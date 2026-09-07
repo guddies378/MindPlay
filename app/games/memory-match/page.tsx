@@ -6,6 +6,7 @@ import {
   recordGame,
   unlockGameAchievement,
 } from "@/lib/progress";
+import { completeDailyChallenge } from "@/lib/dailyChallenge";
 import PlayerFooterText from "@/components/PlayerFooterText";
 import PlayerBrand from "@/components/PlayerBrand";
 
@@ -227,6 +228,7 @@ export default function MemoryMatchPage() {
           setGameOver(true);
 
           recordGame(currentMove, totalXP);
+          completeDailyChallenge("memory-match");
           unlockGameAchievement("memory-master");
         }
       }
