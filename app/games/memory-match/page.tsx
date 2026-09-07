@@ -371,7 +371,7 @@ export default function MemoryMatchPage() {
                 <button
                   key={level}
                   type="button"
-                  onClick={() => startGame(level)}
+                  onClick={() => setDifficulty(level)}
                   className={`group rounded-2xl border p-3 text-left transition-all duration-200 sm:p-4 ${
                     selected
                       ? "border-cyan-300/30 bg-cyan-300/8 shadow-[0_0_30px_rgba(103,232,249,0.05)]"

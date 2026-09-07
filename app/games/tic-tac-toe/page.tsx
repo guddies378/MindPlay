@@ -792,7 +792,6 @@ export default function TicTacToePage() {
                         setDifficulty(
                           level
                         );
-                        resetBoard();
                       }}
                       className={[
                         "group rounded-2xl border p-3 text-left transition-all duration-200 sm:p-4",

@@ -66,7 +66,7 @@ const DIFFICULTIES = {
   easy: {
     label: "Easy",
     xp: 20,
-    time: 45,
+    time: 30,
     icon: "🌱",
   },
   normal: {
@@ -78,7 +78,7 @@ const DIFFICULTIES = {
   hard: {
     label: "Hard",
     xp: 50,
-    time: 45,
+    time: 60,
     icon: "🔥",
   },
 };
@@ -169,7 +169,9 @@ export default function WordScramblePage() {
 
   const [wrong, setWrong] = useState(0);
 
-  const [timeLeft, setTimeLeft] = useState(45);
+  const [timeLeft, setTimeLeft] = useState(
+    DIFFICULTIES.normal.time
+  );
 
   const [started, setStarted] = useState(false);
 
@@ -426,9 +428,7 @@ export default function WordScramblePage() {
                 return (
                   <button
                     key={level}
-                    onClick={() =>
-                      startGame(level)
-                    }
+                    onClick={() => setDifficulty(level)}
                     className={[
                       "group rounded-2xl border p-3 text-left transition-all duration-200 sm:p-4",
                       active
@@ -466,7 +466,7 @@ export default function WordScramblePage() {
                     </p>
 
                     <p className="mt-1 text-xs text-white/30">
-                      45 seconds
+                      {DIFFICULTIES[level].time} seconds
                     </p>
                   </button>
                 );
@@ -511,7 +511,10 @@ export default function WordScramblePage() {
                   : "text-white",
               ].join(" ")}
             >
-              {timeLeft}s
+              {started
+                ? timeLeft
+                : DIFFICULTIES[difficulty].time}
+              s
             </p>
           </div>
         </div>
@@ -574,17 +577,17 @@ export default function WordScramblePage() {
                 <div className="mx-auto mt-6 grid max-w-sm grid-cols-3 gap-2">
                   <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-3">
                     <p className="text-lg font-black text-cyan-300">
-                      +10
+                      +{DIFFICULTIES[difficulty].xp} XP
                     </p>
 
                     <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/25">
-                      Correct
+                      Base XP
                     </p>
                   </div>
 
                   <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-3">
                     <p className="text-lg font-black text-white">
-                      45s
+                      {DIFFICULTIES[difficulty].time}s
                     </p>
 
                     <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/25">

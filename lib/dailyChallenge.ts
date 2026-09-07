@@ -1,5 +1,6 @@
 import type { AchievementId } from "@/lib/achievements";
 import { addXP } from "@/lib/progress";
+import { DAILY_CHALLENGE_XP } from "@/lib/gameXP";
 
 export type DailyChallengeGame =
   | "memory-match"
@@ -38,7 +39,7 @@ const CHALLENGES: Omit<
     description: "Complete a Memory Match challenge.",
     icon: "🧠",
     difficulty: "normal",
-    rewardXP: 50,
+    rewardXP: DAILY_CHALLENGE_XP,
     achievementId: "memory-master",
   },
   {
@@ -47,7 +48,7 @@ const CHALLENGES: Omit<
     description: "Complete a Quick Math challenge.",
     icon: "⚡",
     difficulty: "hard",
-    rewardXP: 60,
+    rewardXP: DAILY_CHALLENGE_XP,
     achievementId: "math-machine",
   },
   {
@@ -56,7 +57,7 @@ const CHALLENGES: Omit<
     description: "Complete a Word Scramble challenge.",
     icon: "🔤",
     difficulty: "normal",
-    rewardXP: 50,
+    rewardXP: DAILY_CHALLENGE_XP,
     achievementId: "word-wizard",
   },
   {
@@ -65,7 +66,7 @@ const CHALLENGES: Omit<
     description: "Solve a Riddle Me challenge.",
     icon: "🧩",
     difficulty: "hard",
-    rewardXP: 60,
+    rewardXP: DAILY_CHALLENGE_XP,
     achievementId: "riddle-solver",
   },
   {
@@ -74,7 +75,7 @@ const CHALLENGES: Omit<
     description: "Complete an Odd One Out challenge.",
     icon: "👀",
     difficulty: "hard",
-    rewardXP: 55,
+    rewardXP: DAILY_CHALLENGE_XP,
     achievementId: "sharp-eyes",
   },
   {
@@ -83,7 +84,7 @@ const CHALLENGES: Omit<
     description: "Complete a Tic-Tac-Toe challenge.",
     icon: "❌⭕",
     difficulty: "normal",
-    rewardXP: 50,
+    rewardXP: DAILY_CHALLENGE_XP,
     achievementId: "strategy-master",
   },
 ];

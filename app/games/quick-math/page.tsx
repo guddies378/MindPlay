@@ -26,6 +26,7 @@ const DIFFICULTIES = {
     maxNumber: 10,
     operations: ["+", "-"] as const,
     xp: 20,
+    time: 30,
   },
   normal: {
     label: "Normal",
@@ -33,6 +34,7 @@ const DIFFICULTIES = {
     maxNumber: 20,
     operations: ["+", "-", "×"] as const,
     xp: 35,
+    time: 45,
   },
   hard: {
     label: "Hard",
@@ -40,6 +42,7 @@ const DIFFICULTIES = {
     maxNumber: 50,
     operations: ["+", "-", "×", "÷"] as const,
     xp: 50,
+    time: 60,
   },
 };
 
@@ -124,7 +127,9 @@ export default function QuickMathPage() {
 
   const [wrong, setWrong] = useState(0);
 
-  const [timeLeft, setTimeLeft] = useState(30);
+  const [timeLeft, setTimeLeft] = useState(
+    DIFFICULTIES.normal.time
+  );
 
   const [started, setStarted] = useState(false);
 
@@ -149,7 +154,7 @@ export default function QuickMathPage() {
     setScore(0);
     setCorrect(0);
     setWrong(0);
-    setTimeLeft(30);
+    setTimeLeft(DIFFICULTIES[selectedDifficulty].time);
     setStarted(true);
     setGameOver(false);
     setFeedback(null);
@@ -254,7 +259,8 @@ export default function QuickMathPage() {
   };
 
   const timePercentage =
-    (timeLeft / 30) * 100;
+    (timeLeft / DIFFICULTIES[difficulty].time) *
+    100;
 
   return (
     <main className="min-h-screen overflow-hidden bg-transparent text-white">
@@ -315,7 +321,7 @@ export default function QuickMathPage() {
 
           <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-white/45 sm:text-base">
             Solve as many equations as you can before
-            the 30-second countdown ends.
+            the {DIFFICULTIES[difficulty].time}-second countdown ends.
           </p>
         </div>
 
@@ -347,9 +353,7 @@ export default function QuickMathPage() {
                 <button
                   key={level}
                   type="button"
-                  onClick={() =>
-                    startGame(level)
-                  }
+                  onClick={() => setDifficulty(level)}
                   className={`group rounded-2xl border p-3 text-left transition-all duration-200 sm:p-4 ${
                     selected
                       ? "border-cyan-300/30 bg-cyan-300/8 shadow-[0_0_30px_rgba(103,232,249,0.05)]"
@@ -371,7 +375,7 @@ export default function QuickMathPage() {
                     {
                       DIFFICULTIES[level]
                         .description
-                    }
+                    } · {DIFFICULTIES[level].time}s
                   </p>
                 </button>
               );
@@ -416,7 +420,10 @@ export default function QuickMathPage() {
                   : "text-white"
               }`}
             >
-              {timeLeft}s
+              {started
+                ? timeLeft
+                : DIFFICULTIES[difficulty].time}
+              s
             </p>
           </div>
         </div>
@@ -481,12 +488,12 @@ export default function QuickMathPage() {
 
               <p className="mt-3 max-w-md text-sm leading-6 text-white/40">
                 Answer as many equations as possible
-                in 30 seconds.
+                in {DIFFICULTIES[difficulty].time} seconds.
               </p>
 
               <div className="mt-6 flex items-center gap-2">
                 <div className="rounded-xl border border-white/[0.07] bg-white/[0.035] px-3 py-2 text-xs font-bold text-white/40">
-                  30 seconds
+                  {DIFFICULTIES[difficulty].time} seconds
                 </div>
 
                 <div className="rounded-xl border border-white/[0.07] bg-white/[0.035] px-3 py-2 text-xs font-bold text-white/40">

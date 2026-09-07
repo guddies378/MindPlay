@@ -28,14 +28,14 @@ const DIFFICULTIES = {
   normal: {
     label: "Normal",
     items: 6,
-    time: 30,
+    time: 45,
     xp: 30,
     icon: "⚡",
   },
   hard: {
     label: "Hard",
     items: 9,
-    time: 30,
+    time: 60,
     xp: 40,
     icon: "🔥",
   },
@@ -124,7 +124,9 @@ export default function OddOneOutPage() {
   const [correct, setCorrect] = useState(0);
   const [wrong, setWrong] = useState(0);
 
-  const [timeLeft, setTimeLeft] = useState(30);
+  const [timeLeft, setTimeLeft] = useState(
+    DIFFICULTIES.normal.time
+  );
 
   const [started, setStarted] = useState(false);
   const [gameOver, setGameOver] = useState(false);
@@ -365,9 +367,7 @@ export default function OddOneOutPage() {
               return (
                 <button
                   key={level}
-                  onClick={() =>
-                    startGame(level)
-                  }
+                  onClick={() => setDifficulty(level)}
                   className={[
                     "group rounded-2xl border p-3 text-left transition-all duration-200 sm:p-4",
                     active
@@ -410,7 +410,12 @@ export default function OddOneOutPage() {
                         level
                       ].items
                     }{" "}
-                    items
+                    items ·{" "}
+                    {
+                      DIFFICULTIES[
+                        level
+                      ].time
+                    }s
                   </p>
                 </button>
               );
@@ -454,7 +459,10 @@ export default function OddOneOutPage() {
                   : "text-white",
               ].join(" ")}
             >
-              {timeLeft}s
+              {started
+                ? timeLeft
+                : DIFFICULTIES[difficulty].time}
+              s
             </p>
           </div>
         </div>
@@ -511,6 +519,16 @@ export default function OddOneOutPage() {
                 different before the timer runs
                 out.
               </p>
+
+              <div className="mt-6 flex items-center justify-center gap-2">
+                <div className="rounded-xl border border-white/[0.07] bg-white/[0.035] px-3 py-2 text-xs font-bold text-white/40">
+                  {DIFFICULTIES[difficulty].time}s timer
+                </div>
+
+                <div className="rounded-xl border border-white/[0.07] bg-white/[0.035] px-3 py-2 text-xs font-bold text-white/40">
+                  +{DIFFICULTIES[difficulty].xp} base XP
+                </div>
+              </div>
 
               <button
                 onClick={() =>

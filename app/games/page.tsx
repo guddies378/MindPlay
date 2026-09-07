@@ -14,7 +14,7 @@ const games = [
   {
     icon: "🧠",
     title: "Memory Match",
-    description: "Remember the cards and match every pair.",
+    description: "Study the board, then match every pair.",
     category: "MEMORY",
     difficulty: "Easy → Hard",
     href: "/games/memory-match",
@@ -24,7 +24,7 @@ const games = [
   {
     icon: "⚡",
     title: "Quick Math",
-    description: "Solve equations before the clock catches you.",
+    description: "Build a combo before the clock catches you.",
     category: "SPEED",
     difficulty: "Easy → Hard",
     href: "/games/quick-math",
@@ -34,7 +34,7 @@ const games = [
   {
     icon: "🔤",
     title: "Word Scramble",
-    description: "Untangle the letters and find the hidden word.",
+    description: "Untangle words, but use hints wisely.",
     category: "WORDS",
     difficulty: "Easy → Hard",
     href: "/games/word-scramble",
@@ -44,7 +44,7 @@ const games = [
   {
     icon: "🧩",
     title: "Riddle Me",
-    description: "Think outside the box and solve the riddle.",
+    description: "Solve riddles before your hints run out.",
     category: "LOGIC",
     difficulty: "Easy → Hard",
     href: "/games/riddle-me",
@@ -54,7 +54,7 @@ const games = [
   {
     icon: "❌⭕",
     title: "Tic-Tac-Toe",
-    description: "Challenge the AI and prove your strategy.",
+    description: "Outplay the AI and create clever forks.",
     category: "STRATEGY",
     difficulty: "Easy → Hard",
     href: "/games/tic-tac-toe",
@@ -64,7 +64,7 @@ const games = [
   {
     icon: "👀",
     title: "Odd One Out",
-    description: "Spot the different item before time runs out.",
+    description: "Spot the odd item quickly for bonus points.",
     category: "FOCUS",
     difficulty: "Easy → Hard",
     href: "/games/odd-one-out",

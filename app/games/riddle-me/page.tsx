@@ -167,7 +167,7 @@ const DIFFICULTIES = {
   easy: {
     label: "Easy",
     xp: 20,
-    time: 45,
+    time: 30,
     icon: "🌱",
   },
   normal: {
@@ -179,7 +179,7 @@ const DIFFICULTIES = {
   hard: {
     label: "Hard",
     xp: 50,
-    time: 45,
+    time: 60,
     icon: "🔥",
   },
 };
@@ -225,7 +225,9 @@ export default function RiddleMePage() {
 
   const [wrong, setWrong] = useState(0);
 
-  const [timeLeft, setTimeLeft] = useState(45);
+  const [timeLeft, setTimeLeft] = useState(
+    DIFFICULTIES.normal.time
+  );
 
   const [started, setStarted] = useState(false);
 
@@ -466,9 +468,7 @@ export default function RiddleMePage() {
               return (
                 <button
                   key={level}
-                  onClick={() =>
-                    startGame(level)
-                  }
+                  onClick={() => setDifficulty(level)}
                   className={[
                     "group rounded-2xl border p-3 text-left transition-all duration-200 sm:p-4",
                     active
@@ -542,7 +542,10 @@ export default function RiddleMePage() {
                   : "text-white",
               ].join(" ")}
             >
-              {timeLeft}s
+              {started
+                ? timeLeft
+                : DIFFICULTIES[difficulty].time}
+              s
             </p>
           </div>
         </div>
@@ -593,6 +596,16 @@ export default function RiddleMePage() {
                 Solve as many riddles as possible
                 before the clock hits zero.
               </p>
+
+              <div className="mt-6 flex items-center justify-center gap-2">
+                <div className="rounded-xl border border-white/[0.07] bg-white/[0.035] px-3 py-2 text-xs font-bold text-white/40">
+                  {DIFFICULTIES[difficulty].time}s timer
+                </div>
+
+                <div className="rounded-xl border border-white/[0.07] bg-white/[0.035] px-3 py-2 text-xs font-bold text-white/40">
+                  +{DIFFICULTIES[difficulty].xp} base XP
+                </div>
+              </div>
 
               <button
                 onClick={() =>
