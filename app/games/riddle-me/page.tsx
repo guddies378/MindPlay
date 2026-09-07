@@ -61,6 +61,68 @@ const RIDDLES: Record<Difficulty, Riddle[]> = {
       answers: ["bottle"],
       hint: "You might drink from one.",
     },
+    {
+      question: "What has ears but cannot hear?",
+      answers: ["corn", "a corn"],
+      hint: "You might eat it.",
+    },
+    {
+      question:
+        "What has a thumb and four fingers but is not alive?",
+      answers: ["glove", "a glove"],
+      hint: "You wear it on your hand.",
+    },
+    {
+      question: "What has a tail but no body?",
+      answers: ["coin", "a coin"],
+      hint: "You might find it in your pocket.",
+    },
+    {
+      question: "What has a head and a tail but no body?",
+      answers: ["coin", "a coin"],
+      hint: "It can be used to make a choice.",
+    },
+    {
+      question: "What has a ring but no finger?",
+      answers: ["phone", "telephone", "a phone"],
+      hint: "You might hear it ringing.",
+    },
+    {
+      question:
+        "What has four legs and a seat but cannot sit?",
+      answers: ["chair", "a chair"],
+      hint: "You can sit on it.",
+    },
+    {
+      question: "What can you catch but cannot throw?",
+      answers: ["cold", "a cold"],
+      hint: "You might get one when you're sick.",
+    },
+    {
+      question: "What goes up but never comes down?",
+      answers: ["age", "your age"],
+      hint: "It increases every birthday.",
+    },
+    {
+      question: "What has a bark but no bite?",
+      answers: ["tree", "a tree"],
+      hint: "You might find it in a forest.",
+    },
+    {
+      question: "What has pages but is not a newspaper?",
+      answers: ["book", "a book"],
+      hint: "You can read it.",
+    },
+    {
+      question: "What has a bed but never sleeps?",
+      answers: ["river", "a river"],
+      hint: "It flows through nature.",
+    },
+    {
+      question: "What has a mouth but cannot eat?",
+      answers: ["river", "a river"],
+      hint: "It may flow toward the sea.",
+    },
   ],
 
   normal: [
@@ -95,19 +157,99 @@ const RIDDLES: Record<Difficulty, Riddle[]> = {
       hint: "People use it when they talk to you.",
     },
     {
-      question: "What can you catch but never throw?",
+      question:
+        "What can you catch but never throw?",
       answers: ["cold", "a cold"],
       hint: "You might get one when you're sick.",
     },
     {
-      question: "What has words but never speaks?",
+      question:
+        "What has words but never speaks?",
       answers: ["book", "a book"],
       hint: "You can read it.",
     },
     {
-      question: "What has keys but cannot open locks?",
-      answers: ["piano", "keyboard", "a piano", "a keyboard"],
+      question:
+        "What has keys but cannot open locks?",
+      answers: [
+        "piano",
+        "keyboard",
+        "a piano",
+        "a keyboard",
+      ],
       hint: "You can play or type on it.",
+    },
+    {
+      question:
+        "What can run but never walks, has a mouth but never talks?",
+      answers: ["river", "a river"],
+      hint: "It moves through nature.",
+    },
+    {
+      question:
+        "What has an eye but cannot see, and is often found in a storm?",
+      answers: ["hurricane", "a hurricane", "storm"],
+      hint: "Look at the center of a powerful storm.",
+    },
+    {
+      question:
+        "What gets bigger the more you take away from it?",
+      answers: ["hole", "a hole"],
+      hint: "Digging can make one larger.",
+    },
+    {
+      question:
+        "What has many keys but cannot open a single lock?",
+      answers: ["piano", "keyboard"],
+      hint: "One makes music, the other helps you type.",
+    },
+    {
+      question:
+        "What can fill a room but takes up no space?",
+      answers: ["light", "sunlight"],
+      hint: "Turn on a lamp.",
+    },
+    {
+      question:
+        "What has a head, a tail, is brown, and has no legs?",
+      answers: ["penny", "coin", "a penny"],
+      hint: "You might find it in your wallet.",
+    },
+    {
+      question:
+        "What is full of holes but still holds water?",
+      answers: ["sponge", "a sponge"],
+      hint: "You might use it to clean dishes.",
+    },
+    {
+      question:
+        "What can be cracked, made, told, and played?",
+      answers: ["joke", "a joke"],
+      hint: "It can make people laugh.",
+    },
+    {
+      question:
+        "What has a neck but no head, two arms but no hands?",
+      answers: ["shirt", "a shirt"],
+      hint: "You wear it.",
+    },
+    {
+      question:
+        "What has no life but can die?",
+      answers: ["battery", "a battery"],
+      hint: "It powers your devices.",
+    },
+    {
+      question:
+        "What goes through cities and fields but never moves?",
+      answers: ["road", "a road"],
+      hint: "Cars travel on it.",
+    },
+    {
+      question:
+        "What has a bottom at the top?",
+      answers: ["leg", "a leg"],
+      hint: "Think about furniture.",
     },
   ],
 
@@ -133,7 +275,12 @@ const RIDDLES: Record<Difficulty, Riddle[]> = {
     {
       question:
         "The person who makes it sells it. The person who buys it never uses it. The person who uses it never knows they're using it. What is it?",
-      answers: ["coffin", "a coffin", "casket", "a casket"],
+      answers: [
+        "coffin",
+        "a coffin",
+        "casket",
+        "a casket",
+      ],
       hint: "Think about something associated with death.",
     },
     {
@@ -151,7 +298,11 @@ const RIDDLES: Record<Difficulty, Riddle[]> = {
     {
       question:
         "I am taken from a mine and shut inside a wooden case, from which I am never released. What am I?",
-      answers: ["pencil lead", "lead", "graphite"],
+      answers: [
+        "pencil lead",
+        "lead",
+        "graphite",
+      ],
       hint: "You use me to write.",
     },
     {
@@ -159,6 +310,82 @@ const RIDDLES: Record<Difficulty, Riddle[]> = {
         "What is so fragile that saying its name breaks it?",
       answers: ["silence"],
       hint: "The answer is the absence of sound.",
+    },
+    {
+      question:
+        "The more there is, the less you see. What is it?",
+      answers: ["darkness", "dark"],
+      hint: "It happens when the lights go out.",
+    },
+    {
+      question:
+        "What can travel through glass without breaking it?",
+      answers: ["light", "sunlight"],
+      hint: "You see it through windows.",
+    },
+    {
+      question:
+        "I have no beginning, no end, and no middle. What am I?",
+      answers: ["circle", "a circle"],
+      hint: "Think about a shape.",
+    },
+    {
+      question:
+        "What word is pronounced wrong even when you say it correctly?",
+      answers: ["wrong"],
+      hint: "The answer is hidden in the question.",
+    },
+    {
+      question:
+        "What comes once in a minute, twice in a moment, but never in a thousand years?",
+      answers: ["letter m", "m"],
+      hint: "Look at the spelling of the words.",
+    },
+    {
+      question:
+        "What has 13 hearts but no other organs?",
+      answers: [
+        "deck of cards",
+        "a deck of cards",
+        "cards",
+      ],
+      hint: "You might use it to play games.",
+    },
+    {
+      question:
+        "What can you hold without ever touching it?",
+      answers: ["conversation", "a conversation"],
+      hint: "You can have one with another person.",
+    },
+    {
+      question:
+        "What is always coming but never arrives?",
+      answers: ["tomorrow"],
+      hint: "It becomes today when it arrives.",
+    },
+    {
+      question:
+        "What has many rings but no fingers?",
+      answers: ["tree", "a tree"],
+      hint: "You can use them to estimate its age.",
+    },
+    {
+      question:
+        "What gets sharper the more you use it?",
+      answers: ["brain", "mind"],
+      hint: "Thinking exercises can improve it.",
+    },
+    {
+      question:
+        "What can be seen once in a year, twice in a week, but never in a day?",
+      answers: ["letter e", "e"],
+      hint: "Look carefully at the spelling.",
+    },
+    {
+      question:
+        "I have keys but no locks, space but no room, and you can enter but cannot go inside. What am I?",
+      answers: ["keyboard", "a keyboard"],
+      hint: "You probably used one today.",
     },
   ],
 };
@@ -202,11 +429,14 @@ function getRandomRiddle(
 
   if (previousQuestion && available.length > 1) {
     candidates = available.filter(
-      (riddle) => riddle.question !== previousQuestion
+      (riddle) =>
+        riddle.question !== previousQuestion
     );
   }
 
-  return candidates[Math.floor(Math.random() * candidates.length)];
+  return candidates[
+    Math.floor(Math.random() * candidates.length)
+  ];
 }
 
 export default function RiddleMePage() {
@@ -468,7 +698,9 @@ export default function RiddleMePage() {
               return (
                 <button
                   key={level}
-                  onClick={() => setDifficulty(level)}
+                  onClick={() =>
+                    setDifficulty(level)
+                  }
                   className={[
                     "group rounded-2xl border p-3 text-left transition-all duration-200 sm:p-4",
                     active
@@ -861,7 +1093,11 @@ export default function RiddleMePage() {
       {/* Footer */}
 
       <footer className="relative z-10 border-t border-white/5 py-8 text-center">
-        <PlayerFooterText>🧠 MindPlay <span className="mx-2">•</span> Play. Think. Have fun.</PlayerFooterText>
+        <PlayerFooterText>
+          🧠 MindPlay
+          <span className="mx-2">•</span>
+          Play. Think. Have fun.
+        </PlayerFooterText>
       </footer>
     </main>
   );
