@@ -9,6 +9,7 @@ import {
 } from "@/lib/progress";
 import PlayerFooterText from "@/components/PlayerFooterText";
 import PlayerBrand from "@/components/PlayerBrand";
+import DailyChallengeCard from "@/components/DailyChallengeCard";
 
 const games = [
   {
@@ -370,34 +371,7 @@ export default function HomePage() {
 
       {/* Daily challenge */}
       <section className="mx-auto w-full max-w-6xl px-5 pb-16 sm:px-8">
-        <div className="relative overflow-hidden rounded-4xl border border-purple-300/10 bg-linear-to-br from-purple-400/8 to-cyan-300/4 p-6 sm:p-8">
-          <div className="pointer-events-none absolute -right-12.5 -top-17.5 text-[160px] opacity-[0.04]">
-            🧩
-          </div>
-
-          <div className="relative">
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-purple-300/60">
-              Coming Soon
-            </p>
-
-            <h2 className="mt-2 text-2xl font-black">
-              Daily Challenge
-            </h2>
-
-            <p className="mt-2 max-w-lg text-sm leading-6 text-white/45">
-              A new challenge every day. Build your streak,
-              earn bonus XP, and beat your previous score.
-            </p>
-
-            <button
-              type="button"
-              disabled
-              className="mt-5 cursor-not-allowed rounded-xl border border-white/10 bg-white/4 px-5 py-2.5 text-sm font-bold text-white/30"
-            >
-              Coming Soon
-            </button>
-          </div>
-        </div>
+        <DailyChallengeCard />
       </section>
 
       {/* Footer */}

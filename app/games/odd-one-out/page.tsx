@@ -6,6 +6,7 @@ import {
   recordGame,
   unlockGameAchievement,
 } from "@/lib/progress";
+import { completeDailyChallenge } from "@/lib/dailyChallenge";
 import PlayerFooterText from "@/components/PlayerFooterText";
 import PlayerBrand from "@/components/PlayerBrand";
 
@@ -185,6 +186,7 @@ export default function OddOneOutPage() {
       setXpEarned(totalXP);
 
       recordGame(score, totalXP);
+      completeDailyChallenge("odd-one-out");
       unlockGameAchievement("sharp-eyes");
 
       return;

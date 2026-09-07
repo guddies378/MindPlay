@@ -6,6 +6,7 @@ import {
   recordGame,
   unlockGameAchievement,
 } from "@/lib/progress";
+import { completeDailyChallenge } from "@/lib/dailyChallenge";
 import PlayerFooterText from "@/components/PlayerFooterText";
 import PlayerBrand from "@/components/PlayerBrand";
 
@@ -234,6 +235,7 @@ export default function WordScramblePage() {
       setXpEarned(totalXP);
 
       recordGame(score, totalXP);
+      completeDailyChallenge("word-scramble");
       unlockGameAchievement("word-wizard");
 
       return;

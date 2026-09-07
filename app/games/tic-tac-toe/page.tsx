@@ -6,6 +6,7 @@ import {
   recordGame,
   unlockGameAchievement,
 } from "@/lib/progress";
+import { completeDailyChallenge } from "@/lib/dailyChallenge";
 import PlayerFooterText from "@/components/PlayerFooterText";
 import PlayerBrand from "@/components/PlayerBrand";
 
@@ -361,6 +362,7 @@ export default function TicTacToePage() {
     }
 
     recordGame(0, xp);
+    completeDailyChallenge("tic-tac-toe");
     unlockGameAchievement("strategy-master");
   }
 
