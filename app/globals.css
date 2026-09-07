@@ -1,0 +1,215 @@
+@import "tailwindcss";
+
+:root {
+  --background: #080b14;
+  --foreground: #f8fafc;
+
+  --card: rgba(255, 255, 255, 0.045);
+  --card-hover: rgba(255, 255, 255, 0.075);
+  --border: rgba(255, 255, 255, 0.09);
+
+  --cyan: #67e8f9;
+  --purple: #c084fc;
+  --pink: #f0abfc;
+
+  --muted: rgba(255, 255, 255, 0.5);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(
+      circle at 10% 0%,
+      rgba(34, 211, 238, 0.1),
+      transparent 34%
+    ),
+    radial-gradient(
+      circle at 90% 100%,
+      rgba(192, 132, 252, 0.1),
+      transparent 36%
+    ),
+    radial-gradient(
+      circle at 50% 45%,
+      rgba(15, 23, 42, 0.45),
+      transparent 58%
+    ),
+    var(--background);
+  background-attachment: fixed;
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.mp-ambient-background {
+  opacity: 0.7;
+  filter: blur(8px);
+  transform: translateZ(0);
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  font-family: inherit;
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 3px;
+}
+
+::selection {
+  background: rgba(103, 232, 249, 0.25);
+  color: white;
+}
+
+/* -------------------------------- */
+/* Scrollbar                        */
+/* -------------------------------- */
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #080b14;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* -------------------------------- */
+/* Animations                       */
+/* -------------------------------- */
+
+@keyframes pop {
+  0% {
+    transform: scale(0.7);
+    opacity: 0;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeUp {
+  0% {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes pulseSoft {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+/* -------------------------------- */
+/* MindPlay utilities                */
+/* -------------------------------- */
+
+.mp-card {
+  border: 1px solid var(--border);
+  background: var(--card);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.mp-card-hover {
+  transition:
+    transform 180ms ease,
+    background 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.mp-card-hover:hover {
+  transform: translateY(-3px);
+  background: var(--card-hover);
+  border-color: rgba(103, 232, 249, 0.18);
+  box-shadow:
+    0 15px 40px rgba(0, 0, 0, 0.2),
+    0 0 30px rgba(103, 232, 249, 0.04);
+}
+
+.mp-gradient-text {
+  background: linear-gradient(
+    90deg,
+    #67e8f9,
+    #c084fc,
+    #f0abfc
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.mp-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  font-weight: 800;
+  transition:
+    transform 150ms ease,
+    opacity 150ms ease,
+    background 150ms ease;
+}
+
+.mp-button:hover {
+  transform: translateY(-1px);
+}
+
+.mp-button:active {
+  transform: scale(0.97);
+}
+
+.mp-fade-up {
+  animation: fadeUp 400ms ease-out both;
+}
+
+.mp-float {
+  animation: float 3s ease-in-out infinite;
+}
