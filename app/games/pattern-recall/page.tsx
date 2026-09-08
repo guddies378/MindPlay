@@ -1,11 +1,24 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { recordGame } from "@/lib/progress";
+import {
+  recordGame,
+  unlockGameAchievement,
+} from "@/lib/progress";
+import {
+  completeDailyChallenge,
+  DAILY_CHALLENGE_BONUS_POINTS,
+  getDailyChallenge,
+} from "@/lib/dailyChallenge";
 
 type Difficulty = "easy" | "normal" | "hard";
 
-type GameState = "menu" | "showing" | "playing" | "feedback" | "finished";
+type GameState =
+  | "menu"
+  | "showing"
+  | "playing"
+  | "feedback"
+  | "finished";
 
 type DifficultyConfig = {
   label: string;
@@ -18,7 +31,10 @@ type DifficultyConfig = {
   baseXP: number;
 };
 
-const DIFFICULTIES: Record<Difficulty, DifficultyConfig> = {
+const DIFFICULTIES: Record<
+  Difficulty,
+  DifficultyConfig
+> = {
   easy: {
     label: "Easy",
     description: "A gentle memory warm-up.",
@@ -76,14 +92,73 @@ export default function PatternRecallPage() {
   const [lastPoints, setLastPoints] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
 
+  const [xpEarned, setXpEarned] = useState(0);
+  const [dailyCompleted, setDailyCompleted] =
+    useState(false);
+
   const showTimeoutRef =
-    useRef<ReturnType<typeof setTimeout> | null>(null);
+    useRef<ReturnType<typeof setTimeout> | null>(
+      null
+    );
 
   const answerTimeoutRef =
-    useRef<ReturnType<typeof setTimeout> | null>(null);
+    useRef<ReturnType<typeof setTimeout> | null>(
+      null
+    );
 
   const intervalRef =
-    useRef<ReturnType<typeof setInterval> | null>(null);
+    useRef<ReturnType<typeof setInterval> | null>(
+      null
+    );
+
+  /*
+   * Today's Daily Challenge
+   */
+  const dailyChallenge = getDailyChallenge();
+
+  const isDailyChallenge =
+    dailyChallenge.game === "pattern-recall";
+
+  /*
+   * Automatically select today's Daily Challenge
+   * difficulty when the game is opened through:
+   *
+   * /games/pattern-recall?daily=true&difficulty=hard
+   *
+   * We use window.location instead of useSearchParams()
+   * so Next.js 16 can still prerender this page normally.
+   */
+  useEffect(() => {
+    if (!isDailyChallenge) {
+      return;
+    }
+
+    const params = new URLSearchParams(
+      window.location.search
+    );
+
+    const dailyMode =
+      params.get("daily") === "true";
+
+    const urlDifficulty =
+      params.get("difficulty");
+
+    const validDifficulty =
+      urlDifficulty === "easy" ||
+      urlDifficulty === "normal" ||
+      urlDifficulty === "hard";
+
+    if (
+      dailyMode &&
+      validDifficulty &&
+      urlDifficulty === dailyChallenge.difficulty
+    ) {
+      setDifficulty(dailyChallenge.difficulty);
+    }
+  }, [
+    isDailyChallenge,
+    dailyChallenge.difficulty,
+  ]);
 
   const config = DIFFICULTIES[difficulty];
 
@@ -110,9 +185,12 @@ export default function PatternRecallPage() {
     };
   }, []);
 
-  function getTilesForRound() {
-    const increase =
-      Math.floor((round - 1) / 2);
+  function getTilesForRound(
+    roundNumber = round
+  ) {
+    const increase = Math.floor(
+      (roundNumber - 1) / 2
+    );
 
     return Math.min(
       config.maxTiles,
@@ -120,11 +198,14 @@ export default function PatternRecallPage() {
     );
   }
 
-  function generatePattern() {
+  function generatePattern(
+    roundNumber = round
+  ) {
     const totalTiles =
       config.gridSize * config.gridSize;
 
-    const tileCount = getTilesForRound();
+    const tileCount =
+      getTilesForRound(roundNumber);
 
     const newPattern: number[] = [];
 
@@ -154,45 +235,34 @@ export default function PatternRecallPage() {
     setLastCorrect(null);
     setLastPoints(0);
     setPattern([]);
+    setTimeLeft(0);
+    setXpEarned(0);
+    setDailyCompleted(false);
 
     setGameState("showing");
 
     showPattern(1);
   }
 
-  function showPattern(roundNumber: number) {
+  function showPattern(
+    roundNumber: number
+  ) {
     clearTimers();
-
-    const increase =
-      Math.floor((roundNumber - 1) / 2);
-
-    const tileCount = Math.min(
-      config.maxTiles,
-      config.startTiles + increase
-    );
 
     const totalTiles =
       config.gridSize * config.gridSize;
 
-    const newPattern: number[] = [];
-
-    while (newPattern.length < tileCount) {
-      const randomTile = Math.floor(
-        Math.random() * totalTiles
-      );
-
-      if (!newPattern.includes(randomTile)) {
-        newPattern.push(randomTile);
-      }
-    }
+    const newPattern =
+      generatePattern(roundNumber);
 
     setPattern(newPattern);
     setSelectedTiles([]);
     setGameState("showing");
 
-    showTimeoutRef.current = setTimeout(() => {
-      startAnswerPhase();
-    }, config.displayTime);
+    showTimeoutRef.current =
+      setTimeout(() => {
+        startAnswerPhase();
+      }, config.displayTime);
   }
 
   function startAnswerPhase() {
@@ -204,15 +274,17 @@ export default function PatternRecallPage() {
     setTimeLeft(answerTime);
     setGameState("playing");
 
-    intervalRef.current = setInterval(() => {
-      setTimeLeft((previous) =>
-        Math.max(0, previous - 100)
-      );
-    }, 100);
+    intervalRef.current =
+      setInterval(() => {
+        setTimeLeft((previous) =>
+          Math.max(0, previous - 100)
+        );
+      }, 100);
 
-    answerTimeoutRef.current = setTimeout(() => {
-      finishRound([]);
-    }, answerTime);
+    answerTimeoutRef.current =
+      setTimeout(() => {
+        finishRound([]);
+      }, answerTime);
   }
 
   function toggleTile(index: number) {
@@ -280,7 +352,9 @@ export default function PatternRecallPage() {
     if (isCorrect) {
       nextCombo = combo + 1;
 
-      const basePoints = pattern.length * 10;
+      const basePoints =
+        pattern.length * 10;
+
       const comboBonus =
         Math.floor(nextCombo / 3) * 5;
 
@@ -358,21 +432,72 @@ export default function PatternRecallPage() {
           ? 10
           : 0;
 
-    const totalXP =
+    /*
+     * Normal Pattern Recall XP.
+     */
+    const baseTotalXP =
       config.baseXP +
       scoreBonus +
       comboBonus;
 
-    recordGame(score, totalXP);
+    /*
+     * Daily Challenge completion.
+     *
+     * completeDailyChallenge() itself awards
+     * the +50 Daily Challenge XP.
+     */
+    const completedDaily =
+      isDailyChallenge
+        ? completeDailyChallenge(
+            "pattern-recall"
+          )
+        : false;
 
-    console.log("Pattern Recall result:", {
-      score,
-      correctRounds,
-      wrongRounds,
-      accuracy,
-      bestCombo,
-      totalXP,
-    });
+    /*
+     * Daily Challenge gives +10 score.
+     */
+    const finalScore =
+      score +
+      (completedDaily
+        ? DAILY_CHALLENGE_BONUS_POINTS
+        : 0);
+
+    /*
+     * Only display the Daily Challenge +50 XP here.
+     *
+     * completeDailyChallenge() already adds the
+     * actual +50 XP to progress.
+     */
+    const finalDisplayedXP =
+      baseTotalXP +
+      (completedDaily ? 50 : 0);
+
+    setXpEarned(finalDisplayedXP);
+    setDailyCompleted(completedDaily);
+
+    recordGame(
+      finalScore,
+      baseTotalXP
+    );
+
+    unlockGameAchievement(
+      "memory-master"
+    );
+
+    console.log(
+      "Pattern Recall result:",
+      {
+        score,
+        finalScore,
+        correctRounds,
+        wrongRounds,
+        accuracy,
+        bestCombo,
+        baseTotalXP,
+        dailyCompleted: completedDaily,
+        finalDisplayedXP,
+      }
+    );
 
     setGameState("finished");
   }
@@ -462,6 +587,11 @@ export default function PatternRecallPage() {
               <div className="rounded-2xl border border-white/10 bg-white/4 p-4">
                 <div className="text-2xl font-black text-cyan-300">
                   {score}
+                  {dailyCompleted && (
+                    <span className="ml-1 text-sm text-purple-300">
+                      +10
+                    </span>
+                  )}
                 </div>
 
                 <div className="mt-1 text-xs font-bold uppercase tracking-wider text-white/40">
@@ -491,7 +621,7 @@ export default function PatternRecallPage() {
 
               <div className="rounded-2xl border border-white/10 bg-white/4 p-4">
                 <div className="text-2xl font-black text-yellow-300">
-                  +{totalXP}
+                  +{xpEarned || totalXP}
                 </div>
 
                 <div className="mt-1 text-xs font-bold uppercase tracking-wider text-white/40">
@@ -499,6 +629,23 @@ export default function PatternRecallPage() {
                 </div>
               </div>
             </div>
+
+            {dailyCompleted && (
+              <div className="mt-5 rounded-2xl border border-purple-300/15 bg-purple-300/5 p-4">
+                <div className="text-lg">
+                  🎯
+                </div>
+
+                <p className="mt-1 text-sm font-black text-purple-200">
+                  Daily Challenge Complete!
+                </p>
+
+                <p className="mt-1 text-xs leading-5 text-white/40">
+                  +50 XP and +10 bonus score
+                  have been added.
+                </p>
+              </div>
+            )}
 
             <div className="mt-6 rounded-2xl border border-white/10 bg-white/2.5 p-4">
               <div className="flex justify-between text-sm">
@@ -670,6 +817,19 @@ export default function PatternRecallPage() {
             </div>
           </div>
 
+          {isDailyChallenge && (
+            <div className="mb-5 rounded-2xl border border-purple-300/15 bg-purple-300/5 px-4 py-3 text-center">
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-purple-300/70">
+                🎯 Daily Challenge
+              </p>
+
+              <p className="mt-1 text-sm font-black text-white/80">
+                {dailyChallenge.title} ·{" "}
+                {dailyChallenge.difficulty.toUpperCase()}
+              </p>
+            </div>
+          )}
+
           <section className="mp-card rounded-3xl p-5 sm:p-8">
             <div className="mb-6 flex items-center justify-between">
               <div>
@@ -708,7 +868,9 @@ export default function PatternRecallPage() {
                 <div className="mt-1 text-2xl font-black">
                   {gameState === "showing"
                     ? "👀"
-                    : `${(timeLeft / 1000).toFixed(1)}`}
+                    : `${(
+                        timeLeft / 1000
+                      ).toFixed(1)}`}
                 </div>
               </div>
             </div>
@@ -765,7 +927,9 @@ export default function PatternRecallPage() {
                     onClick={() =>
                       toggleTile(index)
                     }
-                    aria-label={`Tile ${index + 1}`}
+                    aria-label={`Tile ${
+                      index + 1
+                    }`}
                     className={`aspect-square rounded-xl border transition-all duration-150 ${
                       isShowing
                         ? isPatternTile
@@ -845,11 +1009,31 @@ export default function PatternRecallPage() {
             </p>
           </div>
 
+          {isDailyChallenge && (
+            <div className="mt-6 rounded-2xl border border-purple-300/15 bg-purple-300/5 p-4 text-center">
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-purple-300/70">
+                🎯 Today&apos;s Daily Challenge
+              </p>
+
+              <p className="mt-1 text-sm font-black text-white">
+                Pattern Recall ·{" "}
+                {dailyChallenge.difficulty.toUpperCase()}
+              </p>
+
+              <p className="mt-1 text-xs text-white/35">
+                Difficulty automatically selected
+              </p>
+            </div>
+          )}
+
           <div className="mt-8 grid gap-3 sm:grid-cols-3">
-            {(Object.keys(
-              DIFFICULTIES
-            ) as Difficulty[]).map((level) => {
-              const item = DIFFICULTIES[level];
+            {(
+              Object.keys(
+                DIFFICULTIES
+              ) as Difficulty[]
+            ).map((level) => {
+              const item =
+                DIFFICULTIES[level];
 
               const selected =
                 difficulty === level;

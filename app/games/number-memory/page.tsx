@@ -3,9 +3,19 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { recordGame } from "@/lib/progress";
+import {
+  completeDailyChallenge,
+  DAILY_CHALLENGE_BONUS_POINTS,
+  getDailyChallenge,
+} from "@/lib/dailyChallenge";
 
 type Difficulty = "easy" | "normal" | "hard";
-type GameState = "idle" | "showing" | "input" | "result" | "finished";
+type GameState =
+  | "idle"
+  | "showing"
+  | "input"
+  | "result"
+  | "finished";
 
 const DIFFICULTIES = {
   easy: {
@@ -52,7 +62,10 @@ function generateNumber(length: number) {
   return result;
 }
 
-function getRoundScore(correct: boolean, length: number) {
+function getRoundScore(
+  correct: boolean,
+  length: number
+) {
   if (!correct) return 0;
 
   return length * 10;
@@ -87,6 +100,9 @@ export default function NumberMemoryPage() {
 
   const [xpEarned, setXpEarned] = useState(0);
 
+  const [dailyBonusEarned, setDailyBonusEarned] =
+    useState(false);
+
   const [lastCorrect, setLastCorrect] =
     useState<boolean | null>(null);
 
@@ -96,12 +112,22 @@ export default function NumberMemoryPage() {
   const [countdown, setCountdown] = useState(0);
 
   const timeoutRef =
-    useRef<ReturnType<typeof setTimeout> | null>(null);
+    useRef<ReturnType<typeof setTimeout> | null>(
+      null
+    );
 
   const countdownRef =
-    useRef<ReturnType<typeof setInterval> | null>(null);
+    useRef<ReturnType<typeof setInterval> | null>(
+      null
+    );
 
-  const inputRef = useRef<HTMLInputElement | null>(null);
+  const inputRef =
+    useRef<HTMLInputElement | null>(null);
+
+  const dailyChallenge = getDailyChallenge();
+
+  const isDailyChallenge =
+    dailyChallenge.game === "number-memory";
 
   const config = DIFFICULTIES[difficulty];
 
@@ -119,7 +145,8 @@ export default function NumberMemoryPage() {
 
   function getNumberLength(nextRound: number) {
     return Math.min(
-      config.startingLength + Math.floor((nextRound - 1) / 2),
+      config.startingLength +
+        Math.floor((nextRound - 1) / 2),
       config.maxLength
     );
   }
@@ -127,8 +154,11 @@ export default function NumberMemoryPage() {
   function startRound(nextRound: number) {
     clearTimers();
 
-    const length = getNumberLength(nextRound);
-    const number = generateNumber(length);
+    const length =
+      getNumberLength(nextRound);
+
+    const number =
+      generateNumber(length);
 
     setRound(nextRound);
     setCurrentNumber(number);
@@ -141,22 +171,27 @@ export default function NumberMemoryPage() {
       Math.ceil(config.displayTime / 1000)
     );
 
-    let secondsLeft = Math.ceil(
-      config.displayTime / 1000
-    );
+    let secondsLeft =
+      Math.ceil(config.displayTime / 1000);
 
-    countdownRef.current = setInterval(() => {
-      secondsLeft -= 1;
+    countdownRef.current =
+      setInterval(() => {
+        secondsLeft -= 1;
 
-      setCountdown(Math.max(secondsLeft, 0));
+        setCountdown(
+          Math.max(secondsLeft, 0)
+        );
 
-      if (secondsLeft <= 0) {
-        if (countdownRef.current) {
-          clearInterval(countdownRef.current);
-          countdownRef.current = null;
+        if (secondsLeft <= 0) {
+          if (countdownRef.current) {
+            clearInterval(
+              countdownRef.current
+            );
+
+            countdownRef.current = null;
+          }
         }
-      }
-    }, 1000);
+      }, 1000);
 
     timeoutRef.current = setTimeout(() => {
       setShowCountdown(false);
@@ -179,6 +214,7 @@ export default function NumberMemoryPage() {
     setBestStreak(0);
     setLongestNumber(0);
     setXpEarned(0);
+    setDailyBonusEarned(false);
     setCurrentNumber("");
     setAnswer("");
     setLastCorrect(null);
@@ -190,21 +226,57 @@ export default function NumberMemoryPage() {
   function finishGame(finalScore: number) {
     clearTimers();
 
+    const dailyCompleted =
+      isDailyChallenge &&
+      completeDailyChallenge(
+        "number-memory"
+      );
+
+    const finalScoreWithDailyBonus =
+      finalScore +
+      (dailyCompleted
+        ? DAILY_CHALLENGE_BONUS_POINTS
+        : 0);
+
     const scoreBonus = Math.min(
       40,
-      Math.floor(finalScore / 50)
+      Math.floor(
+        finalScoreWithDailyBonus / 50
+      )
     );
 
     const streakBonus =
-      bestStreak >= 5 ? 20 : bestStreak >= 3 ? 10 : 0;
+      bestStreak >= 5
+        ? 20
+        : bestStreak >= 3
+          ? 10
+          : 0;
+
+    const dailyXP =
+      dailyCompleted ? 50 : 0;
 
     const totalXP =
-      config.xp + scoreBonus + streakBonus;
+      config.xp +
+      scoreBonus +
+      streakBonus +
+      dailyXP;
+
+    setScore(
+      finalScoreWithDailyBonus
+    );
 
     setXpEarned(totalXP);
+
+    setDailyBonusEarned(
+      dailyCompleted
+    );
+
     setGameState("finished");
 
-    recordGame(finalScore, totalXP);
+    recordGame(
+      finalScoreWithDailyBonus,
+      totalXP
+    );
   }
 
   function submitAnswer() {
@@ -212,22 +284,31 @@ export default function NumberMemoryPage() {
       return;
     }
 
-    const isCorrect = answer === currentNumber;
-    const length = currentNumber.length;
+    const isCorrect =
+      answer === currentNumber;
 
-    const roundScore = getRoundScore(
-      isCorrect,
-      length
-    );
+    const length =
+      currentNumber.length;
 
-    const nextScore = score + roundScore;
+    const roundScore =
+      getRoundScore(
+        isCorrect,
+        length
+      );
+
+    const nextScore =
+      score + roundScore;
 
     setLastCorrect(isCorrect);
 
     if (isCorrect) {
-      const nextStreak = streak + 1;
+      const nextStreak =
+        streak + 1;
 
-      setCorrect((value) => value + 1);
+      setCorrect(
+        (value) => value + 1
+      );
+
       setStreak(nextStreak);
 
       if (nextStreak > bestStreak) {
@@ -240,16 +321,20 @@ export default function NumberMemoryPage() {
 
       setScore(nextScore);
     } else {
-      setWrong((value) => value + 1);
+      setWrong(
+        (value) => value + 1
+      );
+
       setStreak(0);
     }
 
     setGameState("result");
 
     if (round >= config.rounds) {
-      const finalScore = isCorrect
-        ? nextScore
-        : score;
+      const finalScore =
+        isCorrect
+          ? nextScore
+          : score;
 
       setTimeout(() => {
         finishGame(finalScore);
@@ -274,6 +359,50 @@ export default function NumberMemoryPage() {
     }
   }
 
+  /*
+   * Daily Challenge difficulty
+   *
+   * We intentionally read window.location.search
+   * inside useEffect instead of useSearchParams().
+   *
+   * This keeps the page compatible with the
+   * Next.js production build.
+   */
+  useEffect(() => {
+    if (!isDailyChallenge) {
+      return;
+    }
+
+    const params = new URLSearchParams(
+      window.location.search
+    );
+
+    const dailyMode =
+      params.get("daily") === "true";
+
+    const urlDifficulty =
+      params.get("difficulty");
+
+    const validDifficulty =
+      urlDifficulty === "easy" ||
+      urlDifficulty === "normal" ||
+      urlDifficulty === "hard";
+
+    if (
+      dailyMode &&
+      validDifficulty &&
+      urlDifficulty ===
+        dailyChallenge.difficulty
+    ) {
+      setDifficulty(
+        dailyChallenge.difficulty
+      );
+    }
+  }, [
+    isDailyChallenge,
+    dailyChallenge.difficulty,
+  ]);
+
   useEffect(() => {
     return () => {
       clearTimers();
@@ -282,19 +411,24 @@ export default function NumberMemoryPage() {
 
   const progress =
     config.rounds > 0
-      ? Math.min(100, (round / config.rounds) * 100)
+      ? Math.min(
+          100,
+          (round / config.rounds) * 100
+        )
       : 0;
 
   const currentLength =
     currentNumber.length ||
-    getNumberLength(Math.max(round, 1));
+    getNumberLength(
+      Math.max(round, 1)
+    );
 
   return (
     <main className="min-h-screen overflow-hidden px-4 py-8 text-white sm:px-6 lg:px-8">
       <div className="mx-auto max-w-5xl">
 
         {/* Header */}
-        <header className="mb-8 flex items-center justify-between">
+        <header className="mb-8 flex items-center justify-between gap-3">
           <Link
             href="/games"
             className="group flex items-center gap-2 text-sm font-bold text-white/40 transition hover:text-white"
@@ -302,17 +436,28 @@ export default function NumberMemoryPage() {
             <span className="transition-transform group-hover:-translate-x-1">
               ←
             </span>
+
             Back to Arcade
           </Link>
 
-          <div className="rounded-full border border-white/10 bg-white/4 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-white/35">
-            Memory Game
+          <div className="flex items-center gap-2">
+            <div className="rounded-full border border-white/10 bg-white/4 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-white/35">
+              Memory Game
+            </div>
+
+            {isDailyChallenge && (
+              <div className="rounded-full border border-yellow-300/20 bg-yellow-300/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-yellow-300">
+                Daily Challenge
+              </div>
+            )}
           </div>
         </header>
 
         {/* Title */}
         <section className="mp-fade-up mb-8 text-center">
-          <div className="mb-3 text-5xl">🔢</div>
+          <div className="mb-3 text-5xl">
+            🔢
+          </div>
 
           <p className="text-xs font-black uppercase tracking-[0.25em] text-cyan-300/60">
             Number Memory
@@ -342,63 +487,93 @@ export default function NumberMemoryPage() {
             </div>
 
             <div className="grid gap-3 sm:grid-cols-3">
-              {(Object.keys(DIFFICULTIES) as Difficulty[]).map(
-                (level) => {
-                  const item = DIFFICULTIES[level];
-                  const selected = difficulty === level;
+              {(
+                Object.keys(
+                  DIFFICULTIES
+                ) as Difficulty[]
+              ).map((level) => {
+                const item =
+                  DIFFICULTIES[level];
 
-                  return (
-                    <button
-                      key={level}
-                      type="button"
-                      onClick={() => setDifficulty(level)}
-                      className={[
-                        "rounded-3xl border p-5 text-left transition-all duration-200",
-                        selected
-                          ? "border-cyan-300/25 bg-cyan-300/[0.07] shadow-lg shadow-cyan-400/5"
-                          : "border-white/[0.07] bg-white/2.5 hover:-translate-y-1 hover:border-white/15 hover:bg-white/5",
-                      ].join(" ")}
-                    >
-                      <div className="flex items-start justify-between">
-                        <span className="text-2xl">
-                          {item.icon}
+                const selected =
+                  difficulty === level;
+
+                return (
+                  <button
+                    key={level}
+                    type="button"
+                    onClick={() =>
+                      setDifficulty(level)
+                    }
+                    className={[
+                      "rounded-3xl border p-5 text-left transition-all duration-200",
+                      selected
+                        ? "border-cyan-300/25 bg-cyan-300/[0.07] shadow-lg shadow-cyan-400/5"
+                        : "border-white/[0.07] bg-white/2.5 hover:-translate-y-1 hover:border-white/15 hover:bg-white/5",
+                    ].join(" ")}
+                  >
+                    <div className="flex items-start justify-between">
+                      <span className="text-2xl">
+                        {item.icon}
+                      </span>
+
+                      {selected && (
+                        <span className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-2 py-1 text-[9px] font-black uppercase tracking-wider text-cyan-300">
+                          Selected
                         </span>
+                      )}
+                    </div>
 
-                        {selected && (
-                          <span className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-2 py-1 text-[9px] font-black uppercase tracking-wider text-cyan-300">
-                            Selected
-                          </span>
-                        )}
-                      </div>
+                    <h2 className="mt-4 text-base font-black">
+                      {item.label}
+                    </h2>
 
-                      <h2 className="mt-4 text-base font-black">
-                        {item.label}
-                      </h2>
+                    <p className="mt-1 text-xs text-white/35">
+                      {item.description}
+                    </p>
 
-                      <p className="mt-1 text-xs text-white/35">
-                        {item.description}
-                      </p>
+                    <div className="mt-4 flex items-center justify-between text-[10px] font-black uppercase tracking-wider">
+                      <span className="text-white/25">
+                        {item.rounds} rounds
+                      </span>
 
-                      <div className="mt-4 flex items-center justify-between text-[10px] font-black uppercase tracking-wider">
-                        <span className="text-white/25">
-                          {item.rounds} rounds
-                        </span>
-
-                        <span className="text-cyan-300">
-                          +{item.xp} base XP
-                        </span>
-                      </div>
-                    </button>
-                  );
-                }
-              )}
+                      <span className="text-cyan-300">
+                        +{item.xp} base XP
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
+
+            {isDailyChallenge && (
+              <div className="mt-4 rounded-2xl border border-yellow-300/15 bg-yellow-300/5 p-4 text-center">
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-yellow-300/70">
+                  🏆 Daily Challenge
+                </p>
+
+                <p className="mt-2 text-sm text-white/50">
+                  Today&apos;s challenge is set
+                  to{" "}
+                  <strong className="capitalize text-yellow-300">
+                    {dailyChallenge.difficulty}
+                  </strong>{" "}
+                  difficulty.
+                </p>
+
+                <p className="mt-1 text-xs text-white/30">
+                  Complete it for +10 score
+                  and +50 XP.
+                </p>
+              </div>
+            )}
           </section>
         )}
 
         {/* Game Card */}
         <section className="relative overflow-hidden rounded-4xl border border-white/10 bg-white/[0.035]">
           <div className="pointer-events-none absolute -right-32 -top-32 h-72 w-72 rounded-full bg-cyan-400/10 blur-3xl" />
+
           <div className="pointer-events-none absolute -bottom-32 -left-32 h-72 w-72 rounded-full bg-fuchsia-400/10 blur-3xl" />
 
           <div className="relative p-5 sm:p-8">
@@ -411,6 +586,7 @@ export default function NumberMemoryPage() {
                     <p className="text-[9px] font-black uppercase tracking-wider text-white/25">
                       Round
                     </p>
+
                     <p className="mt-1 text-lg font-black">
                       {round}/{config.rounds}
                     </p>
@@ -420,6 +596,7 @@ export default function NumberMemoryPage() {
                     <p className="text-[9px] font-black uppercase tracking-wider text-white/25">
                       Score
                     </p>
+
                     <p className="mt-1 text-lg font-black text-cyan-300">
                       {score}
                     </p>
@@ -429,6 +606,7 @@ export default function NumberMemoryPage() {
                     <p className="text-[9px] font-black uppercase tracking-wider text-white/25">
                       Streak
                     </p>
+
                     <p className="mt-1 text-lg font-black text-orange-300">
                       🔥 {streak}
                     </p>
@@ -438,6 +616,7 @@ export default function NumberMemoryPage() {
                     <p className="text-[9px] font-black uppercase tracking-wider text-white/25">
                       Digits
                     </p>
+
                     <p className="mt-1 text-lg font-black text-fuchsia-300">
                       {currentLength}
                     </p>
@@ -450,8 +629,13 @@ export default function NumberMemoryPage() {
               gameState !== "finished" && (
                 <div className="mb-6">
                   <div className="mb-2 flex justify-between text-[9px] font-black uppercase tracking-wider text-white/20">
-                    <span>Memory Progress</span>
-                    <span>{Math.round(progress)}%</span>
+                    <span>
+                      Memory Progress
+                    </span>
+
+                    <span>
+                      {Math.round(progress)}%
+                    </span>
                   </div>
 
                   <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
@@ -477,8 +661,9 @@ export default function NumberMemoryPage() {
                 </h2>
 
                 <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-white/35">
-                  A number will appear for a few seconds.
-                  Memorize it, then type it back.
+                  A number will appear for a
+                  few seconds. Memorize it, then
+                  type it back.
                 </p>
 
                 <div className="mt-7 flex flex-wrap justify-center gap-3">
@@ -497,7 +682,10 @@ export default function NumberMemoryPage() {
                   className="mp-button mt-8 bg-white px-8 py-4 text-sm text-black shadow-xl shadow-white/10 hover:bg-white/90"
                 >
                   Start Number Memory
-                  <span className="ml-2">→</span>
+
+                  <span className="ml-2">
+                    →
+                  </span>
                 </button>
               </div>
             )}
@@ -532,7 +720,9 @@ export default function NumberMemoryPage() {
             {/* Input */}
             {gameState === "input" && (
               <div className="flex min-h-95 flex-col items-center justify-center text-center sm:min-h-107.5">
-                <div className="text-6xl">🧠</div>
+                <div className="text-6xl">
+                  🧠
+                </div>
 
                 <h2 className="mt-5 text-3xl font-black">
                   What was the number?
@@ -552,11 +742,16 @@ export default function NumberMemoryPage() {
                     value={answer}
                     onChange={(event) => {
                       const value =
-                        event.target.value.replace(/\D/g, "");
+                        event.target.value.replace(
+                          /\D/g,
+                          ""
+                        );
 
                       setAnswer(value);
                     }}
-                    onKeyDown={handleInputKeyDown}
+                    onKeyDown={
+                      handleInputKeyDown
+                    }
                     placeholder="Type the number..."
                     className="w-full rounded-3xl border border-white/10 bg-white/5 px-5 py-5 text-center font-mono text-2xl font-black tracking-[0.15em] text-white outline-none transition placeholder:text-white/15 focus:border-cyan-300/30 focus:bg-white/[0.07]"
                     autoComplete="off"
@@ -565,11 +760,16 @@ export default function NumberMemoryPage() {
                   <button
                     type="button"
                     onClick={submitAnswer}
-                    disabled={answer.length === 0}
+                    disabled={
+                      answer.length === 0
+                    }
                     className="mp-button mt-4 w-full bg-white px-8 py-4 text-sm text-black shadow-xl shadow-white/10 hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-30"
                   >
                     Check Answer
-                    <span className="ml-2">→</span>
+
+                    <span className="ml-2">
+                      →
+                    </span>
                   </button>
                 </div>
               </div>
@@ -589,7 +789,8 @@ export default function NumberMemoryPage() {
                     </p>
 
                     <p className="mt-2 text-sm font-bold text-white/35">
-                      Your memory is getting stronger.
+                      Your memory is getting
+                      stronger.
                     </p>
 
                     <div className="mx-auto mt-7 max-w-md rounded-3xl border border-emerald-300/10 bg-emerald-300/4 p-6">
@@ -607,7 +808,8 @@ export default function NumberMemoryPage() {
                         </p>
 
                         <p className="mt-1 text-3xl font-black text-cyan-300">
-                          +{getRoundScore(
+                          +
+                          {getRoundScore(
                             true,
                             currentNumber.length
                           )}
@@ -617,7 +819,9 @@ export default function NumberMemoryPage() {
                   </>
                 ) : (
                   <>
-                    <div className="text-7xl">💥</div>
+                    <div className="text-7xl">
+                      💥
+                    </div>
 
                     <p className="mt-5 text-3xl font-black text-orange-300">
                       NOT QUITE!
@@ -644,7 +848,8 @@ export default function NumberMemoryPage() {
                         </p>
 
                         <p className="mt-2 break-all font-mono text-xl font-black tracking-wider text-orange-300">
-                          {answer || "No answer"}
+                          {answer ||
+                            "No answer"}
                         </p>
                       </div>
                     </div>
@@ -659,7 +864,10 @@ export default function NumberMemoryPage() {
                   {round >= config.rounds
                     ? "See Results"
                     : "Next Number"}
-                  <span className="ml-2">→</span>
+
+                  <span className="ml-2">
+                    →
+                  </span>
                 </button>
               </div>
             )}
@@ -672,12 +880,27 @@ export default function NumberMemoryPage() {
                 </div>
 
                 <p className="mt-5 text-xs font-black uppercase tracking-[0.2em] text-cyan-300/60">
-                  Challenge Complete
+                  {dailyBonusEarned
+                    ? "Daily Challenge Complete"
+                    : "Challenge Complete"}
                 </p>
 
                 <h2 className="mt-2 text-3xl font-black sm:text-4xl">
                   Memory test complete!
                 </h2>
+
+                {dailyBonusEarned && (
+                  <div className="mx-auto mt-5 max-w-md rounded-2xl border border-yellow-300/15 bg-yellow-300/5 p-4">
+                    <p className="text-sm font-black text-yellow-300">
+                      🏆 Daily Challenge
+                      Bonus
+                    </p>
+
+                    <p className="mt-1 text-xs text-white/40">
+                      +10 score · +50 XP
+                    </p>
+                  </div>
+                )}
 
                 <div className="mx-auto mt-8 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
                   <div className="rounded-3xl border border-white/[0.07] bg-white/2.5 p-5">
@@ -696,7 +919,8 @@ export default function NumberMemoryPage() {
                     </p>
 
                     <p className="mt-2 text-2xl font-black text-emerald-300">
-                      {correct}/{config.rounds}
+                      {correct}/
+                      {config.rounds}
                     </p>
                   </div>
 
@@ -731,7 +955,8 @@ export default function NumberMemoryPage() {
                       <p className="mt-1 text-sm font-bold text-white/60">
                         Longest number remembered:{" "}
                         <span className="text-cyan-300">
-                          {longestNumber} digits
+                          {longestNumber}{" "}
+                          digits
                         </span>
                       </p>
                     </div>
@@ -749,7 +974,10 @@ export default function NumberMemoryPage() {
                     className="mp-button bg-white px-8 py-4 text-sm text-black shadow-xl shadow-white/10 hover:bg-white/90"
                   >
                     Play Again
-                    <span className="ml-2">↻</span>
+
+                    <span className="ml-2">
+                      ↻
+                    </span>
                   </button>
 
                   <Link
@@ -767,34 +995,47 @@ export default function NumberMemoryPage() {
         {/* Tips */}
         <section className="mt-6 grid gap-3 sm:grid-cols-3">
           <div className="rounded-3xl border border-white/[0.07] bg-white/2.5 p-5">
-            <div className="text-xl">🧩</div>
+            <div className="text-xl">
+              🧩
+            </div>
+
             <h3 className="mt-3 text-sm font-black">
               Chunk it
             </h3>
+
             <p className="mt-1 text-xs leading-5 text-white/30">
-              Group digits together instead of remembering
-              them one by one.
+              Group digits together instead of
+              remembering them one by one.
             </p>
           </div>
 
           <div className="rounded-3xl border border-white/[0.07] bg-white/2.5 p-5">
-            <div className="text-xl">👀</div>
+            <div className="text-xl">
+              👀
+            </div>
+
             <h3 className="mt-3 text-sm font-black">
               Stay focused
             </h3>
+
             <p className="mt-1 text-xs leading-5 text-white/30">
-              Avoid distractions while the number is visible.
+              Avoid distractions while the
+              number is visible.
             </p>
           </div>
 
           <div className="rounded-3xl border border-white/[0.07] bg-white/2.5 p-5">
-            <div className="text-xl">🔥</div>
+            <div className="text-xl">
+              🔥
+            </div>
+
             <h3 className="mt-3 text-sm font-black">
               Build a streak
             </h3>
+
             <p className="mt-1 text-xs leading-5 text-white/30">
-              Consecutive correct answers show how far your
-              memory can go.
+              Consecutive correct answers show
+              how far your memory can go.
             </p>
           </div>
         </section>

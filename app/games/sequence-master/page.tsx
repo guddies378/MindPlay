@@ -1,710 +1,1126 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { recordGame } from "@/lib/progress";
+import {
+  completeDailyChallenge,
+  DAILY_CHALLENGE_BONUS_POINTS,
+  getDailyChallenge,
+} from "@/lib/dailyChallenge";
+import {
+  recordGame,
+  unlockGameAchievement,
+} from "@/lib/progress";
 
-type Difficulty = "Easy" | "Normal" | "Hard";
-type GameState = "menu" | "showing" | "playing" | "feedback" | "finished";
+type Difficulty = "easy" | "normal" | "hard";
 
-type DifficultyConfig = {
-  sequenceStart: number;
-  sequenceMax: number;
-  rounds: number;
-  displayTime: number;
-  baseXP: number;
-};
+type GameState =
+  | "idle"
+  | "showing"
+  | "input"
+  | "result"
+  | "finished";
 
-const DIFFICULTIES: Record<Difficulty, DifficultyConfig> = {
-  Easy: {
-    sequenceStart: 3,
-    sequenceMax: 7,
+const DIFFICULTIES = {
+  easy: {
+    label: "Easy",
+    description: "Simple sequences to warm up",
+    startingLength: 4,
+    maxLength: 7,
     rounds: 8,
-    displayTime: 800,
-    baseXP: 20,
+    displayTime: 1800,
+    xp: 20,
+    icon: "🌱",
   },
-  Normal: {
-    sequenceStart: 4,
-    sequenceMax: 8,
+  normal: {
+    label: "Normal",
+    description: "A real test of your memory",
+    startingLength: 5,
+    maxLength: 9,
     rounds: 9,
-    displayTime: 650,
-    baseXP: 35,
+    displayTime: 1500,
+    xp: 35,
+    icon: "⚡",
   },
-  Hard: {
-    sequenceStart: 5,
-    sequenceMax: 9,
+  hard: {
+    label: "Hard",
+    description: "Fast patterns for sharp minds",
+    startingLength: 6,
+    maxLength: 11,
     rounds: 10,
-    displayTime: 500,
-    baseXP: 50,
+    displayTime: 1200,
+    xp: 50,
+    icon: "🔥",
   },
-};
+} as const;
 
-const NUMBERS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
-
-function generateSequence(length: number): string[] {
-  const sequence: string[] = [];
+function generateSequence(length: number) {
+  const sequence: number[] = [];
 
   for (let i = 0; i < length; i++) {
-    const randomIndex = Math.floor(Math.random() * NUMBERS.length);
-    sequence.push(NUMBERS[randomIndex]);
+    sequence.push(
+      Math.floor(Math.random() * 9) + 1
+    );
   }
 
   return sequence;
 }
 
-export default function SequenceMasterPage() {
-  const [difficulty, setDifficulty] = useState<Difficulty>("Normal");
-  const [gameState, setGameState] = useState<GameState>("menu");
-
-  const [round, setRound] = useState(1);
-  const [sequence, setSequence] = useState<string[]>([]);
-  const [userSequence, setUserSequence] = useState<string[]>([]);
-
-  const [showIndex, setShowIndex] = useState(-1);
-
-  const [score, setScore] = useState(0);
-  const [correctRounds, setCorrectRounds] = useState(0);
-  const [bestCombo, setBestCombo] = useState(0);
-  const [combo, setCombo] = useState(0);
-
-  const [lastCorrect, setLastCorrect] = useState<boolean | null>(null);
-
-  const [finalXP, setFinalXP] = useState(0);
-
-  const showTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
+function getSequenceLength(
+  round: number,
+  difficulty: Difficulty
+) {
   const config = DIFFICULTIES[difficulty];
 
-  function clearShowTimer() {
-    if (showTimeoutRef.current) {
-      clearTimeout(showTimeoutRef.current);
-      showTimeoutRef.current = null;
+  return Math.min(
+    config.startingLength +
+      Math.floor((round - 1) / 2),
+    config.maxLength
+  );
+}
+
+function getRoundScore(
+  correct: boolean,
+  length: number
+) {
+  if (!correct) {
+    return 0;
+  }
+
+  return length * 10;
+}
+
+export default function SequenceMasterPage() {
+  const [difficulty, setDifficulty] =
+    useState<Difficulty>("normal");
+
+  const [gameState, setGameState] =
+    useState<GameState>("idle");
+
+  const [round, setRound] = useState(0);
+
+  const [sequence, setSequence] =
+    useState<number[]>([]);
+
+  const [answer, setAnswer] =
+    useState("");
+
+  const [score, setScore] =
+    useState(0);
+
+  const [correct, setCorrect] =
+    useState(0);
+
+  const [wrong, setWrong] =
+    useState(0);
+
+  const [streak, setStreak] =
+    useState(0);
+
+  const [bestStreak, setBestStreak] =
+    useState(0);
+
+  const [longestSequence, setLongestSequence] =
+    useState(0);
+
+  const [xpEarned, setXpEarned] =
+    useState(0);
+
+  const [dailyBonusEarned, setDailyBonusEarned] =
+    useState(false);
+
+  const [lastCorrect, setLastCorrect] =
+    useState<boolean | null>(null);
+
+  const [countdown, setCountdown] =
+    useState(0);
+
+  const [showCountdown, setShowCountdown] =
+    useState(false);
+
+  const timeoutRef =
+    useRef<ReturnType<typeof setTimeout> | null>(
+      null
+    );
+
+  const countdownRef =
+    useRef<ReturnType<typeof setInterval> | null>(
+      null
+    );
+
+  const inputRef =
+    useRef<HTMLInputElement | null>(null);
+
+  const dailyChallenge =
+    getDailyChallenge();
+
+  const isDailyChallenge =
+    dailyChallenge.game === "sequence-master";
+
+  const config =
+    DIFFICULTIES[difficulty];
+
+  function clearTimers() {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+
+    if (countdownRef.current) {
+      clearInterval(countdownRef.current);
+      countdownRef.current = null;
     }
   }
 
-  useEffect(() => {
-    return () => {
-      clearShowTimer();
-    };
-  }, []);
+  function startRound(nextRound: number) {
+    clearTimers();
+
+    const length =
+      getSequenceLength(
+        nextRound,
+        difficulty
+      );
+
+    const newSequence =
+      generateSequence(length);
+
+    setRound(nextRound);
+    setSequence(newSequence);
+    setAnswer("");
+    setLastCorrect(null);
+    setGameState("showing");
+
+    const seconds =
+      Math.ceil(
+        config.displayTime / 1000
+      );
+
+    setCountdown(seconds);
+    setShowCountdown(true);
+
+    let secondsLeft = seconds;
+
+    countdownRef.current =
+      setInterval(() => {
+        secondsLeft -= 1;
+
+        setCountdown(
+          Math.max(secondsLeft, 0)
+        );
+
+        if (secondsLeft <= 0) {
+          if (countdownRef.current) {
+            clearInterval(
+              countdownRef.current
+            );
+
+            countdownRef.current = null;
+          }
+        }
+      }, 1000);
+
+    timeoutRef.current =
+      setTimeout(() => {
+        setShowCountdown(false);
+        setGameState("input");
+
+        setTimeout(() => {
+          inputRef.current?.focus();
+        }, 50);
+      }, config.displayTime);
+  }
 
   function startGame() {
-    clearShowTimer();
+    clearTimers();
 
-    setRound(1);
+    setRound(0);
+    setSequence([]);
+    setAnswer("");
     setScore(0);
-    setCorrectRounds(0);
-    setBestCombo(0);
-    setCombo(0);
-    setUserSequence([]);
+    setCorrect(0);
+    setWrong(0);
+    setStreak(0);
+    setBestStreak(0);
+    setLongestSequence(0);
+    setXpEarned(0);
+    setDailyBonusEarned(false);
     setLastCorrect(null);
-    setFinalXP(0);
+    setCountdown(0);
+    setShowCountdown(false);
 
     startRound(1);
   }
 
-  function startRound(roundNumber: number) {
-    clearShowTimer();
+  function finishGame(
+    baseFinalScore: number
+  ) {
+    clearTimers();
 
-    const sequenceLength = Math.min(
-      config.sequenceStart + Math.floor((roundNumber - 1) / 2),
-      config.sequenceMax
+    const dailyCompleted =
+      isDailyChallenge &&
+      completeDailyChallenge(
+        "sequence-master"
+      );
+
+    const finalScore =
+      baseFinalScore +
+      (dailyCompleted
+        ? DAILY_CHALLENGE_BONUS_POINTS
+        : 0);
+
+    const scoreBonus = Math.min(
+      40,
+      Math.floor(finalScore / 50)
     );
 
-    const newSequence = generateSequence(sequenceLength);
+    const streakBonus =
+      bestStreak >= 5
+        ? 20
+        : bestStreak >= 3
+          ? 10
+          : 0;
 
-    setRound(roundNumber);
-    setSequence(newSequence);
-    setUserSequence([]);
-    setShowIndex(0);
-    setLastCorrect(null);
-    setGameState("showing");
+    /*
+     * Important:
+     *
+     * completeDailyChallenge()
+     * already gives +50 XP.
+     *
+     * Therefore the +50 daily XP
+     * must NOT be passed into
+     * recordGame(), otherwise the
+     * player would receive it twice.
+     */
+    const baseTotalXP =
+      config.xp +
+      scoreBonus +
+      streakBonus;
 
-    showTimeoutRef.current = setTimeout(
-      () => showNextNumber(newSequence, 0),
-      config.displayTime
+    const displayTotalXP =
+      baseTotalXP +
+      (dailyCompleted ? 50 : 0);
+
+    setScore(finalScore);
+    setXpEarned(displayTotalXP);
+    setDailyBonusEarned(
+      dailyCompleted
+    );
+    setGameState("finished");
+
+    recordGame(
+      finalScore,
+      baseTotalXP
+    );
+
+    unlockGameAchievement(
+      "memory-master"
     );
   }
 
-  function showNextNumber(currentSequence: string[], currentIndex: number) {
-    const nextIndex = currentIndex + 1;
-
-    if (nextIndex >= currentSequence.length) {
-      setShowIndex(-1);
-      setUserSequence([]);
-      setGameState("playing");
+  function submitAnswer() {
+    if (gameState !== "input") {
       return;
     }
 
-    setShowIndex(nextIndex);
+    const correctAnswer =
+      sequence.join("");
 
-    showTimeoutRef.current = setTimeout(
-      () => showNextNumber(currentSequence, nextIndex),
-      config.displayTime
-    );
-  }
+    const isCorrect =
+      answer === correctAnswer;
 
-  function handleNumberClick(number: string) {
-    if (gameState !== "playing") {
-      return;
-    }
+    const length =
+      sequence.length;
 
-    if (userSequence.length >= sequence.length) {
-      return;
-    }
+    const roundScore =
+      getRoundScore(
+        isCorrect,
+        length
+      );
 
-    setUserSequence((current) => [...current, number]);
-  }
-
-  function handleUndo() {
-    if (gameState !== "playing") {
-      return;
-    }
-
-    setUserSequence((current) => current.slice(0, -1));
-  }
-
-  function handleClear() {
-    if (gameState !== "playing") {
-      return;
-    }
-
-    setUserSequence([]);
-  }
-
-  function submitSequence() {
-    if (
-      gameState !== "playing" ||
-      userSequence.length !== sequence.length
-    ) {
-      return;
-    }
-
-    const isCorrect = userSequence.every(
-      (number, index) => number === sequence[index]
-    );
+    const nextScore =
+      score + roundScore;
 
     setLastCorrect(isCorrect);
 
     if (isCorrect) {
-      const nextCombo = combo + 1;
+      const nextStreak =
+        streak + 1;
 
-      const multiplier = Math.min(
-        1.5,
-        1 + Math.floor(nextCombo / 3) * 0.1
+      setCorrect(
+        (value) => value + 1
       );
 
-      const basePoints = sequence.length * 10;
-      const comboBonus = Math.min(30, Math.floor(nextCombo / 2) * 5);
+      setStreak(nextStreak);
 
-      const earnedPoints = Math.round(
-        (basePoints + comboBonus) * multiplier
-      );
+      if (nextStreak > bestStreak) {
+        setBestStreak(nextStreak);
+      }
 
-      setScore((current) => current + earnedPoints);
-      setCorrectRounds((current) => current + 1);
-      setCombo(nextCombo);
-      setBestCombo((current) => Math.max(current, nextCombo));
+      if (length > longestSequence) {
+        setLongestSequence(length);
+      }
+
+      setScore(nextScore);
     } else {
-      setScore((current) => Math.max(0, current - 5));
-      setCombo(0);
+      setWrong(
+        (value) => value + 1
+      );
+
+      setStreak(0);
     }
 
-    setGameState("feedback");
+    setGameState("result");
+
+    if (round >= config.rounds) {
+      const finalScore =
+        isCorrect
+          ? nextScore
+          : score;
+
+      setTimeout(() => {
+        finishGame(finalScore);
+      }, 700);
+    }
   }
 
   function continueGame() {
     if (round >= config.rounds) {
-      finishGame();
+      finishGame(score);
       return;
     }
 
     startRound(round + 1);
   }
 
-  function finishGame() {
-    const finalScore = score;
-
-    const scoreBonus = Math.min(50, Math.floor(finalScore / 30));
-
-    let comboBonus = 0;
-
-    if (bestCombo >= 7) {
-      comboBonus = 20;
-    } else if (bestCombo >= 4) {
-      comboBonus = 10;
+  function handleInputKeyDown(
+    event: React.KeyboardEvent<HTMLInputElement>
+  ) {
+    if (event.key === "Enter") {
+      submitAnswer();
     }
-
-    const totalXP = config.baseXP + scoreBonus + comboBonus;
-
-    setFinalXP(totalXP);
-    recordGame(finalScore, totalXP);
-    setGameState("finished");
   }
 
-  function playAgain() {
-    startGame();
-  }
-
-  function backToArcade() {
-    window.location.href = "/#games";
-  }
-
-  function handleKeyboard(event: globalThis.KeyboardEvent) {
-    if (gameState !== "playing") {
+  /*
+   * Daily Challenge difficulty.
+   *
+   * We read the URL inside useEffect
+   * instead of useSearchParams().
+   *
+   * This keeps the page build-safe
+   * with the Next.js App Router.
+   */
+  useEffect(() => {
+    if (!isDailyChallenge) {
       return;
     }
 
-    if (event.key >= "1" && event.key <= "9") {
-      handleNumberClick(event.key);
-    }
+    const params =
+      new URLSearchParams(
+        window.location.search
+      );
 
-    if (event.key === "Backspace") {
-      handleUndo();
-    }
+    const dailyMode =
+      params.get("daily") === "true";
 
-    if (event.key === "Enter") {
-      submitSequence();
+    const urlDifficulty =
+      params.get("difficulty");
+
+    const validDifficulty =
+      urlDifficulty === "easy" ||
+      urlDifficulty === "normal" ||
+      urlDifficulty === "hard";
+
+    if (
+      dailyMode &&
+      validDifficulty &&
+      urlDifficulty ===
+        dailyChallenge.difficulty
+    ) {
+      setDifficulty(
+        dailyChallenge.difficulty
+      );
     }
-  }
+  }, [
+    isDailyChallenge,
+    dailyChallenge.difficulty,
+  ]);
 
   useEffect(() => {
-    window.addEventListener("keydown", handleKeyboard);
-
     return () => {
-      window.removeEventListener("keydown", handleKeyboard);
+      clearTimers();
     };
-  });
+  }, []);
 
-  const accuracy =
-    round > 0 ? Math.round((correctRounds / round) * 100) : 0;
+  const progress =
+    config.rounds > 0
+      ? Math.min(
+          100,
+          (round / config.rounds) * 100
+        )
+      : 0;
 
-  const currentMultiplier = Math.min(
-    1.5,
-    1 + Math.floor(combo / 3) * 0.1
-  );
+  const currentLength =
+    sequence.length ||
+    getSequenceLength(
+      Math.max(round, 1),
+      difficulty
+    );
 
   return (
-    <main className="min-h-screen px-4 py-8 text-white sm:px-6">
-      <div className="mx-auto max-w-3xl">
-        {/* Header */}
-        <div className="mb-8 flex items-center justify-between gap-4">
-          <a
-            href="/#games"
-            className="text-sm font-bold text-white/50 transition hover:text-white"
-          >
-            ← Arcade
-          </a>
+    <main className="min-h-screen overflow-hidden px-4 py-8 text-white sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-5xl">
 
-          <div className="text-right">
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-300">
-              MindPlay
-            </p>
-            <p className="text-xs text-white/40">
-              Sequence Master
-            </p>
+        {/* Header */}
+        <header className="mb-8 flex items-center justify-between gap-3">
+          <Link
+            href="/games"
+            className="group flex items-center gap-2 text-sm font-bold text-white/40 transition hover:text-white"
+          >
+            <span className="transition-transform group-hover:-translate-x-1">
+              ←
+            </span>
+
+            Back to Arcade
+          </Link>
+
+          <div className="flex items-center gap-2">
+            <div className="rounded-full border border-white/10 bg-white/4 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-white/35">
+              Memory Game
+            </div>
+
+            {isDailyChallenge && (
+              <div className="rounded-full border border-yellow-300/20 bg-yellow-300/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-yellow-300">
+                Daily Challenge
+              </div>
+            )}
           </div>
-        </div>
+        </header>
 
         {/* Title */}
-        <div className="mb-8 text-center">
-          <div className="mb-3 text-5xl">🔁</div>
+        <section className="mp-fade-up mb-8 text-center">
+          <div className="mb-3 text-5xl">
+            🔁
+          </div>
 
-          <h1 className="text-3xl font-black sm:text-4xl">
+          <p className="text-xs font-black uppercase tracking-[0.25em] text-cyan-300/60">
             Sequence Master
+          </p>
+
+          <h1 className="mt-2 text-4xl font-black tracking-tight sm:text-5xl">
+            Remember the sequence.
           </h1>
 
-          <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-white/50">
-            Watch the numbers. Remember the order. Rebuild the sequence.
+          <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-white/40">
+            Watch the numbers, memorize their
+            exact order, then reproduce the
+            sequence from memory.
           </p>
-        </div>
+        </section>
 
-        {/* MENU */}
-        {gameState === "menu" && (
-          <section className="mp-card rounded-3xl p-6 sm:p-8">
-            <div className="mb-7 text-center">
-              <p className="mb-2 text-xs font-black uppercase tracking-[0.2em] text-white/40">
-                Choose difficulty
+        {/* Difficulty */}
+        {gameState === "idle" && (
+          <section className="mp-fade-up mb-8">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-xs font-black uppercase tracking-wider text-white/30">
+                Select difficulty
               </p>
 
-              <div className="grid grid-cols-3 gap-2">
-                {(Object.keys(DIFFICULTIES) as Difficulty[]).map(
-                  (level) => {
-                    const active = difficulty === level;
-
-                    return (
-                      <button
-                        key={level}
-                        onClick={() => setDifficulty(level)}
-                        className={`rounded-2xl border px-3 py-4 text-sm font-black transition ${
-                          active
-                            ? "border-cyan-300/40 bg-cyan-300/10 text-cyan-200"
-                            : "border-white/10 bg-white/3 text-white/50 hover:bg-white/6 hover:text-white"
-                        }`}
-                      >
-                        {level}
-                      </button>
-                    );
-                  }
-                )}
-              </div>
+              <p className="text-xs font-bold text-white/20">
+                Longer sequences = more points
+              </p>
             </div>
 
-            <div className="mb-7 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <div className="rounded-2xl bg-white/4 p-4 text-center">
-                <p className="text-xs text-white/40">Starting</p>
-                <p className="mt-1 text-xl font-black">
-                  {config.sequenceStart}
-                </p>
-              </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {(
+                Object.keys(
+                  DIFFICULTIES
+                ) as Difficulty[]
+              ).map((level) => {
+                const item =
+                  DIFFICULTIES[level];
 
-              <div className="rounded-2xl bg-white/4 p-4 text-center">
-                <p className="text-xs text-white/40">Max</p>
-                <p className="mt-1 text-xl font-black">
-                  {config.sequenceMax}
-                </p>
-              </div>
+                const selected =
+                  difficulty === level;
 
-              <div className="rounded-2xl bg-white/4 p-4 text-center">
-                <p className="text-xs text-white/40">Rounds</p>
-                <p className="mt-1 text-xl font-black">
-                  {config.rounds}
-                </p>
-              </div>
+                return (
+                  <button
+                    key={level}
+                    type="button"
+                    onClick={() =>
+                      setDifficulty(level)
+                    }
+                    className={[
+                      "rounded-3xl border p-5 text-left transition-all duration-200",
+                      selected
+                        ? "border-cyan-300/25 bg-cyan-300/[0.07] shadow-lg shadow-cyan-400/5"
+                        : "border-white/[0.07] bg-white/2.5 hover:-translate-y-1 hover:border-white/15 hover:bg-white/5",
+                    ].join(" ")}
+                  >
+                    <div className="flex items-start justify-between">
+                      <span className="text-2xl">
+                        {item.icon}
+                      </span>
 
-              <div className="rounded-2xl bg-white/4 p-4 text-center">
-                <p className="text-xs text-white/40">Base XP</p>
-                <p className="mt-1 text-xl font-black text-cyan-300">
-                  +{config.baseXP}
-                </p>
-              </div>
+                      {selected && (
+                        <span className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-2 py-1 text-[9px] font-black uppercase tracking-wider text-cyan-300">
+                          Selected
+                        </span>
+                      )}
+                    </div>
+
+                    <h2 className="mt-4 text-base font-black">
+                      {item.label}
+                    </h2>
+
+                    <p className="mt-1 text-xs text-white/35">
+                      {item.description}
+                    </p>
+
+                    <div className="mt-4 flex items-center justify-between text-[10px] font-black uppercase tracking-wider">
+                      <span className="text-white/25">
+                        {item.rounds} rounds
+                      </span>
+
+                      <span className="text-cyan-300">
+                        +{item.xp} base XP
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
 
-            <button
-              onClick={startGame}
-              className="mp-button w-full bg-white px-6 py-4 text-sm text-black hover:opacity-90"
-            >
-              Start Sequence
-            </button>
+            {isDailyChallenge && (
+              <div className="mt-4 rounded-2xl border border-yellow-300/15 bg-yellow-300/5 p-4 text-center">
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-yellow-300/70">
+                  🏆 Daily Challenge
+                </p>
+
+                <p className="mt-2 text-sm text-white/50">
+                  Today&apos;s challenge is set
+                  to{" "}
+                  <strong className="capitalize text-yellow-300">
+                    {dailyChallenge.difficulty}
+                  </strong>{" "}
+                  difficulty.
+                </p>
+
+                <p className="mt-1 text-xs text-white/30">
+                  Complete it for +10 score
+                  and +50 XP.
+                </p>
+              </div>
+            )}
           </section>
         )}
 
-        {/* GAME */}
-        {gameState !== "menu" && gameState !== "finished" && (
-          <>
+        {/* Game Card */}
+        <section className="relative overflow-hidden rounded-4xl border border-white/10 bg-white/[0.035]">
+          <div className="pointer-events-none absolute -right-32 -top-32 h-72 w-72 rounded-full bg-cyan-400/10 blur-3xl" />
+
+          <div className="pointer-events-none absolute -bottom-32 -left-32 h-72 w-72 rounded-full bg-fuchsia-400/10 blur-3xl" />
+
+          <div className="relative p-5 sm:p-8">
+
             {/* Stats */}
-            <div className="mb-5 grid grid-cols-3 gap-2">
-              <div className="mp-card rounded-2xl p-3 text-center">
-                <p className="text-[10px] font-black uppercase tracking-wider text-white/35">
-                  Round
-                </p>
-                <p className="mt-1 font-black">
-                  {round}/{config.rounds}
-                </p>
-              </div>
+            {gameState !== "idle" &&
+              gameState !== "finished" && (
+                <div className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  <div className="rounded-2xl border border-white/[0.07] bg-white/2.5 p-3 text-center">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-white/25">
+                      Round
+                    </p>
 
-              <div className="mp-card rounded-2xl p-3 text-center">
-                <p className="text-[10px] font-black uppercase tracking-wider text-white/35">
-                  Score
-                </p>
-                <p className="mt-1 font-black">{score}</p>
-              </div>
+                    <p className="mt-1 text-lg font-black">
+                      {round}/{config.rounds}
+                    </p>
+                  </div>
 
-              <div className="mp-card rounded-2xl p-3 text-center">
-                <p className="text-[10px] font-black uppercase tracking-wider text-white/35">
-                  Combo
-                </p>
-                <p className="mt-1 font-black text-cyan-300">
-                  {combo}×
-                </p>
-              </div>
-            </div>
+                  <div className="rounded-2xl border border-white/[0.07] bg-white/2.5 p-3 text-center">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-white/25">
+                      Score
+                    </p>
 
-            {/* SHOWING */}
-            {gameState === "showing" && (
-              <section className="mp-card rounded-3xl p-6 sm:p-10">
-                <div className="mb-6 text-center">
-                  <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-300">
-                    Memorize
-                  </p>
+                    <p className="mt-1 text-lg font-black text-cyan-300">
+                      {score}
+                    </p>
+                  </div>
 
-                  <p className="mt-2 text-sm text-white/40">
-                    Remember the exact order
-                  </p>
-                </div>
+                  <div className="rounded-2xl border border-white/[0.07] bg-white/2.5 p-3 text-center">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-white/25">
+                      Streak
+                    </p>
 
-                <div className="flex min-h-57.5 items-center justify-center">
-                  <div
-                    key={showIndex}
-                    className="mp-fade-up text-8xl font-black tracking-tight text-white sm:text-9xl"
-                  >
-                    {sequence[showIndex]}
+                    <p className="mt-1 text-lg font-black text-orange-300">
+                      🔥 {streak}
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-white/[0.07] bg-white/2.5 p-3 text-center">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-white/25">
+                      Length
+                    </p>
+
+                    <p className="mt-1 text-lg font-black text-fuchsia-300">
+                      {currentLength}
+                    </p>
                   </div>
                 </div>
+              )}
 
-                <div className="flex justify-center gap-2">
-                  {sequence.map((_, index) => (
+            {/* Progress */}
+            {gameState !== "idle" &&
+              gameState !== "finished" && (
+                <div className="mb-6">
+                  <div className="mb-2 flex justify-between text-[9px] font-black uppercase tracking-wider text-white/20">
+                    <span>
+                      Sequence Progress
+                    </span>
+
+                    <span>
+                      {Math.round(progress)}%
+                    </span>
+                  </div>
+
+                  <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
                     <div
-                      key={index}
-                      className={`h-2 w-2 rounded-full transition ${
-                        index === showIndex
-                          ? "scale-125 bg-cyan-300"
-                          : index < showIndex
-                            ? "bg-white/30"
-                            : "bg-white/10"
-                      }`}
+                      className="h-full rounded-full bg-linear-to-r from-cyan-400 to-fuchsia-400 transition-all duration-300"
+                      style={{
+                        width: `${progress}%`,
+                      }}
                     />
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* PLAYING */}
-            {gameState === "playing" && (
-              <section className="mp-card rounded-3xl p-5 sm:p-8">
-                <div className="mb-6 text-center">
-                  <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-300">
-                    Your Turn
-                  </p>
-
-                  <p className="mt-2 text-sm text-white/40">
-                    Reproduce the sequence in the same order
-                  </p>
-                </div>
-
-                {/* User sequence */}
-                <div className="mb-7 min-h-20 rounded-2xl border border-white/10 bg-white/3 p-4">
-                  <div className="flex min-h-11.25 flex-wrap items-center justify-center gap-2">
-                    {Array.from({
-                      length: sequence.length,
-                    }).map((_, index) => {
-                      const value = userSequence[index];
-
-                      return (
-                        <div
-                          key={index}
-                          className={`flex h-11 w-11 items-center justify-center rounded-xl border text-lg font-black ${
-                            value
-                              ? "border-cyan-300/30 bg-cyan-300/10 text-cyan-200"
-                              : "border-white/10 bg-white/2 text-white/15"
-                          }`}
-                        >
-                          {value ?? "?"}
-                        </div>
-                      );
-                    })}
                   </div>
                 </div>
+              )}
 
-                {/* Number buttons */}
-                <div className="mx-auto grid max-w-md grid-cols-3 gap-3">
-                  {NUMBERS.map((number) => (
-                    <button
-                      key={number}
-                      onClick={() => handleNumberClick(number)}
-                      className="mp-button h-16 border border-white/10 bg-white/4 text-2xl hover:border-cyan-300/30 hover:bg-cyan-300/10 hover:text-cyan-200"
-                    >
-                      {number}
-                    </button>
-                  ))}
+            {/* Idle */}
+            {gameState === "idle" && (
+              <div className="py-10 text-center sm:py-14">
+                <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-4xl border border-white/10 bg-white/5 text-5xl shadow-xl">
+                  🔁
                 </div>
 
-                {/* Controls */}
-                <div className="mt-5 grid grid-cols-2 gap-3">
-                  <button
-                    onClick={handleUndo}
-                    disabled={userSequence.length === 0}
-                    className="mp-button border border-white/10 bg-white/3 py-3 text-sm text-white/60 hover:bg-white/6 disabled:cursor-not-allowed disabled:opacity-30"
-                  >
-                    ↶ Undo
-                  </button>
+                <h2 className="mt-6 text-2xl font-black">
+                  How good is your memory?
+                </h2>
 
-                  <button
-                    onClick={handleClear}
-                    disabled={userSequence.length === 0}
-                    className="mp-button border border-white/10 bg-white/3 py-3 text-sm text-white/60 hover:bg-white/6 disabled:cursor-not-allowed disabled:opacity-30"
-                  >
-                    Clear
-                  </button>
+                <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-white/35">
+                  A sequence of numbers will
+                  appear. Memorize the exact order,
+                  then type it back.
+                </p>
+
+                <div className="mt-7 flex flex-wrap justify-center gap-3">
+                  <div className="rounded-full border border-white/10 bg-white/3 px-4 py-2 text-xs font-bold text-white/40">
+                    🎯 +10 per digit
+                  </div>
+
+                  <div className="rounded-full border border-white/10 bg-white/3 px-4 py-2 text-xs font-bold text-white/40">
+                    🔥 Build streaks
+                  </div>
                 </div>
 
                 <button
-                  onClick={submitSequence}
-                  disabled={userSequence.length !== sequence.length}
-                  className="mp-button mt-3 w-full bg-white py-4 text-sm text-black disabled:cursor-not-allowed disabled:opacity-30"
+                  type="button"
+                  onClick={startGame}
+                  className="mp-button mt-8 bg-white px-8 py-4 text-sm text-black shadow-xl shadow-white/10 hover:bg-white/90"
                 >
-                  Lock In Sequence
-                </button>
+                  Start Sequence Master
 
-                <p className="mt-4 text-center text-xs text-white/30">
-                  Keyboard: 1–9 · Backspace to undo · Enter to submit
-                </p>
-              </section>
+                  <span className="ml-2">
+                    →
+                  </span>
+                </button>
+              </div>
             )}
 
-            {/* FEEDBACK */}
-            {gameState === "feedback" && (
-              <section className="mp-card rounded-3xl p-6 sm:p-8">
-                <div className="text-center">
-                  <div className="text-5xl">
-                    {lastCorrect ? "🔥" : "💥"}
-                  </div>
+            {/* Showing Sequence */}
+            {gameState === "showing" && (
+              <div className="flex min-h-95 flex-col items-center justify-center text-center sm:min-h-107.5">
+                <p className="text-xs font-black uppercase tracking-[0.25em] text-cyan-300/60">
+                  Memorize the sequence
+                </p>
 
-                  <h2
-                    className={`mt-4 text-2xl font-black ${
-                      lastCorrect
-                        ? "text-cyan-300"
-                        : "text-fuchsia-300"
-                    }`}
-                  >
-                    {lastCorrect ? "Perfect Sequence!" : "Sequence Broken!"}
-                  </h2>
-
-                  {lastCorrect ? (
-                    <p className="mt-2 text-sm text-white/45">
-                      Combo: {combo}× · Multiplier:{" "}
-                      {currentMultiplier.toFixed(1)}×
-                    </p>
-                  ) : (
-                    <p className="mt-2 text-sm text-white/45">
-                      Your sequence did not match.
-                    </p>
+                <div className="mt-8 flex max-w-full flex-wrap justify-center gap-2 rounded-4xl border border-cyan-300/15 bg-cyan-300/4 px-5 py-7 shadow-2xl shadow-cyan-400/5 sm:gap-3 sm:px-10">
+                  {sequence.map(
+                    (number, index) => (
+                      <div
+                        key={`${number}-${index}`}
+                        className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/6 font-mono text-xl font-black text-white sm:h-16 sm:w-16 sm:text-2xl"
+                      >
+                        {number}
+                      </div>
+                    )
                   )}
                 </div>
 
-                <div className="my-7 grid gap-3">
-                  <div className="rounded-2xl bg-white/4 p-4">
-                    <p className="mb-2 text-xs font-black uppercase tracking-wider text-white/35">
-                      Correct sequence
-                    </p>
-
-                    <div className="flex flex-wrap gap-2">
-                      {sequence.map((number, index) => (
-                        <span
-                          key={`${number}-${index}`}
-                          className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-300/10 font-black text-cyan-200"
-                        >
-                          {number}
-                        </span>
-                      ))}
+                {showCountdown && (
+                  <div className="mt-8">
+                    <div className="text-4xl font-black text-cyan-300">
+                      {countdown}
                     </div>
-                  </div>
 
-                  <div className="rounded-2xl bg-white/4 p-4">
-                    <p className="mb-2 text-xs font-black uppercase tracking-wider text-white/35">
-                      Your sequence
+                    <p className="mt-1 text-xs font-bold text-white/25">
+                      seconds
                     </p>
-
-                    <div className="flex flex-wrap gap-2">
-                      {userSequence.map((number, index) => (
-                        <span
-                          key={`${number}-${index}`}
-                          className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/6 font-black text-white/70"
-                        >
-                          {number}
-                        </span>
-                      ))}
-                    </div>
                   </div>
+                )}
+              </div>
+            )}
+
+            {/* Input */}
+            {gameState === "input" && (
+              <div className="flex min-h-95 flex-col items-center justify-center text-center sm:min-h-107.5">
+                <div className="text-6xl">
+                  🧠
                 </div>
 
+                <h2 className="mt-5 text-3xl font-black">
+                  Rebuild the sequence
+                </h2>
+
+                <p className="mt-2 text-sm text-white/35">
+                  Enter all {currentLength}{" "}
+                  digits in the exact order.
+                </p>
+
+                <div className="mt-8 w-full max-w-md">
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={currentLength}
+                    value={answer}
+                    onChange={(event) => {
+                      const value =
+                        event.target.value.replace(
+                          /\D/g,
+                          ""
+                        );
+
+                      setAnswer(value);
+                    }}
+                    onKeyDown={
+                      handleInputKeyDown
+                    }
+                    placeholder="Enter sequence..."
+                    className="w-full rounded-3xl border border-white/10 bg-white/5 px-5 py-5 text-center font-mono text-2xl font-black tracking-[0.15em] text-white outline-none transition placeholder:text-white/15 focus:border-cyan-300/30 focus:bg-white/[0.07]"
+                    autoComplete="off"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={submitAnswer}
+                    disabled={
+                      answer.length === 0
+                    }
+                    className="mp-button mt-4 w-full bg-white px-8 py-4 text-sm text-black shadow-xl shadow-white/10 hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-30"
+                  >
+                    Check Sequence
+
+                    <span className="ml-2">
+                      →
+                    </span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Result */}
+            {gameState === "result" && (
+              <div className="py-10 text-center sm:py-14">
+                {lastCorrect ? (
+                  <>
+                    <div className="mp-float text-7xl">
+                      🎯
+                    </div>
+
+                    <p className="mt-5 text-3xl font-black text-emerald-300">
+                      PERFECT!
+                    </p>
+
+                    <p className="mt-2 text-sm font-bold text-white/35">
+                      You remembered every digit
+                      in the correct order.
+                    </p>
+
+                    <div className="mx-auto mt-7 max-w-md rounded-3xl border border-emerald-300/10 bg-emerald-300/4 p-6">
+                      <p className="text-xs font-black uppercase tracking-wider text-white/25">
+                        Correct sequence
+                      </p>
+
+                      <div className="mt-4 flex flex-wrap justify-center gap-2">
+                        {sequence.map(
+                          (
+                            number,
+                            index
+                          ) => (
+                            <span
+                              key={`${number}-${index}`}
+                              className="flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-300/10 bg-emerald-300/5 font-mono font-black text-emerald-300"
+                            >
+                              {number}
+                            </span>
+                          )
+                        )}
+                      </div>
+
+                      <div className="mt-5 border-t border-white/6 pt-5">
+                        <p className="text-xs font-bold text-white/30">
+                          Round score
+                        </p>
+
+                        <p className="mt-1 text-3xl font-black text-cyan-300">
+                          +
+                          {getRoundScore(
+                            true,
+                            sequence.length
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-7xl">
+                      💥
+                    </div>
+
+                    <p className="mt-5 text-3xl font-black text-orange-300">
+                      NOT QUITE!
+                    </p>
+
+                    <p className="mt-2 text-sm font-bold text-white/35">
+                      The order got mixed up.
+                    </p>
+
+                    <div className="mx-auto mt-7 max-w-md rounded-3xl border border-white/[0.07] bg-white/2.5 p-6">
+                      <div>
+                        <p className="text-xs font-black uppercase tracking-wider text-white/25">
+                          Correct sequence
+                        </p>
+
+                        <div className="mt-3 flex flex-wrap justify-center gap-2">
+                          {sequence.map(
+                            (
+                              number,
+                              index
+                            ) => (
+                              <span
+                                key={`${number}-${index}`}
+                                className="flex h-9 w-9 items-center justify-center rounded-lg border border-emerald-300/10 bg-emerald-300/5 font-mono text-sm font-black text-emerald-300"
+                              >
+                                {number}
+                              </span>
+                            )
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="mt-5 border-t border-white/6 pt-5">
+                        <p className="text-xs font-black uppercase tracking-wider text-white/25">
+                          Your answer
+                        </p>
+
+                        <p className="mt-2 break-all font-mono text-xl font-black tracking-wider text-orange-300">
+                          {answer ||
+                            "No answer"}
+                        </p>
+                      </div>
+                    </div>
+                  </>
+                )}
+
                 <button
+                  type="button"
                   onClick={continueGame}
-                  className="mp-button w-full bg-white py-4 text-sm text-black hover:opacity-90"
+                  className="mp-button mt-8 bg-white px-8 py-4 text-sm text-black shadow-xl shadow-white/10 hover:bg-white/90"
                 >
                   {round >= config.rounds
                     ? "See Results"
-                    : "Next Sequence →"}
+                    : "Next Sequence"}
+
+                  <span className="ml-2">
+                    →
+                  </span>
                 </button>
-              </section>
+              </div>
             )}
-          </>
-        )}
 
-        {/* RESULTS */}
-        {gameState === "finished" && (
-          <section className="mp-card rounded-3xl p-6 sm:p-8">
-            <div className="text-center">
-              <div className="text-6xl">🏆</div>
+            {/* Final Results */}
+            {gameState === "finished" && (
+              <div className="py-8 text-center sm:py-12">
+                <div className="mp-float text-7xl">
+                  🏆
+                </div>
 
-              <h2 className="mt-4 text-3xl font-black">
-                Sequence Complete
-              </h2>
+                <p className="mt-5 text-xs font-black uppercase tracking-[0.2em] text-cyan-300/60">
+                  {dailyBonusEarned
+                    ? "Daily Challenge Complete"
+                    : "Challenge Complete"}
+                </p>
 
-              <p className="mt-2 text-sm text-white/45">
-                You survived {config.rounds} rounds of memory chaos.
-              </p>
+                <h2 className="mt-2 text-3xl font-black sm:text-4xl">
+                  Sequence mastered!
+                </h2>
+
+                {dailyBonusEarned && (
+                  <div className="mx-auto mt-5 max-w-md rounded-2xl border border-yellow-300/15 bg-yellow-300/5 p-4">
+                    <p className="text-sm font-black text-yellow-300">
+                      🏆 Daily Challenge
+                      Bonus
+                    </p>
+
+                    <p className="mt-1 text-xs text-white/40">
+                      +10 score · +50 XP
+                    </p>
+                  </div>
+                )}
+
+                <div className="mx-auto mt-8 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
+                  <div className="rounded-3xl border border-white/[0.07] bg-white/2.5 p-5">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-white/25">
+                      Score
+                    </p>
+
+                    <p className="mt-2 text-2xl font-black text-cyan-300">
+                      {score}
+                    </p>
+                  </div>
+
+                  <div className="rounded-3xl border border-white/[0.07] bg-white/2.5 p-5">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-white/25">
+                      Correct
+                    </p>
+
+                    <p className="mt-2 text-2xl font-black text-emerald-300">
+                      {correct}/
+                      {config.rounds}
+                    </p>
+                  </div>
+
+                  <div className="rounded-3xl border border-white/[0.07] bg-white/2.5 p-5">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-white/25">
+                      Best Streak
+                    </p>
+
+                    <p className="mt-2 text-2xl font-black text-orange-300">
+                      🔥 {bestStreak}
+                    </p>
+                  </div>
+
+                  <div className="rounded-3xl border border-emerald-300/10 bg-emerald-300/4 p-5">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-white/25">
+                      XP Earned
+                    </p>
+
+                    <p className="mt-2 text-2xl font-black text-emerald-300">
+                      +{xpEarned}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mx-auto mt-6 max-w-2xl rounded-3xl border border-white/[0.07] bg-white/2.5 p-5 text-left">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-wider text-white/25">
+                        Memory Record
+                      </p>
+
+                      <p className="mt-1 text-sm font-bold text-white/60">
+                        Longest sequence:
+                        {" "}
+                        <span className="text-cyan-300">
+                          {longestSequence}{" "}
+                          digits
+                        </span>
+                      </p>
+                    </div>
+
+                    <span className="text-3xl">
+                      🔁
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+                  <button
+                    type="button"
+                    onClick={startGame}
+                    className="mp-button bg-white px-8 py-4 text-sm text-black shadow-xl shadow-white/10 hover:bg-white/90"
+                  >
+                    Play Again
+
+                    <span className="ml-2">
+                      ↻
+                    </span>
+                  </button>
+
+                  <Link
+                    href="/games"
+                    className="mp-button border border-white/10 bg-white/4 px-8 py-4 text-sm text-white/70 hover:bg-white/[0.07]"
+                  >
+                    Back to Arcade
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Tips */}
+        <section className="mt-6 grid gap-3 sm:grid-cols-3">
+          <div className="rounded-3xl border border-white/[0.07] bg-white/2.5 p-5">
+            <div className="text-xl">
+              🧩
             </div>
 
-            <div className="my-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <div className="rounded-2xl bg-white/4 p-4 text-center">
-                <p className="text-xs text-white/40">Score</p>
-                <p className="mt-1 text-2xl font-black">
-                  {score}
-                </p>
-              </div>
+            <h3 className="mt-3 text-sm font-black">
+              Chunk it
+            </h3>
 
-              <div className="rounded-2xl bg-white/4 p-4 text-center">
-                <p className="text-xs text-white/40">Accuracy</p>
-                <p className="mt-1 text-2xl font-black">
-                  {accuracy}%
-                </p>
-              </div>
+            <p className="mt-1 text-xs leading-5 text-white/30">
+              Group nearby digits together to
+              make long sequences easier to
+              remember.
+            </p>
+          </div>
 
-              <div className="rounded-2xl bg-white/4 p-4 text-center">
-                <p className="text-xs text-white/40">Best Combo</p>
-                <p className="mt-1 text-2xl font-black">
-                  {bestCombo}×
-                </p>
-              </div>
-
-              <div className="rounded-2xl bg-white/4 p-4 text-center">
-                <p className="text-xs text-white/40">XP Earned</p>
-                <p className="mt-1 text-2xl font-black text-cyan-300">
-                  +{finalXP}
-                </p>
-              </div>
+          <div className="rounded-3xl border border-white/[0.07] bg-white/2.5 p-5">
+            <div className="text-xl">
+              👀
             </div>
 
-            <div className="mb-6 rounded-2xl border border-cyan-300/10 bg-cyan-300/4 p-5 text-center">
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-300">
-                Performance
-              </p>
+            <h3 className="mt-3 text-sm font-black">
+              Watch the order
+            </h3>
 
-              <p className="mt-2 text-sm text-white/60">
-                {accuracy >= 90
-                  ? "Your memory is absolutely cracked. 🧠"
-                  : accuracy >= 70
-                    ? "Sharp work. Your sequence memory is strong. 🔥"
-                    : accuracy >= 50
-                      ? "Not bad. Keep playing and build that combo. ⚡"
-                      : "The sequences won this round. Run it back. 😈"}
-              </p>
+            <p className="mt-1 text-xs leading-5 text-white/30">
+              Getting the right numbers in the
+              wrong order still counts as a miss.
+            </p>
+          </div>
+
+          <div className="rounded-3xl border border-white/[0.07] bg-white/2.5 p-5">
+            <div className="text-xl">
+              🔥
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              <button
-                onClick={playAgain}
-                className="mp-button bg-white py-4 text-sm text-black hover:opacity-90"
-              >
-                Play Again
-              </button>
+            <h3 className="mt-3 text-sm font-black">
+              Protect your streak
+            </h3>
 
-              <button
-                onClick={backToArcade}
-                className="mp-button border border-white/10 bg-white/4 py-4 text-sm text-white/70 hover:bg-white/[0.07] hover:text-white"
-              >
-                Back to Arcade
-              </button>
-            </div>
-          </section>
-        )}
+            <p className="mt-1 text-xs leading-5 text-white/30">
+              Consecutive correct sequences build
+              your streak and increase your bonus.
+            </p>
+          </div>
+        </section>
 
-        {/* Footer hint */}
-        <div className="mt-8 text-center">
-          <p className="text-xs text-white/25">
-            {difficulty} Mode · Base XP + score bonuses
-          </p>
-        </div>
+        <footer className="mt-10 pb-4 text-center text-xs text-white/20">
+          MindPlay · Train your brain. Have fun.
+        </footer>
       </div>
     </main>
   );

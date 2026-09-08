@@ -52,7 +52,7 @@ export default function DailyChallenge() {
     return null;
   }
 
-  const gameRoute = GAME_ROUTES[challenge.game];
+  const gameRoute = `${GAME_ROUTES[challenge.game]}?daily=true&difficulty=${challenge.difficulty}`;
 
   return (
     <section className="mx-auto w-full max-w-6xl px-5 pb-16 sm:px-8">
