@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   getProgress,
   subscribeToProgress,
@@ -10,7 +10,25 @@ import {
 import PlayerFooterText from "@/components/PlayerFooterText";
 import PlayerBrand from "@/components/PlayerBrand";
 
-const games = [
+type GameCategory =
+  | "MEMORY"
+  | "SPEED"
+  | "FOCUS"
+  | "WORDS"
+  | "LOGIC";
+
+type Game = {
+  icon: string;
+  title: string;
+  description: string;
+  category: GameCategory;
+  difficulty: string;
+  href: string;
+  available: boolean;
+  accent: string;
+};
+
+const games: Game[] = [
   {
     icon: "🧠",
     title: "Memory Match",
@@ -55,7 +73,7 @@ const games = [
     icon: "❌⭕",
     title: "Tic-Tac-Toe",
     description: "Outplay the AI and create clever forks.",
-    category: "STRATEGY",
+    category: "LOGIC",
     difficulty: "Easy → Hard",
     href: "/games/tic-tac-toe",
     available: true,
@@ -68,6 +86,66 @@ const games = [
     category: "FOCUS",
     difficulty: "Easy → Hard",
     href: "/games/odd-one-out",
+    available: true,
+    accent: "green",
+  },
+  {
+    icon: "⚡",
+    title: "Reaction Rush",
+    description: "Wait for the signal, then react as fast as you can.",
+    category: "SPEED",
+    difficulty: "Easy → Hard",
+    href: "/games/reaction-rush",
+    available: true,
+    accent: "yellow",
+  },
+  {
+    icon: "🔢",
+    title: "Number Memory",
+    description: "Memorize longer numbers before they disappear.",
+    category: "MEMORY",
+    difficulty: "Easy → Hard",
+    href: "/games/number-memory",
+    available: true,
+    accent: "cyan",
+  },
+  {
+    icon: "🎨",
+    title: "Color Clash",
+    description: "Ignore the word and choose the actual color.",
+    category: "FOCUS",
+    difficulty: "Easy → Hard",
+    href: "/games/color-clash",
+    available: true,
+    accent: "pink",
+  },
+  {
+    icon: "🟦",
+    title: "Pattern Recall",
+    description: "Memorize the pattern and recreate it perfectly.",
+    category: "MEMORY",
+    difficulty: "Easy → Hard",
+    href: "/games/pattern-recall",
+    available: true,
+    accent: "blue",
+  },
+  {
+    icon: "🔁",
+    title: "Sequence Master",
+    description: "Watch the sequence, then reproduce it exactly.",
+    category: "MEMORY",
+    difficulty: "Easy → Hard",
+    href: "/games/sequence-master",
+    available: true,
+    accent: "purple",
+  },
+  {
+    icon: "🧠",
+    title: "Logic Rush",
+    description: "Solve tricky logic puzzles before time runs out.",
+    category: "LOGIC",
+    difficulty: "Easy → Hard",
+    href: "/games/logic-rush",
     available: true,
     accent: "green",
   },
@@ -113,9 +191,21 @@ const accentStyles: Record<
   },
 };
 
+const categories: Array<"ALL" | GameCategory> = [
+  "ALL",
+  "MEMORY",
+  "SPEED",
+  "FOCUS",
+  "WORDS",
+  "LOGIC",
+];
+
 export default function GamesPage() {
   const [progress, setProgress] =
     useState<MindPlayProgress | null>(null);
+
+  const [activeCategory, setActiveCategory] =
+    useState<"ALL" | GameCategory>("ALL");
 
   useEffect(() => {
     const update = () => {
@@ -133,6 +223,16 @@ export default function GamesPage() {
 
   const level = Math.floor(xp / 100) + 1;
   const levelXP = xp % 100;
+
+  const filteredGames = useMemo(() => {
+    if (activeCategory === "ALL") {
+      return games;
+    }
+
+    return games.filter(
+      (game) => game.category === activeCategory
+    );
+  }, [activeCategory]);
 
   return (
     <main className="min-h-screen overflow-hidden">
@@ -180,7 +280,7 @@ export default function GamesPage() {
           </h1>
 
           <p className="mp-fade-up mx-auto mt-5 max-w-xl text-sm leading-7 text-white/45 sm:text-base">
-            Six quick games. Different ways to test your
+            Twelve quick games. Different ways to test your
             brain. Pick one and see how far you can go.
           </p>
         </section>
@@ -256,25 +356,52 @@ export default function GamesPage() {
 
         {/* Games */}
         <section className="mt-10">
-          <div className="mb-5 flex items-end justify-between">
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-white/25">
-                Available Games
-              </p>
+          <div className="mb-5">
+            <div className="flex items-end justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-white/25">
+                  Available Games
+                </p>
 
-              <h2 className="mt-1 text-2xl font-black">
-                Pick one
-              </h2>
+                <h2 className="mt-1 text-2xl font-black">
+                  Pick one
+                </h2>
+              </div>
+
+              <span className="text-xs font-bold text-white/25">
+                {filteredGames.length}{" "}
+                {filteredGames.length === 1 ? "game" : "games"}
+              </span>
             </div>
 
-            <span className="text-xs font-bold text-white/25">
-              {games.filter((game) => game.available).length}{" "}
-              games
-            </span>
+            {/* Category filters */}
+            <div className="mt-5 flex gap-2 overflow-x-auto pb-1">
+              {categories.map((category) => {
+                const active =
+                  activeCategory === category;
+
+                return (
+                  <button
+                    key={category}
+                    type="button"
+                    onClick={() =>
+                      setActiveCategory(category)
+                    }
+                    className={`shrink-0 rounded-full border px-4 py-2 text-[11px] font-black tracking-wide transition-all duration-200 ${
+                      active
+                        ? "border-cyan-300/20 bg-cyan-300/10 text-cyan-200"
+                        : "border-white/8 bg-white/4 text-white/35 hover:bg-white/7 hover:text-white/70"
+                    }`}
+                  >
+                    {category}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {games.map((game, index) => {
+            {filteredGames.map((game, index) => {
               const accent =
                 accentStyles[game.accent];
 
@@ -393,7 +520,9 @@ export default function GamesPage() {
 
       {/* Footer */}
       <footer className="border-t border-white/6 px-5 py-8 text-center sm:px-8">
-        <PlayerFooterText>MindPlay · Train your brain. Have fun.</PlayerFooterText>
+        <PlayerFooterText>
+          MindPlay · Train your brain. Have fun.
+        </PlayerFooterText>
       </footer>
     </main>
   );

@@ -2,13 +2,21 @@ import type { AchievementId } from "@/lib/achievements";
 import { addXP } from "@/lib/progress";
 import { DAILY_CHALLENGE_XP } from "@/lib/gameXP";
 
+export const DAILY_CHALLENGE_BONUS_POINTS = 10;
+
 export type DailyChallengeGame =
   | "memory-match"
   | "quick-math"
   | "word-scramble"
   | "riddle-me"
   | "odd-one-out"
-  | "tic-tac-toe";
+  | "tic-tac-toe"
+  | "reaction-rush"
+  | "number-memory"
+  | "color-clash"
+  | "pattern-recall"
+  | "sequence-master"
+  | "logic-rush";
 
 export type DailyChallengeDifficulty =
   | "easy"
@@ -87,6 +95,60 @@ const CHALLENGES: Omit<
     rewardXP: DAILY_CHALLENGE_XP,
     achievementId: "strategy-master",
   },
+  {
+    game: "reaction-rush",
+    title: "Lightning Reflexes",
+    description: "Complete a Reaction Rush challenge.",
+    icon: "⚡",
+    difficulty: "hard",
+    rewardXP: DAILY_CHALLENGE_XP,
+    achievementId: "sharp-eyes",
+  },
+  {
+    game: "number-memory",
+    title: "Number Vault",
+    description: "Complete a Number Memory challenge.",
+    icon: "🔢",
+    difficulty: "hard",
+    rewardXP: DAILY_CHALLENGE_XP,
+    achievementId: "memory-master",
+  },
+  {
+    game: "color-clash",
+    title: "Color Focus",
+    description: "Complete a Color Clash challenge.",
+    icon: "🎨",
+    difficulty: "hard",
+    rewardXP: DAILY_CHALLENGE_XP,
+    achievementId: "sharp-eyes",
+  },
+  {
+    game: "pattern-recall",
+    title: "Pattern Master",
+    description: "Complete a Pattern Recall challenge.",
+    icon: "🟦",
+    difficulty: "hard",
+    rewardXP: DAILY_CHALLENGE_XP,
+    achievementId: "memory-master",
+  },
+  {
+    game: "sequence-master",
+    title: "Sequence Master",
+    description: "Complete a Sequence Master challenge.",
+    icon: "🔁",
+    difficulty: "hard",
+    rewardXP: DAILY_CHALLENGE_XP,
+    achievementId: "memory-master",
+  },
+  {
+    game: "logic-rush",
+    title: "Logic Rush",
+    description: "Complete a Logic Rush challenge.",
+    icon: "🧠",
+    difficulty: "hard",
+    rewardXP: DAILY_CHALLENGE_XP,
+    achievementId: "riddle-solver",
+  },
 ];
 
 function isBrowser() {
@@ -122,7 +184,6 @@ function getDailyIndex(date: string): number {
 
 export function getDailyChallenge(): DailyChallenge {
   const date = getToday();
-
   const challenge = CHALLENGES[getDailyIndex(date)];
 
   return {
@@ -170,6 +231,7 @@ export function completeDailyChallenge(
   );
 
   addXP(challenge.rewardXP);
+
   return true;
 }
 

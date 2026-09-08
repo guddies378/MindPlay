@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   getProgress,
   subscribeToProgress,
@@ -11,7 +11,24 @@ import PlayerFooterText from "@/components/PlayerFooterText";
 import PlayerBrand from "@/components/PlayerBrand";
 import DailyChallenge from "@/components/DailyChallenge";
 
-const games = [
+type GameCategory =
+  | "ALL"
+  | "MEMORY"
+  | "SPEED"
+  | "FOCUS"
+  | "WORDS"
+  | "LOGIC";
+
+type Game = {
+  icon: string;
+  title: string;
+  description: string;
+  href: string;
+  tag: Exclude<GameCategory, "ALL">;
+  accent: string;
+};
+
+const games: Game[] = [
   {
     icon: "🧠",
     title: "Memory Match",
@@ -25,7 +42,7 @@ const games = [
     title: "Quick Math",
     description: "Solve fast. Think faster.",
     href: "/games/quick-math",
-    tag: "MATH",
+    tag: "SPEED",
     accent: "yellow",
   },
   {
@@ -49,7 +66,7 @@ const games = [
     title: "Tic-Tac-Toe",
     description: "Outsmart the AI.",
     href: "/games/tic-tac-toe",
-    tag: "STRATEGY",
+    tag: "LOGIC",
     accent: "blue",
   },
   {
@@ -58,6 +75,54 @@ const games = [
     description: "Find what doesn't belong.",
     href: "/games/odd-one-out",
     tag: "FOCUS",
+    accent: "green",
+  },
+  {
+    icon: "⚡",
+    title: "Reaction Rush",
+    description: "React as fast as humanly possible.",
+    href: "/games/reaction-rush",
+    tag: "SPEED",
+    accent: "yellow",
+  },
+  {
+    icon: "🔢",
+    title: "Number Memory",
+    description: "Remember increasingly brutal numbers.",
+    href: "/games/number-memory",
+    tag: "MEMORY",
+    accent: "cyan",
+  },
+  {
+    icon: "🎨",
+    title: "Color Clash",
+    description: "Ignore the word. Trust the color.",
+    href: "/games/color-clash",
+    tag: "FOCUS",
+    accent: "pink",
+  },
+  {
+    icon: "🟦",
+    title: "Pattern Recall",
+    description: "Watch the pattern. Rebuild it perfectly.",
+    href: "/games/pattern-recall",
+    tag: "MEMORY",
+    accent: "blue",
+  },
+  {
+    icon: "🔁",
+    title: "Sequence Master",
+    description: "Remember the sequence. Reproduce it.",
+    href: "/games/sequence-master",
+    tag: "MEMORY",
+    accent: "purple",
+  },
+  {
+    icon: "🧠",
+    title: "Logic Rush",
+    description: "Solve puzzles before the clock destroys you.",
+    href: "/games/logic-rush",
+    tag: "LOGIC",
     accent: "green",
   },
 ];
@@ -75,26 +140,31 @@ const accentStyles: Record<
     category: "text-cyan-300/70",
     action: "text-cyan-300/70 group-hover:text-cyan-200",
   },
+
   yellow: {
     icon: "group-hover:bg-yellow-300/10 group-hover:border-yellow-300/20",
     category: "text-yellow-300/70",
     action: "text-yellow-300/70 group-hover:text-yellow-200",
   },
+
   purple: {
     icon: "group-hover:bg-purple-300/10 group-hover:border-purple-300/20",
     category: "text-purple-300/70",
     action: "text-purple-300/70 group-hover:text-purple-200",
   },
+
   pink: {
     icon: "group-hover:bg-pink-300/10 group-hover:border-pink-300/20",
     category: "text-pink-300/70",
     action: "text-pink-300/70 group-hover:text-pink-200",
   },
+
   blue: {
     icon: "group-hover:bg-blue-300/10 group-hover:border-blue-300/20",
     category: "text-blue-300/70",
     action: "text-blue-300/70 group-hover:text-blue-200",
   },
+
   green: {
     icon: "group-hover:bg-green-300/10 group-hover:border-green-300/20",
     category: "text-green-300/70",
@@ -102,9 +172,21 @@ const accentStyles: Record<
   },
 };
 
+const categories: GameCategory[] = [
+  "ALL",
+  "MEMORY",
+  "SPEED",
+  "FOCUS",
+  "WORDS",
+  "LOGIC",
+];
+
 export default function HomePage() {
   const [progress, setProgress] =
     useState<MindPlayProgress | null>(null);
+
+  const [activeCategory, setActiveCategory] =
+    useState<GameCategory>("ALL");
 
   useEffect(() => {
     const update = () => {
@@ -123,6 +205,16 @@ export default function HomePage() {
 
   const level = Math.floor(xp / 100) + 1;
   const levelXP = xp % 100;
+
+  const filteredGames = useMemo(() => {
+    if (activeCategory === "ALL") {
+      return games;
+    }
+
+    return games.filter(
+      (game) => game.tag === activeCategory
+    );
+  }, [activeCategory]);
 
   return (
     <main className="min-h-screen overflow-hidden">
@@ -163,6 +255,7 @@ export default function HomePage() {
           <h1 className="mp-fade-up text-5xl font-black tracking-[-0.04em] sm:text-7xl">
             Play.
             <br />
+
             <span className="mp-gradient-text">
               Think. Repeat.
             </span>
@@ -302,71 +395,131 @@ export default function HomePage() {
         id="games"
         className="mx-auto w-full max-w-6xl px-5 pb-16 pt-16 sm:px-8 sm:pt-20"
       >
-        <div className="mb-7 flex items-end justify-between gap-4">
-          <div>
-            <p className="mb-2 text-xs font-black uppercase tracking-[0.2em] text-cyan-300/60">
-              Game Arcade
-            </p>
-
-            <h2 className="text-3xl font-black tracking-tight sm:text-4xl">
-              Pick a game
-            </h2>
-          </div>
-
-          <Link
-            href="/games"
-            className="hidden text-sm font-bold text-white/40 transition hover:text-white sm:block"
-          >
-            View all →
-          </Link>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {games.map((game, index) => (
-            (() => {
-              const accent = accentStyles[game.accent];
-
-              return (
-            <Link
-              key={game.href}
-              href={game.href}
-              className="mp-card mp-card-hover group rounded-[1.75rem] p-5"
-              style={{
-                animationDelay: `${index * 60}ms`,
-              }}
-            >
-              <div className="flex items-start justify-between">
-                <div className={`flex h-14 w-14 items-center justify-center rounded-2xl border border-white/6 bg-white/6 text-3xl transition-all duration-200 ${accent.icon}`}>
-                  {game.icon}
-                </div>
-
-                <span className={`rounded-full border border-white/10 bg-white/4 px-2.5 py-1 text-[10px] font-black tracking-wider ${accent.category}`}>
-                  {game.tag}
-                </span>
-              </div>
-
-              <h3 className="mt-5 text-xl font-black">
-                {game.title}
-              </h3>
-
-              <p className="mt-2 min-h-12 text-sm leading-6 text-white/45">
-                {game.description}
+        {/* Heading */}
+        <div className="mb-7">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="mb-2 text-xs font-black uppercase tracking-[0.2em] text-cyan-300/60">
+                Game Arcade
               </p>
 
-              <div className="mt-5 flex items-center justify-between">
-                <span className={`text-sm font-bold transition ${accent.action}`}>
-                  Play game
-                </span>
+              <h2 className="text-3xl font-black tracking-tight sm:text-4xl">
+                Pick a game
+              </h2>
+            </div>
 
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/6 text-sm text-white/40 transition group-hover:translate-x-1 group-hover:bg-white/10 group-hover:text-white">
-                  →
-                </span>
-              </div>
-            </Link>
-              );
-            })()
-          ))}
+            <p className="hidden text-sm text-white/30 sm:block">
+              {filteredGames.length}{" "}
+              {filteredGames.length === 1
+                ? "game"
+                : "games"}
+            </p>
+          </div>
         </div>
+
+        {/* Category filters */}
+        <div className="mb-7 overflow-x-auto pb-1">
+          <div className="flex min-w-max gap-2">
+            {categories.map((category) => {
+              const active =
+                activeCategory === category;
+
+              return (
+                <button
+                  key={category}
+                  onClick={() =>
+                    setActiveCategory(category)
+                  }
+                  className={`rounded-full border px-4 py-2.5 text-xs font-black tracking-wider transition ${
+                    active
+                      ? "border-cyan-300/30 bg-cyan-300/10 text-cyan-200"
+                      : "border-white/10 bg-white/3 text-white/40 hover:bg-white/6 hover:text-white/70"
+                  }`}
+                >
+                  {category}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Game count on mobile */}
+        <div className="mb-4 text-xs text-white/30 sm:hidden">
+          Showing {filteredGames.length}{" "}
+          {filteredGames.length === 1
+            ? "game"
+            : "games"}
+        </div>
+
+        {/* Game cards */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {filteredGames.map((game, index) => {
+            const accent = accentStyles[game.accent];
+
+            return (
+              <Link
+                key={game.href}
+                href={game.href}
+                className="mp-card mp-card-hover group rounded-[1.75rem] p-5"
+                style={{
+                  animationDelay: `${index * 60}ms`,
+                }}
+              >
+                <div className="flex items-start justify-between">
+                  <div
+                    className={`flex h-14 w-14 items-center justify-center rounded-2xl border border-white/6 bg-white/6 text-3xl transition-all duration-200 ${accent.icon}`}
+                  >
+                    {game.icon}
+                  </div>
+
+                  <span
+                    className={`rounded-full border border-white/10 bg-white/4 px-2.5 py-1 text-[10px] font-black tracking-wider ${accent.category}`}
+                  >
+                    {game.tag}
+                  </span>
+                </div>
+
+                <h3 className="mt-5 text-xl font-black">
+                  {game.title}
+                </h3>
+
+                <p className="mt-2 min-h-12 text-sm leading-6 text-white/45">
+                  {game.description}
+                </p>
+
+                <div className="mt-5 flex items-center justify-between">
+                  <span
+                    className={`text-sm font-bold transition ${accent.action}`}
+                  >
+                    Play game
+                  </span>
+
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/6 text-sm text-white/40 transition group-hover:translate-x-1 group-hover:bg-white/10 group-hover:text-white">
+                    →
+                  </span>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* Empty state */}
+        {filteredGames.length === 0 && (
+          <div className="mp-card rounded-3xl p-10 text-center">
+            <div className="text-4xl">🤔</div>
+
+            <p className="mt-4 font-black">
+              No games found
+            </p>
+
+            <button
+              onClick={() => setActiveCategory("ALL")}
+              className="mt-4 text-sm font-bold text-cyan-300 hover:text-cyan-200"
+            >
+              Show all games
+            </button>
+          </div>
+        )}
       </section>
 
       {/* Daily challenge */}
@@ -374,7 +527,9 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer className="border-t border-white/6 px-5 py-8 text-center sm:px-8">
-        <PlayerFooterText>MindPlay · Train your brain. Have fun.</PlayerFooterText>
+        <PlayerFooterText>
+          MindPlay · Train your brain. Have fun.
+        </PlayerFooterText>
       </footer>
     </main>
   );

@@ -16,6 +16,13 @@ const GAME_ROUTES: Record<string, string> = {
   "riddle-me": "/games/riddle-me",
   "odd-one-out": "/games/odd-one-out",
   "tic-tac-toe": "/games/tic-tac-toe",
+
+  "reaction-rush": "/games/reaction-rush",
+  "number-memory": "/games/number-memory",
+  "color-clash": "/games/color-clash",
+  "pattern-recall": "/games/pattern-recall",
+  "sequence-master": "/games/sequence-master",
+  "logic-rush": "/games/logic-rush",
 };
 
 const DIFFICULTY_LABELS = {
