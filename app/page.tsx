@@ -7,6 +7,7 @@ import {
   subscribeToProgress,
   type MindPlayProgress,
 } from "@/lib/progress";
+import { getLevelProgress } from "@/lib/levels";
 import PlayerFooterText from "@/components/PlayerFooterText";
 import PlayerBrand from "@/components/PlayerBrand";
 import DailyChallenge from "@/components/DailyChallenge";
@@ -204,8 +205,7 @@ export default function HomePage() {
   const gamesPlayed = progress?.gamesPlayed ?? 0;
   const bestScore = progress?.bestScore ?? 0;
 
-  const level = Math.floor(xp / 100) + 1;
-  const levelXP = xp % 100;
+  const levelProgress = getLevelProgress(xp);
 
   const filteredGames = useMemo(() => {
     if (activeCategory === "ALL") {
@@ -292,7 +292,7 @@ export default function HomePage() {
             {/* Level */}
             <div className="flex items-center gap-4">
               <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/[0.07] text-xl font-black">
-                {level}
+                {levelProgress.level}
               </div>
 
               <div className="min-w-0">
@@ -301,7 +301,7 @@ export default function HomePage() {
                 </p>
 
                 <p className="mt-1 text-lg font-black">
-                  Level {level}
+                  Level {levelProgress.level}
                 </p>
               </div>
             </div>
@@ -314,7 +314,8 @@ export default function HomePage() {
                 </span>
 
                 <span className="font-bold text-cyan-300/80">
-                  {levelXP}/100 XP
+                  {levelProgress.xpIntoLevel}/
+                  {levelProgress.xpNeeded} XP
                 </span>
               </div>
 
@@ -322,7 +323,7 @@ export default function HomePage() {
                 <div
                   className="h-full rounded-full bg-linear-to-r from-cyan-300 via-purple-400 to-pink-300 transition-all duration-700"
                   style={{
-                    width: `${levelXP}%`,
+                    width: `${levelProgress.percentage}%`,
                   }}
                 />
               </div>

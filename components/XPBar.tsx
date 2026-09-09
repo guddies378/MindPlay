@@ -5,6 +5,7 @@ import {
   getProgress,
   subscribeToProgress,
 } from "@/lib/progress";
+import { getLevelProgress } from "@/lib/levels";
 
 export default function XPBar() {
   const [xp, setXp] = useState(0);
@@ -19,19 +20,18 @@ export default function XPBar() {
     return subscribeToProgress(update);
   }, []);
 
-  const level = Math.floor(xp / 100) + 1;
-  const currentLevelXP = xp % 100;
-  const percentage = currentLevelXP;
+  const levelProgress = getLevelProgress(xp);
 
   return (
     <div className="w-full max-w-xs">
       <div className="mb-2 flex items-center justify-between text-xs">
         <span className="font-bold text-white/70">
-          LEVEL {level}
+          LEVEL {levelProgress.level}
         </span>
 
         <span className="text-white/40">
-          {currentLevelXP}/100 XP
+          {levelProgress.xpIntoLevel}/
+          {levelProgress.xpNeeded} XP
         </span>
       </div>
 
@@ -39,7 +39,7 @@ export default function XPBar() {
         <div
           className="h-full rounded-full bg-linear-to-r from-cyan-400 to-fuchsia-400 transition-all duration-500"
           style={{
-            width: `${percentage}%`,
+            width: `${levelProgress.percentage}%`,
           }}
         />
       </div>

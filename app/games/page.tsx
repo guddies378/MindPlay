@@ -7,6 +7,7 @@ import {
   subscribeToProgress,
   type MindPlayProgress,
 } from "@/lib/progress";
+import { getLevelProgress } from "@/lib/levels";
 import PlayerFooterText from "@/components/PlayerFooterText";
 import PlayerBrand from "@/components/PlayerBrand";
 
@@ -221,8 +222,7 @@ export default function GamesPage() {
   const streak = progress?.streak ?? 0;
   const gamesPlayed = progress?.gamesPlayed ?? 0;
 
-  const level = Math.floor(xp / 100) + 1;
-  const levelXP = xp % 100;
+  const levelProgress = getLevelProgress(xp);
 
   const filteredGames = useMemo(() => {
     if (activeCategory === "ALL") {
@@ -292,7 +292,7 @@ export default function GamesPage() {
               {/* Level */}
               <div className="flex items-center gap-4">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/[0.07] text-lg font-black">
-                  {level}
+                  {levelProgress.level}
                 </div>
 
                 <div>
@@ -301,7 +301,7 @@ export default function GamesPage() {
                   </p>
 
                   <p className="mt-1 font-black">
-                    Level {level}
+                    Level {levelProgress.level}
                   </p>
                 </div>
               </div>
@@ -314,7 +314,8 @@ export default function GamesPage() {
                   </span>
 
                   <span className="font-bold text-cyan-300/70">
-                    {levelXP}/100
+                    {levelProgress.xpIntoLevel}/
+                    {levelProgress.xpNeeded}
                   </span>
                 </div>
 
@@ -322,7 +323,7 @@ export default function GamesPage() {
                   <div
                     className="h-full rounded-full bg-linear-to-r from-cyan-300 to-purple-400 transition-all duration-500"
                     style={{
-                      width: `${levelXP}%`,
+                      width: `${levelProgress.percentage}%`,
                     }}
                   />
                 </div>
@@ -521,7 +522,7 @@ export default function GamesPage() {
       {/* Footer */}
       <footer className="border-t border-white/6 px-5 py-8 text-center sm:px-8">
         <PlayerFooterText>
-          MindPlay · Think. Play. Conquer. 
+          MindPlay · Think. Play. Conquer.
         </PlayerFooterText>
       </footer>
     </main>
