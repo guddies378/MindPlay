@@ -521,7 +521,7 @@ export default function GamesPage() {
       {/* Footer */}
       <footer className="border-t border-white/6 px-5 py-8 text-center sm:px-8">
         <PlayerFooterText>
-          MindPlay · Train your brain. Have fun.
+          MindPlay · Think. Play. Conquer. 
         </PlayerFooterText>
       </footer>
     </main>

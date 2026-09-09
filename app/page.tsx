@@ -10,6 +10,7 @@ import {
 import PlayerFooterText from "@/components/PlayerFooterText";
 import PlayerBrand from "@/components/PlayerBrand";
 import DailyChallenge from "@/components/DailyChallenge";
+import DeveloperSupport from "@/components/DeveloperSupport";
 
 type GameCategory =
   | "ALL"
@@ -390,6 +391,9 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Daily challenge */}
+      <DailyChallenge />
+
       {/* Games */}
       <section
         id="games"
@@ -522,13 +526,13 @@ export default function HomePage() {
         )}
       </section>
 
-      {/* Daily challenge */}
-      <DailyChallenge />
+      {/* Developer Support */}
+      <DeveloperSupport />
 
       {/* Footer */}
       <footer className="border-t border-white/6 px-5 py-8 text-center sm:px-8">
         <PlayerFooterText>
-          MindPlay · Train your brain. Have fun.
+          MindPlay · Think. Play. Conquer.
         </PlayerFooterText>
       </footer>
     </main>

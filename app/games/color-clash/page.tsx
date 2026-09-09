@@ -56,7 +56,10 @@ const DIFFICULTIES: Record<
 
 const getRandomColor = (count: number): ColorOption => {
   const available = COLORS.slice(0, count);
-  return available[Math.floor(Math.random() * available.length)];
+
+  return available[
+    Math.floor(Math.random() * available.length)
+  ];
 };
 
 const getDifferentColor = (
@@ -67,7 +70,9 @@ const getDifferentColor = (
     (color) => color.name !== correctColor.name
   );
 
-  return available[Math.floor(Math.random() * available.length)];
+  return available[
+    Math.floor(Math.random() * available.length)
+  ];
 };
 
 export default function ColorClashPage() {
@@ -103,6 +108,7 @@ export default function ColorClashPage() {
   const [timeLeft, setTimeLeft] = useState(0);
 
   const [xpEarned, setXpEarned] = useState(0);
+
   const [dailyBonusEarned, setDailyBonusEarned] =
     useState(false);
 
@@ -134,23 +140,27 @@ export default function ColorClashPage() {
   }, []);
 
   const createRound = useCallback(() => {
-    const target = getRandomColor(config.colors);
-    const different = getDifferentColor(
-      target,
+    const wordColor = getRandomColor(config.colors);
+
+    const inkColor = getDifferentColor(
+      wordColor,
       config.colors
     );
 
     const shuffledOptions = [
-      target,
+      inkColor,
       ...COLORS.slice(0, config.colors)
-        .filter((color) => color.name !== target.name)
+        .filter(
+          (color) => color.name !== inkColor.name
+        )
         .sort(() => Math.random() - 0.5)
         .slice(0, config.colors - 1),
     ].sort(() => Math.random() - 0.5);
 
-    setTargetColor(target);
-    setDisplayedColor(different);
+    setTargetColor(wordColor);
+    setDisplayedColor(inkColor);
     setOptions(shuffledOptions);
+
     setTimeLeft(config.responseTime);
     setLastCorrect(null);
     setLastPoints(0);
@@ -167,6 +177,7 @@ export default function ColorClashPage() {
 
     countdownTimerRef.current = setInterval(() => {
       const elapsed = Date.now() - startTime;
+
       const remaining = Math.max(
         0,
         config.responseTime - elapsed
@@ -183,21 +194,30 @@ export default function ColorClashPage() {
 
       setRound((current) => current + 1);
     }, config.responseTime);
-  }, [config.colors, config.responseTime, round]);
+  }, [
+    config.colors,
+    config.responseTime,
+    round,
+  ]);
 
   const startGame = () => {
     clearRoundTimers();
 
     setGameState("playing");
+
     setRound(0);
     setScore(0);
     setCorrect(0);
     setWrong(0);
+
     setCombo(0);
     setBestCombo(0);
+
     setLastCorrect(null);
     setLastPoints(0);
+
     setTimeLeft(config.responseTime);
+
     setXpEarned(0);
     setDailyBonusEarned(false);
   };
@@ -215,11 +235,14 @@ export default function ColorClashPage() {
         ? DAILY_CHALLENGE_BONUS_POINTS
         : 0);
 
-    const totalAnswers = correct + wrong;
+    const totalAnswers =
+      correct + wrong;
 
     const accuracy =
       totalAnswers > 0
-        ? Math.round((correct / totalAnswers) * 100)
+        ? Math.round(
+            (correct / totalAnswers) * 100
+          )
         : 0;
 
     const comboBonus =
@@ -271,54 +294,79 @@ export default function ColorClashPage() {
     (selectedColor: ColorOption) => {
       if (
         gameState !== "playing" ||
-        !targetColor
+        !displayedColor
       ) {
         return;
       }
 
       clearRoundTimers();
 
+      /*
+       * Color Clash uses the classic Stroop-style rule:
+       * choose the color the word is displayed in,
+       * not the word itself.
+       */
       const isCorrect =
-        selectedColor.name === targetColor.name;
+        selectedColor.name ===
+        displayedColor.name;
 
       if (isCorrect) {
         const newCombo = combo + 1;
 
-        const comboBonus =
-          Math.min(
-            30,
-            Math.floor(newCombo / 3) * 5
-          );
+        const comboBonus = Math.min(
+          30,
+          Math.floor(newCombo / 3) * 5
+        );
 
-        const points = 10 + comboBonus;
+        const points =
+          10 + comboBonus;
 
-        setScore((current) => current + points);
-        setCorrect((current) => current + 1);
+        setScore(
+          (current) => current + points
+        );
+
+        setCorrect(
+          (current) => current + 1
+        );
+
         setCombo(newCombo);
+
         setBestCombo((current) =>
-          Math.max(current, newCombo)
+          Math.max(
+            current,
+            newCombo
+          )
         );
 
         setLastCorrect(true);
         setLastPoints(points);
       } else {
         setScore((current) =>
-          Math.max(0, current - 5)
+          Math.max(
+            0,
+            current - 5
+          )
         );
-        setWrong((current) => current + 1);
+
+        setWrong(
+          (current) => current + 1
+        );
+
         setCombo(0);
 
         setLastCorrect(false);
         setLastPoints(-5);
       }
 
-      setRound((current) => current + 1);
+      setRound(
+        (current) => current + 1
+      );
     },
     [
       clearRoundTimers,
       combo,
+      displayedColor,
       gameState,
-      targetColor,
     ]
   );
 
@@ -346,9 +394,10 @@ export default function ColorClashPage() {
       return;
     }
 
-    const params = new URLSearchParams(
-      window.location.search
-    );
+    const params =
+      new URLSearchParams(
+        window.location.search
+      );
 
     const dailyMode =
       params.get("daily") === "true";
@@ -372,8 +421,8 @@ export default function ColorClashPage() {
       );
     }
   }, [
-    isDailyChallenge,
     dailyChallenge.difficulty,
+    isDailyChallenge,
   ]);
 
   useEffect(() => {
@@ -384,15 +433,19 @@ export default function ColorClashPage() {
         return;
       }
 
-      const key = event.key.toUpperCase();
+      const key =
+        event.key.toUpperCase();
 
-      const selectedColor = options.find(
-        (color) =>
-          color.name.charAt(0) === key
-      );
+      const selectedColor =
+        options.find(
+          (color) =>
+            color.name.charAt(0) === key
+        );
 
       if (selectedColor) {
-        handleAnswer(selectedColor);
+        handleAnswer(
+          selectedColor
+        );
       }
     };
 
@@ -426,7 +479,8 @@ export default function ColorClashPage() {
     const accuracy =
       totalAnswers > 0
         ? Math.round(
-            (correct / totalAnswers) * 100
+            (correct / totalAnswers) *
+              100
           )
         : 0;
 
@@ -535,7 +589,9 @@ export default function ColorClashPage() {
 
     const timerProgress =
       config.responseTime > 0
-        ? (timeLeft / config.responseTime) * 100
+        ? (timeLeft /
+            config.responseTime) *
+          100
         : 0;
 
     return (
@@ -549,7 +605,11 @@ export default function ColorClashPage() {
                 </p>
 
                 <p className="mt-1 text-sm font-bold text-white/50">
-                  Round {Math.min(round + 1, config.rounds)}{" "}
+                  Round{" "}
+                  {Math.min(
+                    round + 1,
+                    config.rounds
+                  )}{" "}
                   / {config.rounds}
                 </p>
               </div>
@@ -581,7 +641,7 @@ export default function ColorClashPage() {
           <div className="rounded-3xl border border-white/10 bg-white/3 p-6 shadow-2xl sm:p-10">
             <div className="text-center">
               <p className="text-xs font-black uppercase tracking-[0.25em] text-white/30">
-                Choose the written color
+                Choose the display color
               </p>
 
               <div className="mt-8">
@@ -597,7 +657,8 @@ export default function ColorClashPage() {
                 </p>
 
                 <p className="mt-3 text-sm text-white/30">
-                  Ignore the color it is displayed in.
+                  Ignore the word. Choose the color
+                  you see.
                 </p>
               </div>
             </div>
@@ -605,8 +666,12 @@ export default function ColorClashPage() {
             <div className="mx-auto mt-8 max-w-xl">
               <div className="mb-2 flex items-center justify-between text-xs font-bold text-white/30">
                 <span>Time</span>
+
                 <span>
-                  {(timeLeft / 1000).toFixed(1)}s
+                  {(
+                    timeLeft / 1000
+                  ).toFixed(1)}
+                  s
                 </span>
               </div>
 
@@ -621,31 +686,38 @@ export default function ColorClashPage() {
             </div>
 
             <div className="mx-auto mt-10 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-3">
-              {options.map((color) => (
-                <button
-                  key={color.name}
-                  onClick={() =>
-                    handleAnswer(color)
-                  }
-                  className="group rounded-2xl border border-white/10 bg-white/3 p-5 text-center transition hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/6 active:scale-[0.98]"
-                >
-                  <div
-                    className="mx-auto h-10 w-10 rounded-full"
-                    style={{
-                      backgroundColor:
-                        color.value,
-                    }}
-                  />
+              {options.map(
+                (color) => (
+                  <button
+                    key={color.name}
+                    onClick={() =>
+                      handleAnswer(
+                        color
+                      )
+                    }
+                    className="group rounded-2xl border border-white/10 bg-white/3 p-5 text-center transition hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/6 active:scale-[0.98]"
+                  >
+                    <div
+                      className="mx-auto h-10 w-10 rounded-full"
+                      style={{
+                        backgroundColor:
+                          color.value,
+                      }}
+                    />
 
-                  <p className="mt-3 text-sm font-black tracking-wider">
-                    {color.name}
-                  </p>
+                    <p className="mt-3 text-sm font-black tracking-wider">
+                      {color.name}
+                    </p>
 
-                  <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/20">
-                    Press {color.name.charAt(0)}
-                  </p>
-                </button>
-              ))}
+                    <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/20">
+                      Press{" "}
+                      {color.name.charAt(
+                        0
+                      )}
+                    </p>
+                  </button>
+                )
+              )}
             </div>
 
             <div className="mt-8 flex items-center justify-center gap-6 text-sm">
@@ -713,8 +785,8 @@ export default function ColorClashPage() {
 
           <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-white/40 sm:text-lg">
             Test your focus. Pick the color
-            that the word represents, not the
-            color it is displayed in.
+            the word is displayed in, not
+            the word itself.
           </p>
 
           {isDailyChallenge && (
@@ -732,8 +804,7 @@ export default function ColorClashPage() {
               </p>
 
               <p className="mt-1 text-xs text-white/30">
-                Complete it for +10 score and +50
-                XP.
+                Complete it for +10 score and +50 XP.
               </p>
             </div>
           )}
@@ -766,6 +837,7 @@ export default function ColorClashPage() {
                 <p className="font-black text-white/60">
                   {config.rounds}
                 </p>
+
                 <p className="mt-1 text-white/20">
                   Rounds
                 </p>
@@ -773,10 +845,13 @@ export default function ColorClashPage() {
 
               <div className="rounded-xl border border-white/5 bg-white/2 p-3">
                 <p className="font-black text-white/60">
-                  {(config.responseTime / 1000).toFixed(
-                    1
-                  )}s
+                  {(
+                    config.responseTime /
+                    1000
+                  ).toFixed(1)}
+                  s
                 </p>
+
                 <p className="mt-1 text-white/20">
                   Time
                 </p>
@@ -786,6 +861,7 @@ export default function ColorClashPage() {
                 <p className="font-black text-yellow-300/70">
                   +{config.baseXP}
                 </p>
+
                 <p className="mt-1 text-white/20">
                   Base XP
                 </p>

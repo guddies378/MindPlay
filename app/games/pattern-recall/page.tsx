@@ -78,8 +78,10 @@ export default function PatternRecallPage() {
     useState<number[]>([]);
 
   const [score, setScore] = useState(0);
-  const [correctRounds, setCorrectRounds] = useState(0);
-  const [wrongRounds, setWrongRounds] = useState(0);
+  const [correctRounds, setCorrectRounds] =
+    useState(0);
+  const [wrongRounds, setWrongRounds] =
+    useState(0);
 
   const [combo, setCombo] = useState(0);
   const [bestCombo, setBestCombo] = useState(0);
@@ -149,9 +151,12 @@ export default function PatternRecallPage() {
     if (
       dailyMode &&
       validDifficulty &&
-      urlDifficulty === dailyChallenge.difficulty
+      urlDifficulty ===
+        dailyChallenge.difficulty
     ) {
-      setDifficulty(dailyChallenge.difficulty);
+      setDifficulty(
+        dailyChallenge.difficulty
+      );
     }
   }, [
     isDailyChallenge,
@@ -275,7 +280,10 @@ export default function PatternRecallPage() {
     intervalRef.current =
       setInterval(() => {
         setTimeLeft((previous) =>
-          Math.max(0, previous - 100)
+          Math.max(
+            0,
+            previous - 100
+          )
         );
       }, 100);
 
@@ -297,7 +305,10 @@ export default function PatternRecallPage() {
         );
       }
 
-      if (previous.length >= pattern.length) {
+      if (
+        previous.length >=
+        pattern.length
+      ) {
         return previous;
       }
 
@@ -361,14 +372,19 @@ export default function PatternRecallPage() {
         basePoints + comboBonus
       );
 
-      nextScore = score + points;
+      nextScore =
+        score + points;
 
       setCorrectRounds(
-        (previous) => previous + 1
+        (previous) =>
+          previous + 1
       );
 
       setBestCombo((previous) =>
-        Math.max(previous, nextCombo)
+        Math.max(
+          previous,
+          nextCombo
+        )
       );
     } else {
       nextCombo = 0;
@@ -380,7 +396,8 @@ export default function PatternRecallPage() {
       );
 
       setWrongRounds(
-        (previous) => previous + 1
+        (previous) =>
+          previous + 1
       );
     }
 
@@ -414,7 +431,9 @@ export default function PatternRecallPage() {
     const accuracy =
       totalRounds > 0
         ? Math.round(
-            (correctRounds / totalRounds) * 100
+            (correctRounds /
+              totalRounds) *
+              100
           )
         : 0;
 
@@ -470,8 +489,11 @@ export default function PatternRecallPage() {
       baseTotalXP +
       (completedDaily ? 50 : 0);
 
+    setScore(finalScore);
     setXpEarned(finalDisplayedXP);
-    setDailyCompleted(completedDaily);
+    setDailyCompleted(
+      completedDaily
+    );
 
     recordGame(
       finalScore,
@@ -492,7 +514,8 @@ export default function PatternRecallPage() {
         accuracy,
         bestCombo,
         baseTotalXP,
-        dailyCompleted: completedDaily,
+        dailyCompleted:
+          completedDaily,
         finalDisplayedXP,
       }
     );
@@ -501,20 +524,25 @@ export default function PatternRecallPage() {
   }
 
   const totalTiles =
-    config.gridSize * config.gridSize;
+    config.gridSize *
+    config.gridSize;
 
-  const currentAnswerTime = Math.max(
-    3000,
-    7000 - round * 200
-  );
+  const currentAnswerTime =
+    Math.max(
+      3000,
+      7000 - round * 200
+    );
 
-  const timePercentage = Math.max(
-    0,
-    Math.min(
-      100,
-      (timeLeft / currentAnswerTime) * 100
-    )
-  );
+  const timePercentage =
+    Math.max(
+      0,
+      Math.min(
+        100,
+        (timeLeft /
+          currentAnswerTime) *
+          100
+      )
+    );
 
   if (gameState === "finished") {
     const totalRounds =
@@ -523,7 +551,9 @@ export default function PatternRecallPage() {
     const accuracy =
       totalRounds > 0
         ? Math.round(
-            (correctRounds / totalRounds) * 100
+            (correctRounds /
+              totalRounds) *
+              100
           )
         : 0;
 
@@ -585,11 +615,6 @@ export default function PatternRecallPage() {
               <div className="rounded-2xl border border-white/10 bg-white/4 p-4">
                 <div className="text-2xl font-black text-cyan-300">
                   {score}
-                  {dailyCompleted && (
-                    <span className="ml-1 text-sm text-purple-300">
-                      +10
-                    </span>
-                  )}
                 </div>
 
                 <div className="mt-1 text-xs font-bold uppercase tracking-wider text-white/40">
@@ -704,7 +729,9 @@ export default function PatternRecallPage() {
         <div className="mx-auto flex min-h-[85vh] max-w-3xl items-center justify-center">
           <section className="mp-card mp-fade-up w-full rounded-3xl p-6 text-center sm:p-10">
             <div className="text-5xl">
-              {lastCorrect ? "🧠" : "💥"}
+              {lastCorrect
+                ? "🧠"
+                : "💥"}
             </div>
 
             <h1
@@ -738,21 +765,25 @@ export default function PatternRecallPage() {
               >
                 {Array.from({
                   length: totalTiles,
-                }).map((_, index) => {
-                  const active =
-                    pattern.includes(index);
+                }).map(
+                  (_, index) => {
+                    const active =
+                      pattern.includes(
+                        index
+                      );
 
-                  return (
-                    <div
-                      key={index}
-                      className={`aspect-square rounded-lg border ${
-                        active
-                          ? "border-cyan-300/50 bg-cyan-300/70 shadow-[0_0_20px_rgba(103,232,249,0.25)]"
-                          : "border-white/5 bg-white/2.5"
-                      }`}
-                    />
-                  );
-                })}
+                    return (
+                      <div
+                        key={index}
+                        className={`aspect-square rounded-lg border ${
+                          active
+                            ? "border-cyan-300/50 bg-cyan-300/70 shadow-[0_0_20px_rgba(103,232,249,0.25)]"
+                            : "border-white/5 bg-white/2.5"
+                        }`}
+                      />
+                    );
+                  }
+                )}
               </div>
             </div>
 
@@ -806,7 +837,8 @@ export default function PatternRecallPage() {
 
             <div className="text-right">
               <div className="text-sm font-black">
-                Round {round}/{config.rounds}
+                Round {round}/
+                {config.rounds}
               </div>
 
               <div className="text-xs capitalize text-white/40">
@@ -908,38 +940,47 @@ export default function PatternRecallPage() {
             >
               {Array.from({
                 length: totalTiles,
-              }).map((_, index) => {
-                const isPatternTile =
-                  pattern.includes(index);
+              }).map(
+                (_, index) => {
+                  const isPatternTile =
+                    pattern.includes(
+                      index
+                    );
 
-                const isSelected =
-                  selectedTiles.includes(index);
+                  const isSelected =
+                    selectedTiles.includes(
+                      index
+                    );
 
-                const isShowing =
-                  gameState === "showing";
+                  const isShowing =
+                    gameState ===
+                    "showing";
 
-                return (
-                  <button
-                    key={index}
-                    disabled={isShowing}
-                    onClick={() =>
-                      toggleTile(index)
-                    }
-                    aria-label={`Tile ${
-                      index + 1
-                    }`}
-                    className={`aspect-square rounded-xl border transition-all duration-150 ${
-                      isShowing
-                        ? isPatternTile
-                          ? "scale-95 border-cyan-300/50 bg-cyan-300 shadow-[0_0_30px_rgba(103,232,249,0.35)]"
-                          : "border-white/10 bg-white/[0.035]"
-                        : isSelected
-                          ? "scale-95 border-cyan-300/60 bg-cyan-300/60 shadow-[0_0_25px_rgba(103,232,249,0.25)]"
-                          : "border-white/10 bg-white/[0.035] hover:border-white/25 hover:bg-white/8 active:scale-95"
-                    }`}
-                  />
-                );
-              })}
+                  return (
+                    <button
+                      key={index}
+                      disabled={isShowing}
+                      onClick={() =>
+                        toggleTile(
+                          index
+                        )
+                      }
+                      aria-label={`Tile ${
+                        index + 1
+                      }`}
+                      className={`aspect-square rounded-xl border transition-all duration-150 ${
+                        isShowing
+                          ? isPatternTile
+                            ? "scale-95 border-cyan-300/50 bg-cyan-300 shadow-[0_0_30px_rgba(103,232,249,0.35)]"
+                            : "border-white/10 bg-white/[0.035]"
+                          : isSelected
+                            ? "scale-95 border-cyan-300/60 bg-cyan-300/60 shadow-[0_0_25px_rgba(103,232,249,0.25)]"
+                            : "border-white/10 bg-white/[0.035] hover:border-white/25 hover:bg-white/8 active:scale-95"
+                      }`}
+                    />
+                  );
+                }
+              )}
             </div>
 
             {gameState === "showing" ? (
@@ -963,7 +1004,9 @@ export default function PatternRecallPage() {
                 </p>
 
                 <button
-                  onClick={submitPattern}
+                  onClick={
+                    submitPattern
+                  }
                   disabled={
                     selectedTiles.length !==
                     pattern.length
@@ -1019,7 +1062,8 @@ export default function PatternRecallPage() {
               </p>
 
               <p className="mt-1 text-xs text-white/35">
-                Difficulty automatically selected
+                Difficulty automatically
+                selected
               </p>
             </div>
           )}
@@ -1040,7 +1084,9 @@ export default function PatternRecallPage() {
                 <button
                   key={level}
                   onClick={() =>
-                    setDifficulty(level)
+                    setDifficulty(
+                      level
+                    )
                   }
                   className={`rounded-2xl border p-5 text-left transition ${
                     selected
@@ -1067,7 +1113,8 @@ export default function PatternRecallPage() {
                   <div className="mt-4 text-xs font-bold uppercase tracking-wider text-white/25">
                     {item.gridSize}×
                     {item.gridSize} ·{" "}
-                    {item.rounds} rounds
+                    {item.rounds}{" "}
+                    rounds
                   </div>
                 </button>
               );

@@ -11,6 +11,7 @@ import {
 import { unlockGameAchievement } from "@/lib/achievements";
 
 type Difficulty = "easy" | "normal" | "hard";
+
 type GameState =
   | "idle"
   | "showing"
@@ -29,6 +30,7 @@ const DIFFICULTIES = {
     xp: 20,
     icon: "🌱",
   },
+
   normal: {
     label: "Normal",
     description: "Your memory gets tested",
@@ -39,6 +41,7 @@ const DIFFICULTIES = {
     xp: 35,
     icon: "⚡",
   },
+
   hard: {
     label: "Hard",
     description: "For serious brain power",
@@ -57,7 +60,9 @@ function generateNumber(length: number) {
   );
 
   for (let i = 1; i < length; i++) {
-    result += Math.floor(Math.random() * 10);
+    result += Math.floor(
+      Math.random() * 10
+    );
   }
 
   return result;
@@ -67,7 +72,9 @@ function getRoundScore(
   correct: boolean,
   length: number
 ) {
-  if (!correct) return 0;
+  if (!correct) {
+    return 0;
+  }
 
   return length * 10;
 }
@@ -84,22 +91,29 @@ export default function NumberMemoryPage() {
   const [currentNumber, setCurrentNumber] =
     useState("");
 
-  const [answer, setAnswer] = useState("");
+  const [answer, setAnswer] =
+    useState("");
 
-  const [score, setScore] = useState(0);
+  const [score, setScore] =
+    useState(0);
 
-  const [correct, setCorrect] = useState(0);
+  const [correct, setCorrect] =
+    useState(0);
 
-  const [wrong, setWrong] = useState(0);
+  const [wrong, setWrong] =
+    useState(0);
 
-  const [streak, setStreak] = useState(0);
+  const [streak, setStreak] =
+    useState(0);
 
-  const [bestStreak, setBestStreak] = useState(0);
+  const [bestStreak, setBestStreak] =
+    useState(0);
 
   const [longestNumber, setLongestNumber] =
     useState(0);
 
-  const [xpEarned, setXpEarned] = useState(0);
+  const [xpEarned, setXpEarned] =
+    useState(0);
 
   const [dailyBonusEarned, setDailyBonusEarned] =
     useState(false);
@@ -110,7 +124,8 @@ export default function NumberMemoryPage() {
   const [showCountdown, setShowCountdown] =
     useState(false);
 
-  const [countdown, setCountdown] = useState(0);
+  const [countdown, setCountdown] =
+    useState(0);
 
   const timeoutRef =
     useRef<ReturnType<typeof setTimeout> | null>(
@@ -125,34 +140,58 @@ export default function NumberMemoryPage() {
   const inputRef =
     useRef<HTMLInputElement | null>(null);
 
-  const dailyChallenge = getDailyChallenge();
+  /*
+   * Prevent finishGame() from running more than
+   * once for the same game.
+   *
+   * This protects against both:
+   * - the automatic final-round timeout
+   * - the "See Results" button calling finishGame()
+   */
+  const finishedRef =
+    useRef(false);
+
+  const dailyChallenge =
+    getDailyChallenge();
 
   const isDailyChallenge =
-    dailyChallenge.game === "number-memory";
+    dailyChallenge.game ===
+    "number-memory";
 
-  const config = DIFFICULTIES[difficulty];
+  const config =
+    DIFFICULTIES[difficulty];
 
   function clearTimers() {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
+
       timeoutRef.current = null;
     }
 
     if (countdownRef.current) {
-      clearInterval(countdownRef.current);
+      clearInterval(
+        countdownRef.current
+      );
+
       countdownRef.current = null;
     }
   }
 
-  function getNumberLength(nextRound: number) {
+  function getNumberLength(
+    nextRound: number
+  ) {
     return Math.min(
       config.startingLength +
-        Math.floor((nextRound - 1) / 2),
+        Math.floor(
+          (nextRound - 1) / 2
+        ),
       config.maxLength
     );
   }
 
-  function startRound(nextRound: number) {
+  function startRound(
+    nextRound: number
+  ) {
     clearTimers();
 
     const length =
@@ -169,18 +208,25 @@ export default function NumberMemoryPage() {
     setShowCountdown(true);
 
     setCountdown(
-      Math.ceil(config.displayTime / 1000)
+      Math.ceil(
+        config.displayTime / 1000
+      )
     );
 
     let secondsLeft =
-      Math.ceil(config.displayTime / 1000);
+      Math.ceil(
+        config.displayTime / 1000
+      );
 
     countdownRef.current =
       setInterval(() => {
         secondsLeft -= 1;
 
         setCountdown(
-          Math.max(secondsLeft, 0)
+          Math.max(
+            secondsLeft,
+            0
+          )
         );
 
         if (secondsLeft <= 0) {
@@ -189,23 +235,30 @@ export default function NumberMemoryPage() {
               countdownRef.current
             );
 
-            countdownRef.current = null;
+            countdownRef.current =
+              null;
           }
         }
       }, 1000);
 
-    timeoutRef.current = setTimeout(() => {
-      setShowCountdown(false);
-      setGameState("input");
-
+    timeoutRef.current =
       setTimeout(() => {
-        inputRef.current?.focus();
-      }, 50);
-    }, config.displayTime);
+        setShowCountdown(false);
+        setGameState("input");
+
+        setTimeout(() => {
+          inputRef.current?.focus();
+        }, 50);
+      }, config.displayTime);
   }
 
   function startGame() {
     clearTimers();
+
+    /*
+     * Allow finishGame() again for the new game.
+     */
+    finishedRef.current = false;
 
     setRound(0);
     setScore(0);
@@ -224,65 +277,90 @@ export default function NumberMemoryPage() {
     startRound(1);
   }
 
-  function finishGame(finalScore: number) {
-  clearTimers();
+  function finishGame(
+    finalScore: number
+  ) {
+    /*
+     * Safety guard:
+     *
+     * If the game has already been finished,
+     * do absolutely nothing.
+     *
+     * This prevents duplicate:
+     * - progress records
+     * - XP
+     * - achievement unlock attempts
+     * - Daily Challenge processing
+     */
+    if (finishedRef.current) {
+      return;
+    }
 
-  const dailyCompleted =
-    isDailyChallenge &&
-    completeDailyChallenge(
-      "number-memory"
+    finishedRef.current = true;
+
+    clearTimers();
+
+    const dailyCompleted =
+      isDailyChallenge &&
+      completeDailyChallenge(
+        "number-memory"
+      );
+
+    const finalScoreWithDailyBonus =
+      finalScore +
+      (dailyCompleted
+        ? DAILY_CHALLENGE_BONUS_POINTS
+        : 0);
+
+    const scoreBonus =
+      Math.min(
+        40,
+        Math.floor(
+          finalScoreWithDailyBonus / 50
+        )
+      );
+
+    const streakBonus =
+      bestStreak >= 5
+        ? 20
+        : bestStreak >= 3
+          ? 10
+          : 0;
+
+    const baseTotalXP =
+      config.xp +
+      scoreBonus +
+      streakBonus;
+
+    const displayedXP =
+      baseTotalXP +
+      (dailyCompleted
+        ? 50
+        : 0);
+
+    setScore(
+      finalScoreWithDailyBonus
     );
 
-  const finalScoreWithDailyBonus =
-    finalScore +
-    (dailyCompleted
-      ? DAILY_CHALLENGE_BONUS_POINTS
-      : 0);
+    setXpEarned(
+      displayedXP
+    );
 
-  const scoreBonus = Math.min(
-    40,
-    Math.floor(
-      finalScoreWithDailyBonus / 50
-    )
-  );
+    setDailyBonusEarned(
+      dailyCompleted
+    );
 
-  const streakBonus =
-    bestStreak >= 5
-      ? 20
-      : bestStreak >= 3
-        ? 10
-        : 0;
+    setGameState("finished");
 
-  const baseTotalXP =
-    config.xp +
-    scoreBonus +
-    streakBonus;
+    recordGame(
+      finalScoreWithDailyBonus,
+      baseTotalXP
+    );
 
-  const displayedXP =
-    baseTotalXP +
-    (dailyCompleted ? 50 : 0);
-
-  setScore(
-    finalScoreWithDailyBonus
-  );
-
-  setXpEarned(displayedXP);
-
-  setDailyBonusEarned(
-    dailyCompleted
-  );
-
-  setGameState("finished");
-
-  recordGame(
-    finalScoreWithDailyBonus,
-    baseTotalXP
-  );
-
-  unlockGameAchievement(
-    "number-vault"
-  );
-}
+    unlockGameAchievement(
+      "number-vault"
+    );
+  }
 
   function submitAnswer() {
     if (gameState !== "input") {
@@ -304,7 +382,9 @@ export default function NumberMemoryPage() {
     const nextScore =
       score + roundScore;
 
-    setLastCorrect(isCorrect);
+    setLastCorrect(
+      isCorrect
+    );
 
     if (isCorrect) {
       const nextStreak =
@@ -314,17 +394,31 @@ export default function NumberMemoryPage() {
         (value) => value + 1
       );
 
-      setStreak(nextStreak);
+      setStreak(
+        nextStreak
+      );
 
-      if (nextStreak > bestStreak) {
-        setBestStreak(nextStreak);
+      if (
+        nextStreak >
+        bestStreak
+      ) {
+        setBestStreak(
+          nextStreak
+        );
       }
 
-      if (length > longestNumber) {
-        setLongestNumber(length);
+      if (
+        length >
+        longestNumber
+      ) {
+        setLongestNumber(
+          length
+        );
       }
 
-      setScore(nextScore);
+      setScore(
+        nextScore
+      );
     } else {
       setWrong(
         (value) => value + 1
@@ -335,31 +429,51 @@ export default function NumberMemoryPage() {
 
     setGameState("result");
 
-    if (round >= config.rounds) {
+    if (
+      round >=
+      config.rounds
+    ) {
       const finalScore =
         isCorrect
           ? nextScore
           : score;
 
-      setTimeout(() => {
-        finishGame(finalScore);
-      }, 700);
+      timeoutRef.current =
+        setTimeout(() => {
+          finishGame(
+            finalScore
+          );
+        }, 700);
     }
   }
 
   function continueGame() {
-    if (round >= config.rounds) {
+    if (
+      round >=
+      config.rounds
+    ) {
+      /*
+       * finishGame() is protected by finishedRef,
+       * so even if the automatic timeout is still
+       * pending, this cannot finish the game twice.
+       */
       finishGame(score);
+
       return;
     }
 
-    startRound(round + 1);
+    startRound(
+      round + 1
+    );
   }
 
   function handleInputKeyDown(
     event: React.KeyboardEvent<HTMLInputElement>
   ) {
-    if (event.key === "Enter") {
+    if (
+      event.key ===
+      "Enter"
+    ) {
       submitAnswer();
     }
   }
@@ -378,12 +492,14 @@ export default function NumberMemoryPage() {
       return;
     }
 
-    const params = new URLSearchParams(
-      window.location.search
-    );
+    const params =
+      new URLSearchParams(
+        window.location.search
+      );
 
     const dailyMode =
-      params.get("daily") === "true";
+      params.get("daily") ===
+      "true";
 
     const urlDifficulty =
       params.get("difficulty");
@@ -418,14 +534,19 @@ export default function NumberMemoryPage() {
     config.rounds > 0
       ? Math.min(
           100,
-          (round / config.rounds) * 100
+          (round /
+            config.rounds) *
+            100
         )
       : 0;
 
   const currentLength =
     currentNumber.length ||
     getNumberLength(
-      Math.max(round, 1)
+      Math.max(
+        round,
+        1
+      )
     );
 
   return (
@@ -433,6 +554,7 @@ export default function NumberMemoryPage() {
       <div className="mx-auto max-w-5xl">
 
         {/* Header */}
+
         <header className="mb-8 flex items-center justify-between gap-3">
           <Link
             href="/games"
@@ -459,6 +581,7 @@ export default function NumberMemoryPage() {
         </header>
 
         {/* Title */}
+
         <section className="mp-fade-up mb-8 text-center">
           <div className="mb-3 text-5xl">
             🔢
@@ -479,6 +602,7 @@ export default function NumberMemoryPage() {
         </section>
 
         {/* Difficulty */}
+
         {gameState === "idle" && (
           <section className="mp-fade-up mb-8">
             <div className="mb-3 flex items-center justify-between">
@@ -496,59 +620,69 @@ export default function NumberMemoryPage() {
                 Object.keys(
                   DIFFICULTIES
                 ) as Difficulty[]
-              ).map((level) => {
-                const item =
-                  DIFFICULTIES[level];
+              ).map(
+                (level) => {
+                  const item =
+                    DIFFICULTIES[
+                      level
+                    ];
 
-                const selected =
-                  difficulty === level;
+                  const selected =
+                    difficulty ===
+                    level;
 
-                return (
-                  <button
-                    key={level}
-                    type="button"
-                    onClick={() =>
-                      setDifficulty(level)
-                    }
-                    className={[
-                      "rounded-3xl border p-5 text-left transition-all duration-200",
-                      selected
-                        ? "border-cyan-300/25 bg-cyan-300/[0.07] shadow-lg shadow-cyan-400/5"
-                        : "border-white/[0.07] bg-white/2.5 hover:-translate-y-1 hover:border-white/15 hover:bg-white/5",
-                    ].join(" ")}
-                  >
-                    <div className="flex items-start justify-between">
-                      <span className="text-2xl">
-                        {item.icon}
-                      </span>
-
-                      {selected && (
-                        <span className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-2 py-1 text-[9px] font-black uppercase tracking-wider text-cyan-300">
-                          Selected
-                        </span>
+                  return (
+                    <button
+                      key={level}
+                      type="button"
+                      onClick={() =>
+                        setDifficulty(
+                          level
+                        )
+                      }
+                      className={[
+                        "rounded-3xl border p-5 text-left transition-all duration-200",
+                        selected
+                          ? "border-cyan-300/25 bg-cyan-300/[0.07] shadow-lg shadow-cyan-400/5"
+                          : "border-white/[0.07] bg-white/2.5 hover:-translate-y-1 hover:border-white/15 hover:bg-white/5",
+                      ].join(
+                        " "
                       )}
-                    </div>
+                    >
+                      <div className="flex items-start justify-between">
+                        <span className="text-2xl">
+                          {item.icon}
+                        </span>
 
-                    <h2 className="mt-4 text-base font-black">
-                      {item.label}
-                    </h2>
+                        {selected && (
+                          <span className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-2 py-1 text-[9px] font-black uppercase tracking-wider text-cyan-300">
+                            Selected
+                          </span>
+                        )}
+                      </div>
 
-                    <p className="mt-1 text-xs text-white/35">
-                      {item.description}
-                    </p>
+                      <h2 className="mt-4 text-base font-black">
+                        {item.label}
+                      </h2>
 
-                    <div className="mt-4 flex items-center justify-between text-[10px] font-black uppercase tracking-wider">
-                      <span className="text-white/25">
-                        {item.rounds} rounds
-                      </span>
+                      <p className="mt-1 text-xs text-white/35">
+                        {item.description}
+                      </p>
 
-                      <span className="text-cyan-300">
-                        +{item.xp} base XP
-                      </span>
-                    </div>
-                  </button>
-                );
-              })}
+                      <div className="mt-4 flex items-center justify-between text-[10px] font-black uppercase tracking-wider">
+                        <span className="text-white/25">
+                          {item.rounds}{" "}
+                          rounds
+                        </span>
+
+                        <span className="text-cyan-300">
+                          +{item.xp} base XP
+                        </span>
+                      </div>
+                    </button>
+                  );
+                }
+              )}
             </div>
 
             {isDailyChallenge && (
@@ -561,7 +695,9 @@ export default function NumberMemoryPage() {
                   Today&apos;s challenge is set
                   to{" "}
                   <strong className="capitalize text-yellow-300">
-                    {dailyChallenge.difficulty}
+                    {
+                      dailyChallenge.difficulty
+                    }
                   </strong>{" "}
                   difficulty.
                 </p>
@@ -576,6 +712,7 @@ export default function NumberMemoryPage() {
         )}
 
         {/* Game Card */}
+
         <section className="relative overflow-hidden rounded-4xl border border-white/10 bg-white/[0.035]">
           <div className="pointer-events-none absolute -right-32 -top-32 h-72 w-72 rounded-full bg-cyan-400/10 blur-3xl" />
 
@@ -584,6 +721,7 @@ export default function NumberMemoryPage() {
           <div className="relative p-5 sm:p-8">
 
             {/* Stats */}
+
             {gameState !== "idle" &&
               gameState !== "finished" && (
                 <div className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -593,7 +731,8 @@ export default function NumberMemoryPage() {
                     </p>
 
                     <p className="mt-1 text-lg font-black">
-                      {round}/{config.rounds}
+                      {round}/
+                      {config.rounds}
                     </p>
                   </div>
 
@@ -630,6 +769,7 @@ export default function NumberMemoryPage() {
               )}
 
             {/* Progress */}
+
             {gameState !== "idle" &&
               gameState !== "finished" && (
                 <div className="mb-6">
@@ -639,7 +779,10 @@ export default function NumberMemoryPage() {
                     </span>
 
                     <span>
-                      {Math.round(progress)}%
+                      {Math.round(
+                        progress
+                      )}
+                      %
                     </span>
                   </div>
 
@@ -655,6 +798,7 @@ export default function NumberMemoryPage() {
               )}
 
             {/* Idle */}
+
             {gameState === "idle" && (
               <div className="py-10 text-center sm:py-14">
                 <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-4xl border border-white/10 bg-white/5 text-5xl shadow-xl">
@@ -683,7 +827,9 @@ export default function NumberMemoryPage() {
 
                 <button
                   type="button"
-                  onClick={startGame}
+                  onClick={
+                    startGame
+                  }
                   className="mp-button mt-8 bg-white px-8 py-4 text-sm text-black shadow-xl shadow-white/10 hover:bg-white/90"
                 >
                   Start Number Memory
@@ -696,6 +842,7 @@ export default function NumberMemoryPage() {
             )}
 
             {/* Showing Number */}
+
             {gameState === "showing" && (
               <div className="flex min-h-95 flex-col items-center justify-center text-center sm:min-h-107.5">
                 <p className="text-xs font-black uppercase tracking-[0.25em] text-cyan-300/60">
@@ -723,6 +870,7 @@ export default function NumberMemoryPage() {
             )}
 
             {/* Input */}
+
             {gameState === "input" && (
               <div className="flex min-h-95 flex-col items-center justify-center text-center sm:min-h-107.5">
                 <div className="text-6xl">
@@ -739,20 +887,28 @@ export default function NumberMemoryPage() {
 
                 <div className="mt-8 w-full max-w-md">
                   <input
-                    ref={inputRef}
+                    ref={
+                      inputRef
+                    }
                     type="text"
                     inputMode="numeric"
                     pattern="[0-9]*"
-                    maxLength={currentLength}
+                    maxLength={
+                      currentLength
+                    }
                     value={answer}
-                    onChange={(event) => {
+                    onChange={(
+                      event
+                    ) => {
                       const value =
                         event.target.value.replace(
                           /\D/g,
                           ""
                         );
 
-                      setAnswer(value);
+                      setAnswer(
+                        value
+                      );
                     }}
                     onKeyDown={
                       handleInputKeyDown
@@ -764,9 +920,12 @@ export default function NumberMemoryPage() {
 
                   <button
                     type="button"
-                    onClick={submitAnswer}
+                    onClick={
+                      submitAnswer
+                    }
                     disabled={
-                      answer.length === 0
+                      answer.length ===
+                      0
                     }
                     className="mp-button mt-4 w-full bg-white px-8 py-4 text-sm text-black shadow-xl shadow-white/10 hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-30"
                   >
@@ -781,6 +940,7 @@ export default function NumberMemoryPage() {
             )}
 
             {/* Result */}
+
             {gameState === "result" && (
               <div className="py-10 text-center sm:py-14">
                 {lastCorrect ? (
@@ -863,10 +1023,13 @@ export default function NumberMemoryPage() {
 
                 <button
                   type="button"
-                  onClick={continueGame}
+                  onClick={
+                    continueGame
+                  }
                   className="mp-button mt-8 bg-white px-8 py-4 text-sm text-black shadow-xl shadow-white/10 hover:bg-white/90"
                 >
-                  {round >= config.rounds
+                  {round >=
+                  config.rounds
                     ? "See Results"
                     : "Next Number"}
 
@@ -878,7 +1041,9 @@ export default function NumberMemoryPage() {
             )}
 
             {/* Final Results */}
-            {gameState === "finished" && (
+
+            {gameState ===
+              "finished" && (
               <div className="py-8 text-center sm:py-12">
                 <div className="mp-float text-7xl">
                   🏆
@@ -975,7 +1140,9 @@ export default function NumberMemoryPage() {
                 <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
                   <button
                     type="button"
-                    onClick={startGame}
+                    onClick={
+                      startGame
+                    }
                     className="mp-button bg-white px-8 py-4 text-sm text-black shadow-xl shadow-white/10 hover:bg-white/90"
                   >
                     Play Again
@@ -998,6 +1165,7 @@ export default function NumberMemoryPage() {
         </section>
 
         {/* Tips */}
+
         <section className="mt-6 grid gap-3 sm:grid-cols-3">
           <div className="rounded-3xl border border-white/[0.07] bg-white/2.5 p-5">
             <div className="text-xl">

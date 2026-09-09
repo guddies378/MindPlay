@@ -11,6 +11,7 @@ import { recordGame } from "@/lib/progress";
 import { unlockGameAchievement } from "@/lib/achievements";
 
 type Difficulty = "Easy" | "Normal" | "Hard";
+
 type GameState =
   | "menu"
   | "playing"
@@ -397,7 +398,7 @@ const PUZZLES: Record<Difficulty, Puzzle[]> = {
 function shuffle<T>(items: T[]): T[] {
   const copy = [...items];
 
-  for (let i = copy.length - 1; i > 0; i--) {
+  for (let i = copy.length - 1; i > 0; i -= 1) {
     const j =
       Math.floor(Math.random() * (i + 1));
 
@@ -412,7 +413,7 @@ function shuffle<T>(items: T[]): T[] {
 
 function difficultyToKey(
   difficulty: Difficulty
-) {
+): Difficulty {
   return difficulty;
 }
 
@@ -687,6 +688,12 @@ export default function LogicRushPage() {
       (dailyCompleted
         ? DAILY_CHALLENGE_BONUS_POINTS
         : 0);
+
+    /*
+     * Keep the displayed result score
+     * consistent with the recorded score.
+     */
+    setScore(finalScore);
 
     const scoreBonus =
       Math.min(

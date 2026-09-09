@@ -311,11 +311,25 @@ export default function TicTacToePage() {
   const [dailyChallengeCompleted, setDailyChallengeCompleted] =
     useState(false);
 
+  const [gameXP, setGameXP] =
+    useState(0);
+
   const [scores, setScores] = useState({
     player: 0,
     ai: 0,
     draws: 0,
   });
+
+  /*
+   * A match is active whenever there are moves
+   * on the board and the game has not finished.
+   *
+   * This prevents changing difficulty or symbol
+   * in the middle of an active match.
+   */
+  const gameInProgress =
+    board.some((cell) => cell !== null) &&
+    winner === null;
 
   function resetBoard(
     selectedPlayer: Player = humanPlayer
@@ -327,6 +341,7 @@ export default function TicTacToePage() {
     setCurrentPlayer("X");
     setHumanPlayer(selectedPlayer);
     setDailyChallengeCompleted(false);
+    setGameXP(0);
   }
 
   function finishGame(
@@ -370,6 +385,8 @@ export default function TicTacToePage() {
       xp =
         DIFFICULTIES[difficulty].lossXP;
     }
+
+    setGameXP(xp);
 
     const dailyCompleted =
       completeDailyChallenge("tic-tac-toe");
@@ -542,6 +559,13 @@ export default function TicTacToePage() {
   const isDailyChallengeGame =
     getDailyChallenge().game ===
     "tic-tac-toe";
+
+  const baseScore =
+    winner === humanPlayer
+      ? 100
+      : winner === "draw"
+        ? 50
+        : 25;
 
   return (
     <GameShell
@@ -784,15 +808,23 @@ export default function TicTacToePage() {
                   <button
                     key={level}
                     onClick={() => {
+                      if (gameInProgress) {
+                        return;
+                      }
+
                       setDifficulty(
                         level
                       );
                     }}
+                    disabled={gameInProgress}
                     className={[
                       "group rounded-2xl border p-3 text-left transition-all duration-200 sm:p-4",
                       active
                         ? "border-cyan-300/30 bg-cyan-300/8 shadow-[0_0_30px_rgba(103,232,249,0.05)]"
                         : "border-white/10 bg-white/[0.035] hover:-translate-y-0.5 hover:bg-white/6",
+                      gameInProgress
+                        ? "cursor-not-allowed opacity-40"
+                        : "",
                     ].join(" ")}
                   >
                     <div className="flex items-center justify-between">
@@ -836,6 +868,12 @@ export default function TicTacToePage() {
               }
             )}
           </div>
+
+          {gameInProgress && (
+            <p className="mt-2 text-center text-[11px] text-white/25">
+              Difficulty is locked during the match.
+            </p>
+          )}
         </div>
 
         {/* Symbol */}
@@ -847,15 +885,23 @@ export default function TicTacToePage() {
 
           <div className="grid grid-cols-2 gap-2 sm:gap-3">
             <button
-              onClick={() =>
-                resetBoard("X")
-              }
+              onClick={() => {
+                if (gameInProgress) {
+                  return;
+                }
+
+                resetBoard("X");
+              }}
+              disabled={gameInProgress}
               className={[
                 "rounded-2xl border p-4 transition-all duration-200",
                 humanPlayer ===
                 "X"
                   ? "border-cyan-300/30 bg-cyan-300/8"
                   : "border-white/10 bg-white/[0.035] hover:bg-white/6",
+                gameInProgress
+                  ? "cursor-not-allowed opacity-40"
+                  : "",
               ].join(" ")}
             >
               <span className="text-2xl font-black text-cyan-300">
@@ -868,15 +914,23 @@ export default function TicTacToePage() {
             </button>
 
             <button
-              onClick={() =>
-                resetBoard("O")
-              }
+              onClick={() => {
+                if (gameInProgress) {
+                  return;
+                }
+
+                resetBoard("O");
+              }}
+              disabled={gameInProgress}
               className={[
                 "rounded-2xl border p-4 transition-all duration-200",
                 humanPlayer ===
                 "O"
                   ? "border-fuchsia-300/30 bg-fuchsia-300/8"
                   : "border-white/10 bg-white/[0.035] hover:bg-white/6",
+                gameInProgress
+                  ? "cursor-not-allowed opacity-40"
+                  : "",
               ].join(" ")}
             >
               <span className="text-2xl font-black text-fuchsia-300">
@@ -888,6 +942,12 @@ export default function TicTacToePage() {
               </span>
             </button>
           </div>
+
+          {gameInProgress && (
+            <p className="mt-2 text-center text-[11px] text-white/25">
+              Your symbol is locked during the match.
+            </p>
+          )}
         </div>
 
         {/* Restart */}
@@ -904,26 +964,61 @@ export default function TicTacToePage() {
         </button>
       </div>
 
-      {/* Daily Challenge Result */}
+      {/* Game Result */}
 
-      {dailyChallengeCompleted &&
-        isDailyChallengeGame && (
-          <div className="mx-auto mt-6 max-w-2xl rounded-2xl border border-purple-300/15 bg-purple-300/4 p-4">
-            <div className="flex flex-wrap items-center justify-center gap-2 text-xs">
-              <span className="rounded-xl border border-purple-300/10 bg-purple-300/5 px-3 py-2 font-black text-purple-200/80">
-                🎯 Daily Challenge Complete
+      {gameFinished && (
+        <div className="mx-auto mt-6 max-w-2xl rounded-2xl border border-white/10 bg-white/[0.035] p-5">
+          <div className="text-center">
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-white/30">
+              Game Complete
+            </p>
+
+            <p
+              className={[
+                "mt-2 text-2xl font-black",
+                winner === humanPlayer
+                  ? "text-emerald-300"
+                  : winner === "draw"
+                    ? "text-yellow-300"
+                    : "text-red-300",
+              ].join(" ")}
+            >
+              {winner === humanPlayer
+                ? "🎉 You Win!"
+                : winner === "draw"
+                  ? "🤝 Draw Game!"
+                  : "🤖 AI Wins!"}
+            </p>
+
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+              <span className="rounded-xl border border-cyan-300/10 bg-cyan-300/5 px-4 py-2 text-sm font-black text-cyan-300">
+                +{gameXP} XP
               </span>
 
-              <span className="rounded-xl border border-cyan-300/10 bg-cyan-300/5 px-3 py-2 font-black text-cyan-300">
-                +50 XP
-              </span>
-
-              <span className="rounded-xl border border-white/6 bg-white/3 px-3 py-2 font-black text-white/40">
-                +10 score
+              <span className="rounded-xl border border-white/6 bg-white/3 px-4 py-2 text-sm font-black text-white/50">
+                +{baseScore} score
               </span>
             </div>
+
+            {dailyChallengeCompleted &&
+              isDailyChallengeGame && (
+                <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+                  <span className="rounded-xl border border-purple-300/10 bg-purple-300/5 px-3 py-2 text-xs font-black text-purple-200/80">
+                    🎯 Daily Challenge Complete
+                  </span>
+
+                  <span className="rounded-xl border border-purple-300/10 bg-purple-300/5 px-3 py-2 text-xs font-black text-purple-200/70">
+                    +50 Bonus XP
+                  </span>
+
+                  <span className="rounded-xl border border-white/6 bg-white/3 px-3 py-2 text-xs font-black text-white/40">
+                    +10 Bonus Score
+                  </span>
+                </div>
+              )}
           </div>
-        )}
+        </div>
+      )}
 
       {/* Tip */}
 

@@ -136,6 +136,13 @@ export default function SequenceMasterPage() {
   const [showCountdown, setShowCountdown] =
     useState(false);
 
+  /*
+   * Prevents the final game from being
+   * completed more than once.
+   */
+  const finishedRef =
+    useRef(false);
+
   const timeoutRef =
     useRef<ReturnType<typeof setTimeout> | null>(
       null
@@ -231,6 +238,12 @@ export default function SequenceMasterPage() {
   function startGame() {
     clearTimers();
 
+    /*
+     * Allow a completely new game
+     * to reach the final results normally.
+     */
+    finishedRef.current = false;
+
     setRound(0);
     setSequence([]);
     setAnswer("");
@@ -252,6 +265,20 @@ export default function SequenceMasterPage() {
   function finishGame(
     baseFinalScore: number
   ) {
+    /*
+     * Prevent duplicate completion.
+     *
+     * This protects against:
+     * - the automatic final-round timeout
+     * - clicking "See Results"
+     * - both paths firing close together
+     */
+    if (finishedRef.current) {
+      return;
+    }
+
+    finishedRef.current = true;
+
     clearTimers();
 
     const dailyCompleted =
@@ -279,15 +306,11 @@ export default function SequenceMasterPage() {
           : 0;
 
     /*
-     * Important:
-     *
      * completeDailyChallenge()
      * already gives +50 XP.
      *
-     * Therefore the +50 daily XP
-     * must NOT be passed into
-     * recordGame(), otherwise the
-     * player would receive it twice.
+     * Therefore the daily XP must
+     * not be passed into recordGame().
      */
     const baseTotalXP =
       config.xp +
@@ -375,14 +398,22 @@ export default function SequenceMasterPage() {
           ? nextScore
           : score;
 
-      setTimeout(() => {
-        finishGame(finalScore);
-      }, 700);
+      timeoutRef.current =
+        setTimeout(() => {
+          finishGame(finalScore);
+        }, 700);
     }
   }
 
   function continueGame() {
     if (round >= config.rounds) {
+      /*
+       * On the final round, score may already
+       * have been updated correctly for a
+       * correct answer. If the automatic
+       * finish timer has not fired yet,
+       * finishGame() handles the result.
+       */
       finishGame(score);
       return;
     }
