@@ -136,7 +136,7 @@ export default function DeveloperSupport() {
                   <p className="mt-5 text-sm leading-7 font-bold text-white/75">
                     Hey!😎
                     <br />
-                    I JUST WANT TO MAKE SOME COOL STUFF&apos;S 👾
+                    I JUST WANT TO MAKE SOME COOL STUFF 👾
                   </p>
 
                   <Link
