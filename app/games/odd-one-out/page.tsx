@@ -2,11 +2,16 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+
 import {
-  recordGame,
-  unlockGameAchievement,
-} from "@/lib/progress";
-import { completeDailyChallenge } from "@/lib/dailyChallenge";
+  completeDailyChallenge,
+  DAILY_CHALLENGE_BONUS_POINTS,
+  getDailyChallenge,
+} from "@/lib/dailyChallenge";
+
+import { recordGame } from "@/lib/progress";
+import { unlockGameAchievement } from "@/lib/achievements";
+
 import PlayerFooterText from "@/components/PlayerFooterText";
 import PlayerBrand from "@/components/PlayerBrand";
 
@@ -141,6 +146,14 @@ export default function OddOneOutPage() {
   const [xpEarned, setXpEarned] =
     useState<number | null>(null);
 
+  const [dailyBonusEarned, setDailyBonusEarned] =
+    useState(false);
+
+  const dailyChallenge = getDailyChallenge();
+
+  const isDailyChallenge =
+    dailyChallenge.game === "odd-one-out";
+
   const startGame = (
     selectedDifficulty: Difficulty
   ) => {
@@ -164,7 +177,28 @@ export default function OddOneOutPage() {
     setSelectedIndex(null);
     setFeedback(null);
     setXpEarned(null);
+    setDailyBonusEarned(false);
   };
+
+  useEffect(() => {
+    if (
+      !isDailyChallenge ||
+      started ||
+      gameOver
+    ) {
+      return;
+    }
+
+    setDifficulty(dailyChallenge.game === "odd-one-out"
+      ? dailyChallenge.difficulty
+      : "normal");
+  }, [
+    dailyChallenge.difficulty,
+    dailyChallenge.game,
+    gameOver,
+    isDailyChallenge,
+    started,
+  ]);
 
   useEffect(() => {
     if (!started || gameOver) {
@@ -172,24 +206,48 @@ export default function OddOneOutPage() {
     }
 
     if (timeLeft <= 0) {
-      setGameOver(true);
+      const dailyCompleted =
+        isDailyChallenge &&
+        completeDailyChallenge(
+          "odd-one-out"
+        );
+
+      const finalScore =
+        score +
+        (dailyCompleted
+          ? DAILY_CHALLENGE_BONUS_POINTS
+          : 0);
 
       const baseXP =
         DIFFICULTIES[difficulty].xp;
 
       const scoreBonus = Math.min(
         50,
-        Math.max(0, score)
+        Math.max(0, finalScore)
       );
 
-      const totalXP =
+      const baseTotalXP =
         baseXP + scoreBonus;
 
-      setXpEarned(totalXP);
+      const displayedXP =
+        baseTotalXP +
+        (dailyCompleted ? 50 : 0);
 
-      recordGame(score, totalXP);
-      completeDailyChallenge("odd-one-out");
-      unlockGameAchievement("sharp-eyes");
+      setScore(finalScore);
+      setXpEarned(displayedXP);
+      setDailyBonusEarned(
+        dailyCompleted
+      );
+      setGameOver(true);
+
+      recordGame(
+        finalScore,
+        baseTotalXP
+      );
+
+      unlockGameAchievement(
+        "sharp-eyes"
+      );
 
       return;
     }
@@ -209,6 +267,7 @@ export default function OddOneOutPage() {
     timeLeft,
     difficulty,
     score,
+    isDailyChallenge,
   ]);
 
   const handleChoice = (
@@ -337,6 +396,12 @@ export default function OddOneOutPage() {
             Spot the item that doesn't belong.
             Trust your eyes and react fast.
           </p>
+
+          {isDailyChallenge && (
+            <div className="mx-auto mt-4 inline-flex items-center gap-2 rounded-full border border-fuchsia-300/15 bg-fuchsia-300/5 px-4 py-2 text-xs font-bold text-fuchsia-200/70">
+              🌟 Today's Daily Challenge
+            </div>
+          )}
         </div>
 
         {/* Difficulty */}
@@ -367,7 +432,9 @@ export default function OddOneOutPage() {
               return (
                 <button
                   key={level}
-                  onClick={() => setDifficulty(level)}
+                  onClick={() =>
+                    setDifficulty(level)
+                  }
                   className={[
                     "group rounded-2xl border p-3 text-left transition-all duration-200 sm:p-4",
                     active
@@ -529,6 +596,13 @@ export default function OddOneOutPage() {
                   +{DIFFICULTIES[difficulty].xp} base XP
                 </div>
               </div>
+
+              {isDailyChallenge && (
+                <div className="mx-auto mt-4 max-w-xs rounded-xl border border-fuchsia-300/10 bg-fuchsia-300/5 px-3 py-2 text-xs font-bold text-fuchsia-200/60">
+                  🌟 Daily reward: +10 points
+                  +50 XP
+                </div>
+              )}
 
               <button
                 onClick={() =>
@@ -750,6 +824,13 @@ export default function OddOneOutPage() {
                 </p>
               </div>
 
+              {dailyBonusEarned && (
+                <div className="mt-3 rounded-2xl border border-fuchsia-300/15 bg-fuchsia-300/5 px-4 py-3 text-sm font-bold text-fuchsia-200/70">
+                  🌟 Daily Challenge complete
+                  · +10 points · +50 XP
+                </div>
+              )}
+
               <button
                 onClick={() =>
                   startGame(difficulty)
@@ -792,7 +873,11 @@ export default function OddOneOutPage() {
       {/* Footer */}
 
       <footer className="relative z-10 border-t border-white/5 py-8 text-center">
-        <PlayerFooterText>🧠 MindPlay <span className="mx-2">•</span> Play. Think. Have fun.</PlayerFooterText>
+        <PlayerFooterText>
+          🧠 MindPlay{" "}
+          <span className="mx-2">•</span>{" "}
+          Play. Think. Have fun.
+        </PlayerFooterText>
       </footer>
     </main>
   );

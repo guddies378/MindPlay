@@ -5,10 +5,8 @@ import { useEffect, useState } from "react";
 import GameDailyChallenge from "@/components/GameDailyChallenge";
 import GameShell from "@/components/GameShell";
 
-import {
-  recordGame,
-  unlockGameAchievement,
-} from "@/lib/progress";
+import { recordGame } from "@/lib/progress";
+import { unlockGameAchievement } from "@/lib/achievements";
 
 import {
   completeDailyChallenge,
@@ -149,8 +147,10 @@ export default function QuickMathPage() {
     number | null
   >(null);
 
-  const [dailyChallengeCompleted, setDailyChallengeCompleted] =
-    useState(false);
+  const [
+    dailyChallengeCompleted,
+    setDailyChallengeCompleted,
+  ] = useState(false);
 
   const dailyChallenge = getDailyChallenge();
 
@@ -378,6 +378,9 @@ export default function QuickMathPage() {
             const selected =
               difficulty === level;
 
+            const difficultyLocked =
+              started && !gameOver;
+
             return (
               <button
                 key={level}
@@ -385,10 +388,15 @@ export default function QuickMathPage() {
                 onClick={() =>
                   setDifficulty(level)
                 }
+                disabled={difficultyLocked}
                 className={`group rounded-2xl border p-3 text-left transition-all duration-200 sm:p-4 ${
                   selected
                     ? "border-cyan-300/30 bg-cyan-300/8 shadow-[0_0_30px_rgba(103,232,249,0.05)]"
                     : "border-white/10 bg-white/[0.035] hover:-translate-y-0.5 hover:bg-white/6"
+                } ${
+                  difficultyLocked
+                    ? "cursor-not-allowed opacity-50"
+                    : ""
                 }`}
               >
                 <div className="flex items-center justify-between">

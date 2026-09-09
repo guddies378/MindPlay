@@ -1,10 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import {
-  recordGame,
-  unlockGameAchievement,
-} from "@/lib/progress";
+import { recordGame } from "@/lib/progress";
+import { unlockGameAchievement } from "@/lib/achievements";
 import {
   completeDailyChallenge,
   DAILY_CHALLENGE_BONUS_POINTS,
@@ -481,7 +479,7 @@ export default function PatternRecallPage() {
     );
 
     unlockGameAchievement(
-      "memory-master"
+      "pattern-master"
     );
 
     console.log(

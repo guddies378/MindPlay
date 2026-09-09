@@ -7,10 +7,8 @@ import {
   DAILY_CHALLENGE_BONUS_POINTS,
   getDailyChallenge,
 } from "@/lib/dailyChallenge";
-import {
-  recordGame,
-  unlockGameAchievement,
-} from "@/lib/progress";
+import { recordGame } from "@/lib/progress";
+import { unlockGameAchievement } from "@/lib/achievements";
 
 type Difficulty = "easy" | "normal" | "hard";
 
@@ -313,7 +311,7 @@ export default function SequenceMasterPage() {
     );
 
     unlockGameAchievement(
-      "memory-master"
+      "sequence-master"
     );
   }
 

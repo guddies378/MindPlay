@@ -7,10 +7,8 @@ import {
   DAILY_CHALLENGE_BONUS_POINTS,
   getDailyChallenge,
 } from "@/lib/dailyChallenge";
-import {
-  recordGame,
-  unlockGameAchievement,
-} from "@/lib/progress";
+import { recordGame } from "@/lib/progress";
+import { unlockGameAchievement } from "@/lib/achievements";
 
 type Difficulty = "Easy" | "Normal" | "Hard";
 type GameState =
@@ -736,7 +734,7 @@ export default function LogicRushPage() {
     );
 
     unlockGameAchievement(
-      "riddle-solver"
+      "logic-rush"
     );
 
     setGameState(

@@ -5,10 +5,8 @@ import { useEffect, useState } from "react";
 import GameDailyChallenge from "@/components/GameDailyChallenge";
 import GameShell from "@/components/GameShell";
 
-import {
-  recordGame,
-  unlockGameAchievement,
-} from "@/lib/progress";
+import { recordGame } from "@/lib/progress";
+import { unlockGameAchievement } from "@/lib/achievements";
 
 import {
   completeDailyChallenge,
@@ -127,6 +125,9 @@ export default function MemoryMatchPage() {
 
   const [started, setStarted] = useState(false);
 
+  const [dailyBonusEarned, setDailyBonusEarned] =
+    useState(false);
+
   /*
    * Today's Daily Challenge
    */
@@ -168,6 +169,7 @@ export default function MemoryMatchPage() {
     setXpEarned(null);
     setTime(0);
     setStarted(true);
+    setDailyBonusEarned(false);
   };
 
   /*
@@ -299,6 +301,11 @@ export default function MemoryMatchPage() {
             (dailyCompleted ? 50 : 0);
 
           setXpEarned(displayedXP);
+
+          setDailyBonusEarned(
+            dailyCompleted
+          );
+
           setGameOver(true);
 
           recordGame(
@@ -408,6 +415,9 @@ export default function MemoryMatchPage() {
             const selected =
               difficulty === level;
 
+            const difficultyLocked =
+              started && !gameOver;
+
             return (
               <button
                 key={level}
@@ -415,10 +425,15 @@ export default function MemoryMatchPage() {
                 onClick={() =>
                   setDifficulty(level)
                 }
+                disabled={difficultyLocked}
                 className={`group rounded-2xl border p-3 text-left transition-all duration-200 sm:p-4 ${
                   selected
                     ? "border-cyan-300/30 bg-cyan-300/8 shadow-[0_0_30px_rgba(103,232,249,0.05)]"
                     : "border-white/10 bg-white/[0.035] hover:-translate-y-0.5 hover:bg-white/6"
+                } ${
+                  difficultyLocked
+                    ? "cursor-not-allowed opacity-50"
+                    : ""
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -695,7 +710,7 @@ export default function MemoryMatchPage() {
               </div>
             </div>
 
-            {isDailyChallenge && (
+            {dailyBonusEarned && (
               <div className="mt-4 w-full max-w-sm rounded-2xl border border-purple-300/15 bg-purple-300/4 p-4">
                 <p className="text-[10px] font-black uppercase tracking-[0.18em] text-purple-300/70">
                   Daily Challenge

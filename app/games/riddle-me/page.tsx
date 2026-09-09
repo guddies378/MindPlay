@@ -479,8 +479,10 @@ export default function RiddleMePage() {
   const [xpEarned, setXpEarned] =
     useState<number | null>(null);
 
-  const [dailyChallengeCompleted, setDailyChallengeCompleted] =
-    useState(false);
+  const [
+    dailyChallengeCompleted,
+    setDailyChallengeCompleted,
+  ] = useState(false);
 
   const dailyChallenge = getDailyChallenge();
 
@@ -676,6 +678,13 @@ export default function RiddleMePage() {
   const timerDanger =
     timeLeft <= 5 && started;
 
+  /*
+   * Prevent changing difficulty while
+   * a game is currently running.
+   */
+  const difficultyLocked =
+    started && !gameOver;
+
   return (
     <GameShell
       icon="🧩"
@@ -723,11 +732,15 @@ export default function RiddleMePage() {
                 onClick={() =>
                   setDifficulty(level)
                 }
+                disabled={difficultyLocked}
                 className={[
                   "group rounded-2xl border p-3 text-left transition-all duration-200 sm:p-4",
                   active
                     ? "border-cyan-300/30 bg-cyan-300/8 shadow-[0_0_30px_rgba(103,232,249,0.05)]"
                     : "border-white/10 bg-white/[0.035] hover:-translate-y-0.5 hover:bg-white/6",
+                  difficultyLocked
+                    ? "cursor-not-allowed opacity-50"
+                    : "",
                 ].join(" ")}
               >
                 <div className="flex items-center justify-between">

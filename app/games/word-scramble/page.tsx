@@ -203,6 +203,9 @@ export default function WordScramblePage() {
   const isDailyChallenge =
     dailyChallenge.game === "word-scramble";
 
+  const difficultyLocked =
+    started && !gameOver;
+
   const startGame = (
     selectedDifficulty: Difficulty
   ) => {
@@ -266,12 +269,16 @@ export default function WordScramblePage() {
       /*
        * Daily Challenge
        *
+       * Only complete the Daily Challenge
+       * if Word Scramble is today's game.
+       *
        * completeDailyChallenge() handles:
        *
        * +50 XP
        * once-per-day protection
        */
       const dailyCompleted =
+        isDailyChallenge &&
         completeDailyChallenge(
           "word-scramble"
         );
@@ -333,6 +340,7 @@ export default function WordScramblePage() {
     timeLeft,
     difficulty,
     score,
+    isDailyChallenge,
   ]);
 
   const submitAnswer = () => {
@@ -470,11 +478,15 @@ export default function WordScramblePage() {
                 onClick={() =>
                   setDifficulty(level)
                 }
+                disabled={difficultyLocked}
                 className={[
                   "group rounded-2xl border p-3 text-left transition-all duration-200 sm:p-4",
                   active
                     ? "border-cyan-300/30 bg-cyan-300/8 shadow-[0_0_30px_rgba(103,232,249,0.05)]"
                     : "border-white/10 bg-white/[0.035] hover:-translate-y-0.5 hover:bg-white/6",
+                  difficultyLocked
+                    ? "cursor-not-allowed opacity-50"
+                    : "",
                 ].join(" ")}
               >
                 <div className="flex items-center justify-between">

@@ -11,10 +11,8 @@ import {
   completeDailyChallenge,
 } from "@/lib/dailyChallenge";
 
-import {
-  recordGame,
-  unlockGameAchievement,
-} from "@/lib/progress";
+import { recordGame } from "@/lib/progress";
+import { unlockGameAchievement } from "@/lib/achievements";
 
 type Player = "X" | "O";
 type Cell = Player | null;
@@ -380,11 +378,23 @@ export default function TicTacToePage() {
       setDailyChallengeCompleted(true);
     }
 
-    const finalScore = dailyCompleted
-      ? DAILY_CHALLENGE_BONUS_POINTS
-      : 0;
+    const baseScore =
+      result === humanPlayer
+        ? 100
+        : result === "draw"
+          ? 50
+          : 25;
 
-    recordGame(finalScore, xp);
+    const finalScore =
+      baseScore +
+      (dailyCompleted
+        ? DAILY_CHALLENGE_BONUS_POINTS
+        : 0);
+
+    recordGame(
+      finalScore,
+      xp
+    );
 
     unlockGameAchievement(
       "strategy-master"

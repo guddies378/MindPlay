@@ -102,7 +102,7 @@ const CHALLENGES: Omit<
     icon: "⚡",
     difficulty: "hard",
     rewardXP: DAILY_CHALLENGE_XP,
-    achievementId: "sharp-eyes",
+    achievementId: "lightning-reflexes",
   },
   {
     game: "number-memory",
@@ -111,7 +111,7 @@ const CHALLENGES: Omit<
     icon: "🔢",
     difficulty: "hard",
     rewardXP: DAILY_CHALLENGE_XP,
-    achievementId: "memory-master",
+    achievementId: "number-vault",
   },
   {
     game: "color-clash",
@@ -120,7 +120,7 @@ const CHALLENGES: Omit<
     icon: "🎨",
     difficulty: "hard",
     rewardXP: DAILY_CHALLENGE_XP,
-    achievementId: "sharp-eyes",
+    achievementId: "color-focus",
   },
   {
     game: "pattern-recall",
@@ -129,7 +129,7 @@ const CHALLENGES: Omit<
     icon: "🟦",
     difficulty: "hard",
     rewardXP: DAILY_CHALLENGE_XP,
-    achievementId: "memory-master",
+    achievementId: "pattern-master",
   },
   {
     game: "sequence-master",
@@ -138,7 +138,7 @@ const CHALLENGES: Omit<
     icon: "🔁",
     difficulty: "hard",
     rewardXP: DAILY_CHALLENGE_XP,
-    achievementId: "memory-master",
+    achievementId: "sequence-master",
   },
   {
     game: "logic-rush",
@@ -147,7 +147,7 @@ const CHALLENGES: Omit<
     icon: "🧠",
     difficulty: "hard",
     rewardXP: DAILY_CHALLENGE_XP,
-    achievementId: "riddle-solver",
+    achievementId: "logic-rush",
   },
 ];
 
@@ -157,34 +157,34 @@ function isBrowser() {
 
 function getToday(): string {
   const now = new Date();
-
   const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const month = String(now.getMonth() + 1).padStart(
+    2,
+    "0"
+  );
   const day = String(now.getDate()).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
 }
 
-/**
- * Creates a deterministic number from today's date.
- *
- * This means the challenge stays the same for the entire day,
- * even if the player refreshes the page.
- */
-function getDailyIndex(date: string): number {
+function hashString(value: string): number {
   let hash = 0;
 
-  for (let i = 0; i < date.length; i++) {
-    hash = (hash << 5) - hash + date.charCodeAt(i);
-    hash |= 0;
+  for (let index = 0; index < value.length; index += 1) {
+    hash =
+      (hash * 31 + value.charCodeAt(index)) |
+      0;
   }
 
-  return Math.abs(hash) % CHALLENGES.length;
+  return Math.abs(hash);
 }
 
 export function getDailyChallenge(): DailyChallenge {
   const date = getToday();
-  const challenge = CHALLENGES[getDailyIndex(date)];
+  const index =
+    hashString(date) % CHALLENGES.length;
+
+  const challenge = CHALLENGES[index];
 
   return {
     ...challenge,
@@ -193,19 +193,23 @@ export function getDailyChallenge(): DailyChallenge {
   };
 }
 
+export function isDailyChallenge(
+  game: DailyChallengeGame
+): boolean {
+  return getDailyChallenge().game === game;
+}
+
 export function isDailyChallengeCompleted(): boolean {
   if (!isBrowser()) {
     return false;
   }
 
-  try {
-    return (
-      localStorage.getItem(STORAGE_KEY) ===
-      getDailyChallenge().id
-    );
-  } catch {
-    return false;
-  }
+  const challenge = getDailyChallenge();
+
+  return (
+    localStorage.getItem(STORAGE_KEY) ===
+    challenge.id
+  );
 }
 
 export function completeDailyChallenge(
@@ -217,10 +221,11 @@ export function completeDailyChallenge(
 
   const challenge = getDailyChallenge();
 
-  if (
-    challenge.game !== game ||
-    isDailyChallengeCompleted()
-  ) {
+  if (challenge.game !== game) {
+    return false;
+  }
+
+  if (isDailyChallengeCompleted()) {
     return false;
   }
 
@@ -235,18 +240,6 @@ export function completeDailyChallenge(
   return true;
 }
 
-export function resetDailyChallenge(): void {
-  if (!isBrowser()) {
-    return;
-  }
-
-  localStorage.removeItem(STORAGE_KEY);
-
-  window.dispatchEvent(
-    new Event("mindplay-daily-challenge-updated")
-  );
-}
-
 export function subscribeToDailyChallenge(
   callback: () => void
 ): () => void {
@@ -254,23 +247,22 @@ export function subscribeToDailyChallenge(
     return () => {};
   }
 
-  const handleUpdate = () => {
-    callback();
-  };
-
   window.addEventListener(
     "mindplay-daily-challenge-updated",
-    handleUpdate
+    callback
   );
 
-  window.addEventListener("storage", handleUpdate);
+  window.addEventListener("storage", callback);
 
   return () => {
     window.removeEventListener(
       "mindplay-daily-challenge-updated",
-      handleUpdate
+      callback
     );
 
-    window.removeEventListener("storage", handleUpdate);
+    window.removeEventListener(
+      "storage",
+      callback
+    );
   };
 }

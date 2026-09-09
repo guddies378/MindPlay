@@ -65,13 +65,16 @@ function saveProgress(progress: MindPlayProgress) {
     return;
   }
 
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify(progress)
+  );
+
   notifyUpdate();
 }
 
 function getToday(): string {
   const now = new Date();
-
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, "0");
   const day = String(now.getDate()).padStart(2, "0");
@@ -82,43 +85,64 @@ function getToday(): string {
 function getYesterday(): string {
   const yesterday = new Date();
 
-  yesterday.setDate(yesterday.getDate() - 1);
+  yesterday.setDate(
+    yesterday.getDate() - 1
+  );
 
   const year = yesterday.getFullYear();
-  const month = String(yesterday.getMonth() + 1).padStart(2, "0");
-  const day = String(yesterday.getDate()).padStart(2, "0");
+  const month = String(
+    yesterday.getMonth() + 1
+  ).padStart(2, "0");
+  const day = String(
+    yesterday.getDate()
+  ).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
 }
 
-export function recordGame(score = 0, xpEarned = 10): MindPlayProgress {
+export function recordGame(
+  score = 0,
+  xpEarned = 10
+): MindPlayProgress {
   const progress = getProgress();
-
   const today = getToday();
   const yesterday = getYesterday();
 
   let streak = progress.streak;
 
   if (progress.lastPlayed === today) {
-    // Already played today.
-    streak = Math.max(streak, 1);
-  } else if (progress.lastPlayed === yesterday) {
-    // Continued the streak.
+    streak = Math.max(
+      streak,
+      1
+    );
+  } else if (
+    progress.lastPlayed === yesterday
+  ) {
     streak += 1;
   } else {
-    // Streak was broken or this is the first game.
     streak = 1;
   }
 
   const updatedProgress: MindPlayProgress = {
-    xp: progress.xp + Math.max(0, xpEarned),
-    gamesPlayed: progress.gamesPlayed + 1,
+    xp:
+      progress.xp +
+      Math.max(0, xpEarned),
+
+    gamesPlayed:
+      progress.gamesPlayed + 1,
+
     streak,
+
     lastPlayed: today,
-    bestScore: Math.max(progress.bestScore, score),
+
+    bestScore: Math.max(
+      progress.bestScore,
+      score
+    ),
   };
 
   saveProgress(updatedProgress);
+
   syncProgressAchievements(
     updatedProgress.xp,
     updatedProgress.gamesPlayed,
@@ -128,15 +152,27 @@ export function recordGame(score = 0, xpEarned = 10): MindPlayProgress {
   return updatedProgress;
 }
 
-export function addXP(amount: number): MindPlayProgress {
+export function addXP(
+  amount: number
+): MindPlayProgress {
   const progress = getProgress();
 
-  const updatedProgress = {
+  const updatedProgress: MindPlayProgress = {
     ...progress,
-    xp: progress.xp + Math.max(0, amount),
+    xp:
+      progress.xp +
+      Math.max(0, amount),
   };
 
   saveProgress(updatedProgress);
+
+  // Keep XP-based achievements in sync
+  // even when XP comes from a Daily Challenge.
+  syncProgressAchievements(
+    updatedProgress.xp,
+    updatedProgress.gamesPlayed,
+    updatedProgress.streak
+  );
 
   return updatedProgress;
 }
@@ -154,11 +190,25 @@ export function subscribeToProgress(
     return () => {};
   }
 
-  window.addEventListener(UPDATE_EVENT, callback);
-  window.addEventListener("storage", callback);
+  window.addEventListener(
+    UPDATE_EVENT,
+    callback
+  );
+
+  window.addEventListener(
+    "storage",
+    callback
+  );
 
   return () => {
-    window.removeEventListener(UPDATE_EVENT, callback);
-    window.removeEventListener("storage", callback);
+    window.removeEventListener(
+      UPDATE_EVENT,
+      callback
+    );
+
+    window.removeEventListener(
+      "storage",
+      callback
+    );
   };
 }

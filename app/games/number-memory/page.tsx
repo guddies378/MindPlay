@@ -8,6 +8,7 @@ import {
   DAILY_CHALLENGE_BONUS_POINTS,
   getDailyChallenge,
 } from "@/lib/dailyChallenge";
+import { unlockGameAchievement } from "@/lib/achievements";
 
 type Difficulty = "easy" | "normal" | "hard";
 type GameState =
@@ -224,60 +225,64 @@ export default function NumberMemoryPage() {
   }
 
   function finishGame(finalScore: number) {
-    clearTimers();
+  clearTimers();
 
-    const dailyCompleted =
-      isDailyChallenge &&
-      completeDailyChallenge(
-        "number-memory"
-      );
-
-    const finalScoreWithDailyBonus =
-      finalScore +
-      (dailyCompleted
-        ? DAILY_CHALLENGE_BONUS_POINTS
-        : 0);
-
-    const scoreBonus = Math.min(
-      40,
-      Math.floor(
-        finalScoreWithDailyBonus / 50
-      )
+  const dailyCompleted =
+    isDailyChallenge &&
+    completeDailyChallenge(
+      "number-memory"
     );
 
-    const streakBonus =
-      bestStreak >= 5
-        ? 20
-        : bestStreak >= 3
-          ? 10
-          : 0;
+  const finalScoreWithDailyBonus =
+    finalScore +
+    (dailyCompleted
+      ? DAILY_CHALLENGE_BONUS_POINTS
+      : 0);
 
-    const dailyXP =
-      dailyCompleted ? 50 : 0;
+  const scoreBonus = Math.min(
+    40,
+    Math.floor(
+      finalScoreWithDailyBonus / 50
+    )
+  );
 
-    const totalXP =
-      config.xp +
-      scoreBonus +
-      streakBonus +
-      dailyXP;
+  const streakBonus =
+    bestStreak >= 5
+      ? 20
+      : bestStreak >= 3
+        ? 10
+        : 0;
 
-    setScore(
-      finalScoreWithDailyBonus
-    );
+  const baseTotalXP =
+    config.xp +
+    scoreBonus +
+    streakBonus;
 
-    setXpEarned(totalXP);
+  const displayedXP =
+    baseTotalXP +
+    (dailyCompleted ? 50 : 0);
 
-    setDailyBonusEarned(
-      dailyCompleted
-    );
+  setScore(
+    finalScoreWithDailyBonus
+  );
 
-    setGameState("finished");
+  setXpEarned(displayedXP);
 
-    recordGame(
-      finalScoreWithDailyBonus,
-      totalXP
-    );
-  }
+  setDailyBonusEarned(
+    dailyCompleted
+  );
+
+  setGameState("finished");
+
+  recordGame(
+    finalScoreWithDailyBonus,
+    baseTotalXP
+  );
+
+  unlockGameAchievement(
+    "number-vault"
+  );
+}
 
   function submitAnswer() {
     if (gameState !== "input") {

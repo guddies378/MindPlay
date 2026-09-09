@@ -11,7 +11,13 @@ export type AchievementId =
   | "word-wizard"
   | "riddle-solver"
   | "sharp-eyes"
-  | "strategy-master";
+  | "strategy-master"
+  | "lightning-reflexes"
+  | "number-vault"
+  | "color-focus"
+  | "pattern-master"
+  | "sequence-master"
+  | "logic-rush";
 
 export type Achievement = {
   id: AchievementId;
@@ -22,6 +28,7 @@ export type Achievement = {
 };
 
 export const ACHIEVEMENTS: Achievement[] = [
+  // Progress achievements
   {
     id: "first-game",
     title: "First Step",
@@ -71,6 +78,8 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: "🚀",
     requirement: "7-day streak",
   },
+
+  // Game achievements
   {
     id: "memory-master",
     title: "Memory Master",
@@ -112,6 +121,48 @@ export const ACHIEVEMENTS: Achievement[] = [
     description: "Complete a Tic-Tac-Toe challenge.",
     icon: "❌⭕",
     requirement: "Tic-Tac-Toe",
+  },
+  {
+    id: "lightning-reflexes",
+    title: "Lightning Reflexes",
+    description: "Complete a Reaction Rush challenge.",
+    icon: "⚡",
+    requirement: "Reaction Rush",
+  },
+  {
+    id: "number-vault",
+    title: "Number Vault",
+    description: "Complete a Number Memory challenge.",
+    icon: "🔢",
+    requirement: "Number Memory",
+  },
+  {
+    id: "color-focus",
+    title: "Color Focus",
+    description: "Complete a Color Clash challenge.",
+    icon: "🎨",
+    requirement: "Color Clash",
+  },
+  {
+    id: "pattern-master",
+    title: "Pattern Master",
+    description: "Complete a Pattern Recall challenge.",
+    icon: "🟦",
+    requirement: "Pattern Recall",
+  },
+  {
+    id: "sequence-master",
+    title: "Sequence Master",
+    description: "Complete a Sequence Master challenge.",
+    icon: "🔁",
+    requirement: "Sequence Master",
+  },
+  {
+    id: "logic-rush",
+    title: "Logic Rush",
+    description: "Complete a Logic Rush challenge.",
+    icon: "🧠",
+    requirement: "Logic Rush",
   },
 ];
 
@@ -171,8 +222,7 @@ function notifyAchievementUpdate() {
 export function unlockAchievement(
   id: AchievementId
 ): Achievement | null {
-  const unlocked =
-    getUnlockedAchievements();
+  const unlocked = getUnlockedAchievements();
 
   if (unlocked.includes(id)) {
     return null;
@@ -203,8 +253,7 @@ export function getAchievement(
   id: AchievementId
 ): Achievement | undefined {
   return ACHIEVEMENTS.find(
-    (achievement) =>
-      achievement.id === id
+    (achievement) => achievement.id === id
   );
 }
 
