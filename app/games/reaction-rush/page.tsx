@@ -366,12 +366,12 @@ export default function ReactionRushPage() {
 
           <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-white/40">
             Wait for the signal. Then react as fast
-            as possible. But don't click early.
+            as possible. But don&apos;t click early.
           </p>
 
           {isDailyChallenge && (
             <div className="mx-auto mt-4 inline-flex items-center gap-2 rounded-full border border-fuchsia-300/15 bg-fuchsia-300/5 px-4 py-2 text-xs font-bold text-fuchsia-200/70">
-              🌟 Today's Daily Challenge
+              🌟 Today&apos;s Daily Challenge
             </div>
           )}
         </section>
@@ -549,7 +549,7 @@ export default function ReactionRushPage() {
 
                 <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-white/35">
                   The screen will tell you when to
-                  click. Don't click before it turns
+                  click. Don&apos;t click before it turns
                   green.
                 </p>
 
@@ -609,7 +609,7 @@ export default function ReactionRushPage() {
                     </p>
 
                     <p className="mt-2 text-sm font-bold text-white/30">
-                      Don't click yet!
+                      Don&apos;t click yet!
                     </p>
 
                     <div className="mt-8 flex items-center gap-2">
@@ -875,7 +875,7 @@ export default function ReactionRushPage() {
             </h3>
 
             <p className="mt-1 text-xs leading-5 text-white/30">
-              Don't stare at the button. Watch
+              Don&apos;t stare at the button. Watch
               for the signal.
             </p>
           </div>
@@ -886,7 +886,7 @@ export default function ReactionRushPage() {
             </div>
 
             <h3 className="mt-3 text-sm font-black">
-              Don't rush
+              Don&apos;t rush
             </h3>
 
             <p className="mt-1 text-xs leading-5 text-white/30">

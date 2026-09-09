@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { recordGame } from "@/lib/progress";
 import { unlockGameAchievement } from "@/lib/achievements";
@@ -66,8 +67,23 @@ const DIFFICULTIES: Record<
 };
 
 export default function PatternRecallPage() {
+  /*
+   * Today's Daily Challenge
+   */
+  const dailyChallenge = getDailyChallenge();
+
+  const isDailyChallenge =
+    dailyChallenge.game === "pattern-recall";
+
+  const initialDifficulty: Difficulty =
+    isDailyChallenge
+      ? dailyChallenge.difficulty
+      : "normal";
+
   const [difficulty, setDifficulty] =
-    useState<Difficulty>("normal");
+    useState<Difficulty>(
+      initialDifficulty
+    );
 
   const [gameState, setGameState] =
     useState<GameState>("menu");
@@ -110,58 +126,6 @@ export default function PatternRecallPage() {
     useRef<ReturnType<typeof setInterval> | null>(
       null
     );
-
-  /*
-   * Today's Daily Challenge
-   */
-  const dailyChallenge = getDailyChallenge();
-
-  const isDailyChallenge =
-    dailyChallenge.game === "pattern-recall";
-
-  /*
-   * Automatically select today's Daily Challenge
-   * difficulty when the game is opened through:
-   *
-   * /games/pattern-recall?daily=true&difficulty=hard
-   *
-   * We use window.location instead of useSearchParams()
-   * so Next.js 16 can still prerender this page normally.
-   */
-  useEffect(() => {
-    if (!isDailyChallenge) {
-      return;
-    }
-
-    const params = new URLSearchParams(
-      window.location.search
-    );
-
-    const dailyMode =
-      params.get("daily") === "true";
-
-    const urlDifficulty =
-      params.get("difficulty");
-
-    const validDifficulty =
-      urlDifficulty === "easy" ||
-      urlDifficulty === "normal" ||
-      urlDifficulty === "hard";
-
-    if (
-      dailyMode &&
-      validDifficulty &&
-      urlDifficulty ===
-        dailyChallenge.difficulty
-    ) {
-      setDifficulty(
-        dailyChallenge.difficulty
-      );
-    }
-  }, [
-    isDailyChallenge,
-    dailyChallenge.difficulty,
-  ]);
 
   const config = DIFFICULTIES[difficulty];
 
@@ -251,9 +215,6 @@ export default function PatternRecallPage() {
     roundNumber: number
   ) {
     clearTimers();
-
-    const totalTiles =
-      config.gridSize * config.gridSize;
 
     const newPattern =
       generatePattern(roundNumber);
@@ -710,12 +671,12 @@ export default function PatternRecallPage() {
                 🔄 Play Again
               </button>
 
-              <a
+              <Link
                 href="/"
                 className="mp-button flex-1 border border-white/10 bg-white/4 px-6 py-4 text-white/80"
               >
                 ← Back to Arcade
-              </a>
+              </Link>
             </div>
           </section>
         </div>
@@ -828,12 +789,12 @@ export default function PatternRecallPage() {
       <main className="min-h-screen px-4 py-8 sm:px-6">
         <div className="mx-auto max-w-3xl">
           <div className="mb-5 flex items-center justify-between">
-            <a
+            <Link
               href="/"
               className="text-sm font-bold text-white/40 transition hover:text-white"
             >
               ← Arcade
-            </a>
+            </Link>
 
             <div className="text-right">
               <div className="text-sm font-black">
@@ -1162,12 +1123,12 @@ export default function PatternRecallPage() {
             🟦 Start Pattern Recall
           </button>
 
-          <a
+          <Link
             href="/"
             className="mt-4 block text-center text-sm font-bold text-white/35 transition hover:text-white"
           >
             ← Back to Arcade
-          </a>
+          </Link>
         </section>
       </div>
     </main>

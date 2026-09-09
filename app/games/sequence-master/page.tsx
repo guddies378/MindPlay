@@ -109,9 +109,6 @@ export default function SequenceMasterPage() {
   const [correct, setCorrect] =
     useState(0);
 
-  const [wrong, setWrong] =
-    useState(0);
-
   const [streak, setStreak] =
     useState(0);
 
@@ -249,7 +246,6 @@ export default function SequenceMasterPage() {
     setAnswer("");
     setScore(0);
     setCorrect(0);
-    setWrong(0);
     setStreak(0);
     setBestStreak(0);
     setLongestSequence(0);
@@ -383,10 +379,6 @@ export default function SequenceMasterPage() {
 
       setScore(nextScore);
     } else {
-      setWrong(
-        (value) => value + 1
-      );
-
       setStreak(0);
     }
 
@@ -465,9 +457,18 @@ export default function SequenceMasterPage() {
       urlDifficulty ===
         dailyChallenge.difficulty
     ) {
-      setDifficulty(
-        dailyChallenge.difficulty
-      );
+      const difficultyTimer =
+        window.setTimeout(() => {
+          setDifficulty(
+            dailyChallenge.difficulty
+          );
+        }, 0);
+
+      return () => {
+        window.clearTimeout(
+          difficultyTimer
+        );
+      };
     }
   }, [
     isDailyChallenge,

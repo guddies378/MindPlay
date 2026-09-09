@@ -60,9 +60,7 @@ function generateNumber(length: number) {
   );
 
   for (let i = 1; i < length; i++) {
-    result += Math.floor(
-      Math.random() * 10
-    );
+    result += Math.floor(Math.random() * 10);
   }
 
   return result;
@@ -80,8 +78,50 @@ function getRoundScore(
 }
 
 export default function NumberMemoryPage() {
+  const dailyChallenge = getDailyChallenge();
+
+  const isDailyChallenge =
+    dailyChallenge.game ===
+    "number-memory";
+
   const [difficulty, setDifficulty] =
-    useState<Difficulty>("normal");
+    useState<Difficulty>(() => {
+      if (
+        typeof window === "undefined" ||
+        dailyChallenge.game !==
+          "number-memory"
+      ) {
+        return "normal";
+      }
+
+      const params =
+        new URLSearchParams(
+          window.location.search
+        );
+
+      const dailyMode =
+        params.get("daily") ===
+        "true";
+
+      const urlDifficulty =
+        params.get("difficulty");
+
+      const validDifficulty =
+        urlDifficulty === "easy" ||
+        urlDifficulty === "normal" ||
+        urlDifficulty === "hard";
+
+      if (
+        dailyMode &&
+        validDifficulty &&
+        urlDifficulty ===
+          dailyChallenge.difficulty
+      ) {
+        return dailyChallenge.difficulty;
+      }
+
+      return "normal";
+    });
 
   const [gameState, setGameState] =
     useState<GameState>("idle");
@@ -98,9 +138,6 @@ export default function NumberMemoryPage() {
     useState(0);
 
   const [correct, setCorrect] =
-    useState(0);
-
-  const [wrong, setWrong] =
     useState(0);
 
   const [streak, setStreak] =
@@ -150,13 +187,6 @@ export default function NumberMemoryPage() {
    */
   const finishedRef =
     useRef(false);
-
-  const dailyChallenge =
-    getDailyChallenge();
-
-  const isDailyChallenge =
-    dailyChallenge.game ===
-    "number-memory";
 
   const config =
     DIFFICULTIES[difficulty];
@@ -263,7 +293,6 @@ export default function NumberMemoryPage() {
     setRound(0);
     setScore(0);
     setCorrect(0);
-    setWrong(0);
     setStreak(0);
     setBestStreak(0);
     setLongestNumber(0);
@@ -420,10 +449,6 @@ export default function NumberMemoryPage() {
         nextScore
       );
     } else {
-      setWrong(
-        (value) => value + 1
-      );
-
       setStreak(0);
     }
 
@@ -477,52 +502,6 @@ export default function NumberMemoryPage() {
       submitAnswer();
     }
   }
-
-  /*
-   * Daily Challenge difficulty
-   *
-   * We intentionally read window.location.search
-   * inside useEffect instead of useSearchParams().
-   *
-   * This keeps the page compatible with the
-   * Next.js production build.
-   */
-  useEffect(() => {
-    if (!isDailyChallenge) {
-      return;
-    }
-
-    const params =
-      new URLSearchParams(
-        window.location.search
-      );
-
-    const dailyMode =
-      params.get("daily") ===
-      "true";
-
-    const urlDifficulty =
-      params.get("difficulty");
-
-    const validDifficulty =
-      urlDifficulty === "easy" ||
-      urlDifficulty === "normal" ||
-      urlDifficulty === "hard";
-
-    if (
-      dailyMode &&
-      validDifficulty &&
-      urlDifficulty ===
-        dailyChallenge.difficulty
-    ) {
-      setDifficulty(
-        dailyChallenge.difficulty
-      );
-    }
-  }, [
-    isDailyChallenge,
-    dailyChallenge.difficulty,
-  ]);
 
   useEffect(() => {
     return () => {

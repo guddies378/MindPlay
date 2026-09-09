@@ -198,72 +198,76 @@ export default function QuickMathPage() {
     }
 
     if (timeLeft <= 0) {
-      setGameOver(true);
+      const timeout = window.setTimeout(() => {
+        setGameOver(true);
 
-      const baseXP =
-        DIFFICULTIES[difficulty].xp;
+        const baseXP =
+          DIFFICULTIES[difficulty].xp;
 
-      const scoreBonus = Math.min(
-        30,
-        Math.floor(score / 5)
-      );
-
-      const totalXP =
-        baseXP + scoreBonus;
-
-      /*
-       * Daily Challenge
-       *
-       * completeDailyChallenge() handles:
-       *
-       * +50 XP
-       * once-per-day protection
-       */
-      const dailyCompleted =
-        completeDailyChallenge(
-          "quick-math"
+        const scoreBonus = Math.min(
+          30,
+          Math.floor(score / 5)
         );
 
-      setDailyChallengeCompleted(
-        dailyCompleted
-      );
+        const totalXP =
+          baseXP + scoreBonus;
 
-      /*
-       * Daily Challenge gives +10 score.
-       */
-      const finalScore =
-        score +
-        (dailyCompleted
-          ? DAILY_CHALLENGE_BONUS_POINTS
-          : 0);
+        /*
+         * Daily Challenge
+         *
+         * completeDailyChallenge() handles:
+         *
+         * +50 XP
+         * once-per-day protection
+         */
+        const dailyCompleted =
+          completeDailyChallenge(
+            "quick-math"
+          );
 
-      /*
-       * Display normal game XP plus
-       * the Daily Challenge XP.
-       *
-       * IMPORTANT:
-       * completeDailyChallenge() already adds
-       * the +50 XP, so recordGame() receives
-       * only the normal game XP.
-       */
-      const displayedXP =
-        totalXP +
-        (dailyCompleted ? 50 : 0);
+        setDailyChallengeCompleted(
+          dailyCompleted
+        );
 
-      setScore(finalScore);
+        /*
+         * Daily Challenge gives +10 score.
+         */
+        const finalScore =
+          score +
+          (dailyCompleted
+            ? DAILY_CHALLENGE_BONUS_POINTS
+            : 0);
 
-      setXpEarned(displayedXP);
+        /*
+         * Display normal game XP plus
+         * the Daily Challenge XP.
+         *
+         * IMPORTANT:
+         * completeDailyChallenge() already adds
+         * the +50 XP, so recordGame() receives
+         * only the normal game XP.
+         */
+        const displayedXP =
+          totalXP +
+          (dailyCompleted ? 50 : 0);
 
-      recordGame(
-        finalScore,
-        totalXP
-      );
+        setScore(finalScore);
 
-      unlockGameAchievement(
-        "math-machine"
-      );
+        setXpEarned(displayedXP);
 
-      return;
+        recordGame(
+          finalScore,
+          totalXP
+        );
+
+        unlockGameAchievement(
+          "math-machine"
+        );
+      }, 0);
+
+      return () => {
+        window.clearTimeout(timeout);
+      };
     }
 
     const timer = window.setTimeout(() => {

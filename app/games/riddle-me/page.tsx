@@ -521,67 +521,71 @@ export default function RiddleMePage() {
     }
 
     if (timeLeft <= 0) {
-      setGameOver(true);
+      const timeout = window.setTimeout(() => {
+        setGameOver(true);
 
-      const baseXP =
-        DIFFICULTIES[difficulty].xp;
+        const baseXP =
+          DIFFICULTIES[difficulty].xp;
 
-      const scoreBonus = Math.min(
-        30,
-        Math.floor(score / 10)
-      );
+        const scoreBonus = Math.min(
+          30,
+          Math.floor(score / 10)
+        );
 
-      const totalXP =
-        baseXP + scoreBonus;
+        const totalXP =
+          baseXP + scoreBonus;
 
-      /*
-       * Daily Challenge
-       *
-       * completeDailyChallenge() handles:
-       * +50 XP
-       * once-per-day protection
-       */
-      const dailyCompleted =
-        completeDailyChallenge("riddle-me");
+        /*
+         * Daily Challenge
+         *
+         * completeDailyChallenge() handles:
+         * +50 XP
+         * once-per-day protection
+         */
+        const dailyCompleted =
+          completeDailyChallenge("riddle-me");
 
-      setDailyChallengeCompleted(
-        dailyCompleted
-      );
+        setDailyChallengeCompleted(
+          dailyCompleted
+        );
 
-      /*
-       * Daily Challenge gives +10 score.
-       */
-      const finalScore =
-        score +
-        (dailyCompleted
-          ? DAILY_CHALLENGE_BONUS_POINTS
-          : 0);
+        /*
+         * Daily Challenge gives +10 score.
+         */
+        const finalScore =
+          score +
+          (dailyCompleted
+            ? DAILY_CHALLENGE_BONUS_POINTS
+            : 0);
 
-      /*
-       * completeDailyChallenge()
-       * already adds the +50 XP.
-       *
-       * recordGame() therefore receives
-       * only the normal game XP.
-       */
-      const displayedXP =
-        totalXP +
-        (dailyCompleted ? 50 : 0);
+        /*
+         * completeDailyChallenge()
+         * already adds the +50 XP.
+         *
+         * recordGame() therefore receives
+         * only the normal game XP.
+         */
+        const displayedXP =
+          totalXP +
+          (dailyCompleted ? 50 : 0);
 
-      setScore(finalScore);
+        setScore(finalScore);
 
-      setXpEarned(displayedXP);
+        setXpEarned(displayedXP);
 
-      recordGame(
-        finalScore,
-        totalXP
-      );
+        recordGame(
+          finalScore,
+          totalXP
+        );
 
-      unlockGameAchievement(
-        "riddle-solver"
-      );
+        unlockGameAchievement(
+          "riddle-solver"
+        );
+      }, 0);
 
-      return;
+      return () => {
+        window.clearTimeout(timeout);
+      };
     }
 
     const timer = window.setTimeout(() => {

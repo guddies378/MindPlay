@@ -118,11 +118,23 @@ function createRound(
 }
 
 export default function OddOneOutPage() {
+  const dailyChallenge = getDailyChallenge();
+
+  const isDailyChallenge =
+    dailyChallenge.game === "odd-one-out";
+
+  const initialDifficulty: Difficulty =
+    isDailyChallenge
+      ? dailyChallenge.difficulty
+      : "normal";
+
   const [difficulty, setDifficulty] =
-    useState<Difficulty>("normal");
+    useState<Difficulty>(
+      initialDifficulty
+    );
 
   const [round, setRound] = useState<Round>(() =>
-    createRound("normal")
+    createRound(initialDifficulty)
   );
 
   const [score, setScore] = useState(0);
@@ -130,7 +142,7 @@ export default function OddOneOutPage() {
   const [wrong, setWrong] = useState(0);
 
   const [timeLeft, setTimeLeft] = useState(
-    DIFFICULTIES.normal.time
+    DIFFICULTIES[initialDifficulty].time
   );
 
   const [started, setStarted] = useState(false);
@@ -148,11 +160,6 @@ export default function OddOneOutPage() {
 
   const [dailyBonusEarned, setDailyBonusEarned] =
     useState(false);
-
-  const dailyChallenge = getDailyChallenge();
-
-  const isDailyChallenge =
-    dailyChallenge.game === "odd-one-out";
 
   const startGame = (
     selectedDifficulty: Difficulty
@@ -181,75 +188,59 @@ export default function OddOneOutPage() {
   };
 
   useEffect(() => {
-    if (
-      !isDailyChallenge ||
-      started ||
-      gameOver
-    ) {
-      return;
-    }
-
-    setDifficulty(dailyChallenge.game === "odd-one-out"
-      ? dailyChallenge.difficulty
-      : "normal");
-  }, [
-    dailyChallenge.difficulty,
-    dailyChallenge.game,
-    gameOver,
-    isDailyChallenge,
-    started,
-  ]);
-
-  useEffect(() => {
     if (!started || gameOver) {
       return;
     }
 
     if (timeLeft <= 0) {
-      const dailyCompleted =
-        isDailyChallenge &&
-        completeDailyChallenge(
-          "odd-one-out"
+      const timer = window.setTimeout(() => {
+        const dailyCompleted =
+          isDailyChallenge &&
+          completeDailyChallenge(
+            "odd-one-out"
+          );
+
+        const finalScore =
+          score +
+          (dailyCompleted
+            ? DAILY_CHALLENGE_BONUS_POINTS
+            : 0);
+
+        const baseXP =
+          DIFFICULTIES[difficulty].xp;
+
+        const scoreBonus = Math.min(
+          50,
+          Math.max(0, finalScore)
         );
 
-      const finalScore =
-        score +
-        (dailyCompleted
-          ? DAILY_CHALLENGE_BONUS_POINTS
-          : 0);
+        const baseTotalXP =
+          baseXP + scoreBonus;
 
-      const baseXP =
-        DIFFICULTIES[difficulty].xp;
+        const displayedXP =
+          baseTotalXP +
+          (dailyCompleted ? 50 : 0);
 
-      const scoreBonus = Math.min(
-        50,
-        Math.max(0, finalScore)
-      );
+        setScore(finalScore);
+        setXpEarned(displayedXP);
+        setDailyBonusEarned(
+          dailyCompleted
+        );
+        setGameOver(true);
 
-      const baseTotalXP =
-        baseXP + scoreBonus;
+        recordGame(
+          finalScore,
+          baseTotalXP
+        );
 
-      const displayedXP =
-        baseTotalXP +
-        (dailyCompleted ? 50 : 0);
+        unlockGameAchievement(
+          "sharp-eyes"
+        );
+      }, 0);
 
-      setScore(finalScore);
-      setXpEarned(displayedXP);
-      setDailyBonusEarned(
-        dailyCompleted
-      );
-      setGameOver(true);
-
-      recordGame(
-        finalScore,
-        baseTotalXP
-      );
-
-      unlockGameAchievement(
-        "sharp-eyes"
-      );
-
-      return;
+      return () => {
+        window.clearTimeout(timer);
+      };
     }
 
     const timer = window.setTimeout(() => {
@@ -393,13 +384,13 @@ export default function OddOneOutPage() {
           </h1>
 
           <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-white/45 sm:text-base">
-            Spot the item that doesn't belong.
+            Spot the item that doesn&apos;t belong.
             Trust your eyes and react fast.
           </p>
 
           {isDailyChallenge && (
             <div className="mx-auto mt-4 inline-flex items-center gap-2 rounded-full border border-fuchsia-300/15 bg-fuchsia-300/5 px-4 py-2 text-xs font-bold text-fuchsia-200/70">
-              🌟 Today's Daily Challenge
+              🌟 Today&apos;s Daily Challenge
             </div>
           )}
         </div>
@@ -743,7 +734,7 @@ export default function OddOneOutPage() {
               </div>
 
               <p className="mt-3 text-[11px] text-white/25">
-                Find the one that doesn't
+                Find the one that doesn&apos;t
                 belong.
               </p>
             </div>
@@ -762,7 +753,7 @@ export default function OddOneOutPage() {
               </p>
 
               <h2 className="mt-2 text-3xl font-black sm:text-4xl">
-                Time's up!
+                Time&apos;s up!
               </h2>
 
               <p className="mt-2 text-sm text-white/40">
@@ -860,7 +851,7 @@ export default function OddOneOutPage() {
               </p>
 
               <p className="mt-1 text-sm leading-6 text-white/35">
-                Don't stare at each item for too
+                Don&apos;t stare at each item for too
                 long. Scan the whole group first,
                 then look for the small detail
                 that breaks the pattern.

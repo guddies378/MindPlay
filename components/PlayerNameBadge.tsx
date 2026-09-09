@@ -12,8 +12,6 @@ export default function PlayerNameBadge() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
-
     const update = () => {
       setPlayerName(getPlayerName());
     };
@@ -25,6 +23,16 @@ export default function PlayerNameBadge() {
     return () => {
       window.removeEventListener(PLAYER_NAME_UPDATED_EVENT, update);
       window.removeEventListener("storage", update);
+    };
+  }, []);
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      setMounted(true);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frame);
     };
   }, []);
 

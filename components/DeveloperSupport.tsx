@@ -78,7 +78,6 @@ export default function DeveloperSupport() {
                   <span>Buy Me a Coffee</span>
 
                   <span className="text-pink-300 transition-transform duration-300 group-hover/button:translate-x-1">
-
                   </span>
                 </button>
 
@@ -134,10 +133,10 @@ export default function DeveloperSupport() {
                     built this?
                   </h2>
 
-                  <p className="mt-5 text-sm leading-7 font-bold text-white/75 ">
+                  <p className="mt-5 text-sm leading-7 font-bold text-white/75">
                     Hey!😎
                     <br />
-                    I JUST WANT TO MAKE SOME COOL STUFF's 👾
+                    I JUST WANT TO MAKE SOME COOL STUFF&apos;S 👾
                   </p>
 
                   <Link
@@ -151,7 +150,6 @@ export default function DeveloperSupport() {
                     <span>View My Portfolio</span>
 
                     <span className="text-cyan-300 transition-transform duration-300 group-hover/link:translate-x-1">
-                      
                     </span>
                   </Link>
                 </div>
@@ -194,7 +192,9 @@ export default function DeveloperSupport() {
             aria-modal="true"
             aria-labelledby="gcash-modal-title"
             className="relative max-h-[92vh] w-full max-w-sm overflow-y-auto rounded-4xl border border-white/10 bg-[#0b0f1a] p-5 shadow-2xl shadow-black/60 sm:p-6"
-            onClick={(event) => event.stopPropagation()}
+            onClick={(event) =>
+              event.stopPropagation()
+            }
           >
             {/* Modal glow */}
             <div className="pointer-events-none absolute -left-24 -top-24 h-56 w-56 rounded-full bg-pink-500/10 blur-3xl" />
@@ -221,7 +221,9 @@ export default function DeveloperSupport() {
 
                 <button
                   type="button"
-                  onClick={() => setShowQR(false)}
+                  onClick={() =>
+                    setShowQR(false)
+                  }
                   aria-label="Close GCash QR"
                   className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-lg text-white/40 transition-all duration-200 hover:border-white/20 hover:bg-white/10 hover:text-white active:scale-95"
                 >

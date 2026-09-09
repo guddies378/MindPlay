@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
 import GameDailyChallenge from "@/components/GameDailyChallenge";
 import GameShell from "@/components/GameShell";
 
@@ -59,12 +58,30 @@ const WORDS: Record<Difficulty, WordItem[]> = {
     { word: "CHALLENGE", hint: "Something difficult to overcome" },
     { word: "COMPUTER", hint: "A machine used for digital tasks" },
     { word: "GALAXY", hint: "A huge collection of stars" },
-    { word: "MYSTERY", hint: "Something difficult to explain or solve" },
-    { word: "LIGHTNING", hint: "A bright flash during a storm" },
-    { word: "CREATIVE", hint: "Having new and imaginative ideas" },
-    { word: "LANGUAGE", hint: "Used by people to communicate" },
-    { word: "TREASURE", hint: "Something valuable that may be hidden" },
-    { word: "EXPLORER", hint: "Someone who discovers new places" },
+    {
+      word: "MYSTERY",
+      hint: "Something difficult to explain or solve",
+    },
+    {
+      word: "LIGHTNING",
+      hint: "A bright flash during a storm",
+    },
+    {
+      word: "CREATIVE",
+      hint: "Having new and imaginative ideas",
+    },
+    {
+      word: "LANGUAGE",
+      hint: "Used by people to communicate",
+    },
+    {
+      word: "TREASURE",
+      hint: "Something valuable that may be hidden",
+    },
+    {
+      word: "EXPLORER",
+      hint: "Someone who discovers new places",
+    },
   ],
 };
 
@@ -98,7 +115,7 @@ function shuffleLetters(word: string): string {
     return word;
   }
 
-  let shuffled = [...original];
+  const shuffled = [...original];
   let attempts = 0;
 
   do {
@@ -170,11 +187,8 @@ export default function WordScramblePage() {
   );
 
   const [answer, setAnswer] = useState("");
-
   const [score, setScore] = useState(0);
-
   const [correct, setCorrect] = useState(0);
-
   const [wrong, setWrong] = useState(0);
 
   const [timeLeft, setTimeLeft] = useState(
@@ -182,7 +196,6 @@ export default function WordScramblePage() {
   );
 
   const [started, setStarted] = useState(false);
-
   const [gameOver, setGameOver] = useState(false);
 
   const [feedback, setFeedback] = useState<
@@ -214,17 +227,11 @@ export default function WordScramblePage() {
     );
 
     setDifficulty(selectedDifficulty);
-
     setWord(round.wordItem);
-
     setScrambled(round.scrambled);
-
     setAnswer("");
-
     setScore(0);
-
     setCorrect(0);
-
     setWrong(0);
 
     setTimeLeft(
@@ -232,15 +239,10 @@ export default function WordScramblePage() {
     );
 
     setStarted(true);
-
     setGameOver(false);
-
     setFeedback(null);
-
     setShowHint(false);
-
     setXpEarned(null);
-
     setDailyChallengeCompleted(false);
   };
 
@@ -253,76 +255,79 @@ export default function WordScramblePage() {
     }
 
     if (timeLeft <= 0) {
-      setGameOver(true);
+      const timer = window.setTimeout(() => {
+        setGameOver(true);
 
-      const baseXP =
-        DIFFICULTIES[difficulty].xp;
+        const baseXP =
+          DIFFICULTIES[difficulty].xp;
 
-      const scoreBonus = Math.min(
-        30,
-        Math.floor(score / 10)
-      );
-
-      const totalXP =
-        baseXP + scoreBonus;
-
-      /*
-       * Daily Challenge
-       *
-       * Only complete the Daily Challenge
-       * if Word Scramble is today's game.
-       *
-       * completeDailyChallenge() handles:
-       *
-       * +50 XP
-       * once-per-day protection
-       */
-      const dailyCompleted =
-        isDailyChallenge &&
-        completeDailyChallenge(
-          "word-scramble"
+        const scoreBonus = Math.min(
+          30,
+          Math.floor(score / 10)
         );
 
-      setDailyChallengeCompleted(
-        dailyCompleted
-      );
+        const totalXP =
+          baseXP + scoreBonus;
 
-      /*
-       * Daily Challenge gives +10 score.
-       */
-      const finalScore =
-        score +
-        (dailyCompleted
-          ? DAILY_CHALLENGE_BONUS_POINTS
-          : 0);
+        /*
+         * Daily Challenge
+         *
+         * Only complete the Daily Challenge
+         * if Word Scramble is today's game.
+         *
+         * completeDailyChallenge() handles:
+         *
+         * +50 XP
+         * once-per-day protection
+         */
+        const dailyCompleted =
+          isDailyChallenge &&
+          completeDailyChallenge(
+            "word-scramble"
+          );
 
-      /*
-       * Display normal game XP plus
-       * the Daily Challenge XP.
-       *
-       * IMPORTANT:
-       * completeDailyChallenge() already adds
-       * the +50 XP, so recordGame() receives
-       * only the normal game XP.
-       */
-      const displayedXP =
-        totalXP +
-        (dailyCompleted ? 50 : 0);
+        setDailyChallengeCompleted(
+          dailyCompleted
+        );
 
-      setScore(finalScore);
+        /*
+         * Daily Challenge gives +10 score.
+         */
+        const finalScore =
+          score +
+          (dailyCompleted
+            ? DAILY_CHALLENGE_BONUS_POINTS
+            : 0);
 
-      setXpEarned(displayedXP);
+        /*
+         * Display normal game XP plus
+         * the Daily Challenge XP.
+         *
+         * IMPORTANT:
+         * completeDailyChallenge() already adds
+         * the +50 XP, so recordGame() receives
+         * only the normal game XP.
+         */
+        const displayedXP =
+          totalXP +
+          (dailyCompleted ? 50 : 0);
 
-      recordGame(
-        finalScore,
-        totalXP
-      );
+        setScore(finalScore);
+        setXpEarned(displayedXP);
 
-      unlockGameAchievement(
-        "word-wizard"
-      );
+        recordGame(
+          finalScore,
+          totalXP
+        );
 
-      return;
+        unlockGameAchievement(
+          "word-wizard"
+        );
+      }, 0);
+
+      return () => {
+        window.clearTimeout(timer);
+      };
     }
 
     const timer = window.setTimeout(() => {
@@ -371,7 +376,6 @@ export default function WordScramblePage() {
       );
 
       setFeedback("correct");
-
       setShowHint(false);
 
       const currentWord = word.word;
@@ -392,9 +396,7 @@ export default function WordScramblePage() {
         );
 
         setAnswer("");
-
         setFeedback(null);
-
         setShowHint(false);
       }, 400);
 
@@ -407,7 +409,6 @@ export default function WordScramblePage() {
     );
 
     setFeedback("wrong");
-
     setAnswer("");
 
     window.setTimeout(() => {

@@ -197,11 +197,42 @@ export default function ColorClashPage() {
   }, [
     config.colors,
     config.responseTime,
-    round,
   ]);
 
   const startGame = () => {
     clearRoundTimers();
+
+    let startingDifficulty = difficulty;
+
+    const params = new URLSearchParams(
+      window.location.search
+    );
+
+    const dailyMode =
+      params.get("daily") === "true";
+
+    const urlDifficulty =
+      params.get("difficulty");
+
+    const validDifficulty =
+      urlDifficulty === "easy" ||
+      urlDifficulty === "normal" ||
+      urlDifficulty === "hard";
+
+    if (
+      isDailyChallenge &&
+      dailyMode &&
+      validDifficulty &&
+      urlDifficulty === dailyChallenge.difficulty
+    ) {
+      startingDifficulty =
+        dailyChallenge.difficulty;
+
+      setDifficulty(startingDifficulty);
+    }
+
+    const startingConfig =
+      DIFFICULTIES[startingDifficulty];
 
     setGameState("playing");
 
@@ -216,7 +247,9 @@ export default function ColorClashPage() {
     setLastCorrect(null);
     setLastPoints(0);
 
-    setTimeLeft(config.responseTime);
+    setTimeLeft(
+      startingConfig.responseTime
+    );
 
     setXpEarned(0);
     setDailyBonusEarned(false);
@@ -234,16 +267,6 @@ export default function ColorClashPage() {
       (dailyCompleted
         ? DAILY_CHALLENGE_BONUS_POINTS
         : 0);
-
-    const totalAnswers =
-      correct + wrong;
-
-    const accuracy =
-      totalAnswers > 0
-        ? Math.round(
-            (correct / totalAnswers) * 100
-          )
-        : 0;
 
     const comboBonus =
       bestCombo >= 8
@@ -284,10 +307,8 @@ export default function ColorClashPage() {
     bestCombo,
     clearRoundTimers,
     config.baseXP,
-    correct,
     isDailyChallenge,
     score,
-    wrong,
   ]);
 
   const handleAnswer = useCallback(
@@ -376,53 +397,28 @@ export default function ColorClashPage() {
     }
 
     if (round >= config.rounds) {
-      finishGame();
-      return;
+      const finishTimer = setTimeout(() => {
+        finishGame();
+      }, 0);
+
+      return () => {
+        clearTimeout(finishTimer);
+      };
     }
 
-    createRound();
+    const roundTimer = setTimeout(() => {
+      createRound();
+    }, 0);
+
+    return () => {
+      clearTimeout(roundTimer);
+    };
   }, [
     config.rounds,
     createRound,
     finishGame,
     gameState,
     round,
-  ]);
-
-  useEffect(() => {
-    if (!isDailyChallenge) {
-      return;
-    }
-
-    const params =
-      new URLSearchParams(
-        window.location.search
-      );
-
-    const dailyMode =
-      params.get("daily") === "true";
-
-    const urlDifficulty =
-      params.get("difficulty");
-
-    const validDifficulty =
-      urlDifficulty === "easy" ||
-      urlDifficulty === "normal" ||
-      urlDifficulty === "hard";
-
-    if (
-      dailyMode &&
-      validDifficulty &&
-      urlDifficulty ===
-        dailyChallenge.difficulty
-    ) {
-      setDifficulty(
-        dailyChallenge.difficulty
-      );
-    }
-  }, [
-    dailyChallenge.difficulty,
-    isDailyChallenge,
   ]);
 
   useEffect(() => {
@@ -879,7 +875,7 @@ export default function ColorClashPage() {
               href="/games"
               className="mt-4 block text-sm font-bold text-white/30 transition hover:text-white"
             >
-              ← Back to Arcade
+              Back to Arcade
             </a>
           </div>
         </div>

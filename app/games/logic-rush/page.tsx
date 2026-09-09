@@ -1,7 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import {
   completeDailyChallenge,
   DAILY_CHALLENGE_BONUS_POINTS,
@@ -419,7 +424,33 @@ function difficultyToKey(
 
 export default function LogicRushPage() {
   const [difficulty, setDifficulty] =
-    useState<Difficulty>("Normal");
+    useState<Difficulty>(() => {
+      if (typeof window === "undefined") {
+        return "Normal";
+      }
+
+      const params =
+        new URLSearchParams(
+          window.location.search
+        );
+
+      const urlDifficulty =
+        params.get("difficulty");
+
+      if (urlDifficulty === "easy") {
+        return "Easy";
+      }
+
+      if (urlDifficulty === "normal") {
+        return "Normal";
+      }
+
+      if (urlDifficulty === "hard") {
+        return "Hard";
+      }
+
+      return "Normal";
+    });
 
   const [gameState, setGameState] =
     useState<GameState>("menu");
@@ -469,48 +500,97 @@ export default function LogicRushPage() {
   const isDailyChallenge =
     dailyChallenge.game === "logic-rush";
 
-  useEffect(() => {
-    if (!isDailyChallenge) {
-      return;
-    }
+  const handleAnswer = useCallback(
+    (answerIndex: number | null) => {
+      if (gameState !== "playing") {
+        return;
+      }
 
-    const params =
-      new URLSearchParams(
-        window.location.search
+      if (!currentPuzzle) {
+        return;
+      }
+
+      const isCorrect =
+        answerIndex !== null &&
+        answerIndex ===
+          currentPuzzle.answer;
+
+      setSelectedAnswer(
+        answerIndex
       );
 
-    const dailyMode =
-      params.get("daily") === "true";
-
-    const urlDifficulty =
-      params.get("difficulty");
-
-    const validDifficulty =
-      urlDifficulty === "easy" ||
-      urlDifficulty === "normal" ||
-      urlDifficulty === "hard";
-
-    if (
-      dailyMode &&
-      validDifficulty &&
-      urlDifficulty ===
-        dailyChallenge.difficulty
-    ) {
-      const mappedDifficulty =
-        urlDifficulty === "easy"
-          ? "Easy"
-          : urlDifficulty === "normal"
-            ? "Normal"
-            : "Hard";
-
-      setDifficulty(
-        mappedDifficulty
+      setLastCorrect(
+        isCorrect
       );
-    }
-  }, [
-    isDailyChallenge,
-    dailyChallenge.difficulty,
-  ]);
+
+      if (isCorrect) {
+        const nextCombo =
+          combo + 1;
+
+        const multiplier =
+          Math.min(
+            2,
+            1 +
+              Math.floor(
+                nextCombo / 3
+              ) *
+                0.25
+          );
+
+        const timeBonus =
+          Math.max(
+            0,
+            timeLeft * 2
+          );
+
+        const points =
+          Math.round(
+            (50 + timeBonus) *
+              multiplier
+          );
+
+        setScore(
+          (current) =>
+            current + points
+        );
+
+        setCorrect(
+          (current) =>
+            current + 1
+        );
+
+        setCombo(nextCombo);
+
+        setBestCombo(
+          (current) =>
+            Math.max(
+              current,
+              nextCombo
+            )
+        );
+      } else {
+        setScore(
+          (current) =>
+            Math.max(
+              0,
+              current - 10
+            )
+        );
+
+        setCombo(0);
+      }
+
+      setGameState(
+        "feedback"
+      );
+    },
+    [
+      combo,
+      currentPuzzle,
+      gameState,
+      timeLeft,
+    ]
+  );
 
   useEffect(() => {
     if (gameState !== "playing") {
@@ -518,8 +598,13 @@ export default function LogicRushPage() {
     }
 
     if (timeLeft <= 0) {
-      handleAnswer(null);
-      return;
+      const timeout =
+        window.setTimeout(() => {
+          handleAnswer(null);
+        }, 0);
+
+      return () =>
+        window.clearTimeout(timeout);
     }
 
     const timer =
@@ -533,6 +618,7 @@ export default function LogicRushPage() {
       window.clearTimeout(timer);
   }, [
     gameState,
+    handleAnswer,
     timeLeft,
   ]);
 
@@ -557,92 +643,6 @@ export default function LogicRushPage() {
       config.timeLimit
     );
     setGameState("playing");
-  }
-
-  function handleAnswer(
-    answerIndex: number | null
-  ) {
-    if (gameState !== "playing") {
-      return;
-    }
-
-    if (!currentPuzzle) {
-      return;
-    }
-
-    const isCorrect =
-      answerIndex !== null &&
-      answerIndex ===
-        currentPuzzle.answer;
-
-    setSelectedAnswer(
-      answerIndex
-    );
-
-    setLastCorrect(
-      isCorrect
-    );
-
-    if (isCorrect) {
-      const nextCombo =
-        combo + 1;
-
-      const multiplier =
-        Math.min(
-          2,
-          1 +
-            Math.floor(
-              nextCombo / 3
-            ) *
-              0.25
-        );
-
-      const timeBonus =
-        Math.max(
-          0,
-          timeLeft * 2
-        );
-
-      const points =
-        Math.round(
-          (50 + timeBonus) *
-            multiplier
-        );
-
-      setScore(
-        (current) =>
-          current + points
-      );
-
-      setCorrect(
-        (current) =>
-          current + 1
-      );
-
-      setCombo(nextCombo);
-
-      setBestCombo(
-        (current) =>
-          Math.max(
-            current,
-            nextCombo
-          )
-      );
-    } else {
-      setScore(
-        (current) =>
-          Math.max(
-            0,
-            current - 10
-          )
-      );
-
-      setCombo(0);
-    }
-
-    setGameState(
-      "feedback"
-    );
   }
 
   function nextRound() {

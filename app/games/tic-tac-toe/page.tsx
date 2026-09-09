@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import GameDailyChallenge from "@/components/GameDailyChallenge";
 import GameShell from "@/components/GameShell";
@@ -344,79 +344,85 @@ export default function TicTacToePage() {
     setGameXP(0);
   }
 
-  function finishGame(
-    result: Player | "draw",
-    line: number[]
-  ) {
-    setWinner(result);
-    setWinningLine(line);
+  const finishGame = useCallback(
+    (
+      result: Player | "draw",
+      line: number[]
+    ) => {
+      setWinner(result);
+      setWinningLine(line);
 
-    setScores((previous) => {
-      if (result === "draw") {
+      setScores((previous) => {
+        if (result === "draw") {
+          return {
+            ...previous,
+            draws: previous.draws + 1,
+          };
+        }
+
+        if (result === humanPlayer) {
+          return {
+            ...previous,
+            player:
+              previous.player + 1,
+          };
+        }
+
         return {
           ...previous,
-          draws: previous.draws + 1,
+          ai: previous.ai + 1,
         };
-      }
+      });
+
+      let xp = 10;
 
       if (result === humanPlayer) {
-        return {
-          ...previous,
-          player:
-            previous.player + 1,
-        };
+        xp =
+          DIFFICULTIES[difficulty].winXP;
+      } else if (result === "draw") {
+        xp =
+          DIFFICULTIES[difficulty].drawXP;
+      } else {
+        xp =
+          DIFFICULTIES[difficulty].lossXP;
       }
 
-      return {
-        ...previous,
-        ai: previous.ai + 1,
-      };
-    });
+      setGameXP(xp);
 
-    let xp = 10;
+      const dailyCompleted =
+        completeDailyChallenge("tic-tac-toe");
 
-    if (result === humanPlayer) {
-      xp =
-        DIFFICULTIES[difficulty].winXP;
-    } else if (result === "draw") {
-      xp =
-        DIFFICULTIES[difficulty].drawXP;
-    } else {
-      xp =
-        DIFFICULTIES[difficulty].lossXP;
-    }
+      if (dailyCompleted) {
+        setDailyChallengeCompleted(true);
+      }
 
-    setGameXP(xp);
+      const baseScore =
+        result === humanPlayer
+          ? 100
+          : result === "draw"
+            ? 50
+            : 25;
 
-    const dailyCompleted =
-      completeDailyChallenge("tic-tac-toe");
+      const finalScore =
+        baseScore +
+        (dailyCompleted
+          ? DAILY_CHALLENGE_BONUS_POINTS
+          : 0);
 
-    if (dailyCompleted) {
-      setDailyChallengeCompleted(true);
-    }
+      recordGame(
+        finalScore,
+        xp
+      );
 
-    const baseScore =
-      result === humanPlayer
-        ? 100
-        : result === "draw"
-          ? 50
-          : 25;
-
-    const finalScore =
-      baseScore +
-      (dailyCompleted
-        ? DAILY_CHALLENGE_BONUS_POINTS
-        : 0);
-
-    recordGame(
-      finalScore,
-      xp
-    );
-
-    unlockGameAchievement(
-      "strategy-master"
-    );
-  }
+      unlockGameAchievement(
+        "strategy-master"
+      );
+    },
+    [
+      difficulty,
+      humanPlayer,
+    ]
+  );
 
   function handlePlayerMove(
     index: number
@@ -460,7 +466,7 @@ export default function TicTacToePage() {
   const aiPlayer: Player =
     humanPlayer === "X" ? "O" : "X";
 
-  function makeAIMove() {
+  const makeAIMove = useCallback(() => {
     let move: number | null = null;
 
     if (difficulty === "easy") {
@@ -505,7 +511,13 @@ export default function TicTacToePage() {
     }
 
     setCurrentPlayer(humanPlayer);
-  }
+  }, [
+    aiPlayer,
+    board,
+    difficulty,
+    finishGame,
+    humanPlayer,
+  ]);
 
   useEffect(() => {
     if (currentPlayer !== aiPlayer) {
@@ -516,11 +528,12 @@ export default function TicTacToePage() {
       return;
     }
 
-    setThinking(true);
-
     const timeout =
       window.setTimeout(() => {
+        setThinking(true);
+
         makeAIMove();
+
         setThinking(false);
       }, 550);
 
@@ -530,7 +543,7 @@ export default function TicTacToePage() {
     currentPlayer,
     aiPlayer,
     winner,
-    board,
+    makeAIMove,
   ]);
 
   function getStatus() {
@@ -1034,7 +1047,7 @@ export default function TicTacToePage() {
             </p>
 
             <p className="mt-1 text-sm leading-6 text-white/35">
-              Don't only think about your
+              Don&apos;t only think about your
               next move. Look for the move
               that gives you the best position
               on the next turn.
