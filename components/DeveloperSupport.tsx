@@ -155,7 +155,7 @@ export default function DeveloperSupport() {
                 </div>
 
                 {/* Developer character */}
-                <div className="pointer-events-none absolute -bottom-5 right-[-13%] z-10 w-32 transition-transform duration-500 group-hover:-translate-y-2 sm:-bottom-8 sm:right-[-2%] sm:w-64">
+                <div className="pointer-events-none absolute -bottom-5 right-[-10%] z-10 w-32 transition-transform duration-500 group-hover:-translate-y-2 sm:-bottom-8 sm:right-[-2%] sm:w-64">
                   {/* Character glow */}
                   <div className="absolute bottom-10 left-1/2 h-32 w-32 -translate-x-1/2 rounded-full bg-cyan-400/10 blur-3xl sm:h-40 sm:w-40" />
 
@@ -166,6 +166,7 @@ export default function DeveloperSupport() {
                     <Image
                       src="/Character.png"
                       alt="Developer character"
+                      loading="eager"
                       width={400}
                       height={600}
                       priority={false}

@@ -497,11 +497,11 @@ export default function SequenceMasterPage() {
     );
 
   return (
-    <main className="min-h-screen overflow-hidden px-4 py-8 text-white sm:px-6 lg:px-8">
+    <main className="min-h-[100dvh] overflow-hidden px-4 py-3 text-white sm:px-6 sm:py-4 lg:px-8">
       <div className="mx-auto max-w-5xl">
 
         {/* Header */}
-        <header className="mb-8 flex items-center justify-between gap-3">
+        <header className="mb-4 flex items-center justify-between gap-3">
           <Link
             href="/games"
             className="group flex items-center gap-2 text-sm font-bold text-white/40 transition hover:text-white"
@@ -527,8 +527,8 @@ export default function SequenceMasterPage() {
         </header>
 
         {/* Title */}
-        <section className="mp-fade-up mb-8 text-center">
-          <div className="mb-3 text-5xl">
+        <section className="mp-fade-up mb-4 text-center">
+          <div className="mb-2 text-4xl">
             🔁
           </div>
 
@@ -536,7 +536,7 @@ export default function SequenceMasterPage() {
             Sequence Master
           </p>
 
-          <h1 className="mt-2 text-4xl font-black tracking-tight sm:text-5xl">
+          <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
             Remember the sequence.
           </h1>
 
@@ -549,7 +549,7 @@ export default function SequenceMasterPage() {
 
         {/* Difficulty */}
         {gameState === "idle" && (
-          <section className="mp-fade-up mb-8">
+          <section className="mp-fade-up mb-4">
             <div className="mb-3 flex items-center justify-between">
               <p className="text-xs font-black uppercase tracking-wider text-white/30">
                 Select difficulty
@@ -650,12 +650,12 @@ export default function SequenceMasterPage() {
 
           <div className="pointer-events-none absolute -bottom-32 -left-32 h-72 w-72 rounded-full bg-fuchsia-400/10 blur-3xl" />
 
-          <div className="relative p-5 sm:p-8">
+          <div className="relative p-4 sm:p-6">
 
             {/* Stats */}
             {gameState !== "idle" &&
               gameState !== "finished" && (
-                <div className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
                   <div className="rounded-2xl border border-white/[0.07] bg-white/2.5 p-3 text-center">
                     <p className="text-[9px] font-black uppercase tracking-wider text-white/25">
                       Round
@@ -701,7 +701,7 @@ export default function SequenceMasterPage() {
             {/* Progress */}
             {gameState !== "idle" &&
               gameState !== "finished" && (
-                <div className="mb-6">
+                <div className="mb-4">
                   <div className="mb-2 flex justify-between text-[9px] font-black uppercase tracking-wider text-white/20">
                     <span>
                       Sequence Progress
@@ -730,7 +730,7 @@ export default function SequenceMasterPage() {
                   🔁
                 </div>
 
-                <h2 className="mt-6 text-2xl font-black">
+                <h2 className="mt-4 text-2xl font-black">
                   How good is your memory?
                 </h2>
 
@@ -740,7 +740,7 @@ export default function SequenceMasterPage() {
                   then type it back.
                 </p>
 
-                <div className="mt-7 flex flex-wrap justify-center gap-3">
+                <div className="mt-4 flex flex-wrap justify-center gap-3">
                   <div className="rounded-full border border-white/10 bg-white/3 px-4 py-2 text-xs font-bold text-white/40">
                     🎯 +10 per digit
                   </div>
@@ -753,7 +753,7 @@ export default function SequenceMasterPage() {
                 <button
                   type="button"
                   onClick={startGame}
-                  className="mp-button mt-8 bg-white px-8 py-4 text-sm text-black shadow-xl shadow-white/10 hover:bg-white/90"
+                  className="mp-button mt-4 bg-white px-8 py-4 text-sm text-black shadow-xl shadow-white/10 hover:bg-white/90"
                 >
                   Start Sequence Master
 
@@ -771,7 +771,7 @@ export default function SequenceMasterPage() {
                   Memorize the sequence
                 </p>
 
-                <div className="mt-8 flex max-w-full flex-wrap justify-center gap-2 rounded-4xl border border-cyan-300/15 bg-cyan-300/4 px-5 py-7 shadow-2xl shadow-cyan-400/5 sm:gap-3 sm:px-10">
+                <div className="mt-4 flex max-w-full flex-wrap justify-center gap-2 rounded-4xl border border-cyan-300/15 bg-cyan-300/4 px-5 py-7 shadow-2xl shadow-cyan-400/5 sm:gap-3 sm:px-10">
                   {sequence.map(
                     (number, index) => (
                       <div
@@ -785,7 +785,7 @@ export default function SequenceMasterPage() {
                 </div>
 
                 {showCountdown && (
-                  <div className="mt-8">
+                  <div className="mt-4">
                     <div className="text-4xl font-black text-cyan-300">
                       {countdown}
                     </div>
@@ -814,7 +814,7 @@ export default function SequenceMasterPage() {
                   digits in the exact order.
                 </p>
 
-                <div className="mt-8 w-full max-w-md">
+                <div className="mt-4 w-full max-w-md">
                   <input
                     ref={inputRef}
                     type="text"
@@ -875,7 +875,7 @@ export default function SequenceMasterPage() {
                       in the correct order.
                     </p>
 
-                    <div className="mx-auto mt-7 max-w-md rounded-3xl border border-emerald-300/10 bg-emerald-300/4 p-6">
+                    <div className="mx-auto mt-4 max-w-md rounded-3xl border border-emerald-300/10 bg-emerald-300/4 p-6">
                       <p className="text-xs font-black uppercase tracking-wider text-white/25">
                         Correct sequence
                       </p>
@@ -925,7 +925,7 @@ export default function SequenceMasterPage() {
                       The order got mixed up.
                     </p>
 
-                    <div className="mx-auto mt-7 max-w-md rounded-3xl border border-white/[0.07] bg-white/2.5 p-6">
+                    <div className="mx-auto mt-4 max-w-md rounded-3xl border border-white/[0.07] bg-white/2.5 p-6">
                       <div>
                         <p className="text-xs font-black uppercase tracking-wider text-white/25">
                           Correct sequence
@@ -965,7 +965,7 @@ export default function SequenceMasterPage() {
                 <button
                   type="button"
                   onClick={continueGame}
-                  className="mp-button mt-8 bg-white px-8 py-4 text-sm text-black shadow-xl shadow-white/10 hover:bg-white/90"
+                  className="mp-button mt-4 bg-white px-8 py-4 text-sm text-black shadow-xl shadow-white/10 hover:bg-white/90"
                 >
                   {round >= config.rounds
                     ? "See Results"
@@ -1008,7 +1008,7 @@ export default function SequenceMasterPage() {
                   </div>
                 )}
 
-                <div className="mx-auto mt-8 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
+                <div className="mx-auto mt-4 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
                   <div className="rounded-3xl border border-white/[0.07] bg-white/2.5 p-5">
                     <p className="text-[9px] font-black uppercase tracking-wider text-white/25">
                       Score
@@ -1051,7 +1051,7 @@ export default function SequenceMasterPage() {
                   </div>
                 </div>
 
-                <div className="mx-auto mt-6 max-w-2xl rounded-3xl border border-white/[0.07] bg-white/2.5 p-5 text-left">
+                <div className="mx-auto mt-4 max-w-2xl rounded-3xl border border-white/[0.07] bg-white/2.5 p-5 text-left">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs font-black uppercase tracking-wider text-white/25">
@@ -1074,7 +1074,7 @@ export default function SequenceMasterPage() {
                   </div>
                 </div>
 
-                <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+                <div className="mt-4 flex flex-col justify-center gap-3 sm:flex-row">
                   <button
                     type="button"
                     onClick={startGame}
@@ -1100,7 +1100,7 @@ export default function SequenceMasterPage() {
         </section>
 
         {/* Tips */}
-        <section className="mt-6 grid gap-3 sm:grid-cols-3">
+        <section className="mt-4 grid gap-3 sm:grid-cols-3">
           <div className="rounded-3xl border border-white/[0.07] bg-white/2.5 p-5">
             <div className="text-xl">
               🧩
@@ -1148,7 +1148,7 @@ export default function SequenceMasterPage() {
           </div>
         </section>
 
-        <footer className="mt-10 pb-4 text-center text-xs text-white/20">
+        <footer className="mindplay-footer hidden mt-5 pb-4 text-center text-xs text-white/20">
           MindPlay · Train your brain. Have fun.
         </footer>
       </div>

@@ -62,107 +62,63 @@ function shuffle<T>(array: T[]): T[] {
   const result = [...array];
 
   for (let i = result.length - 1; i > 0; i--) {
-    const randomIndex = Math.floor(
-      Math.random() * (i + 1)
-    );
-
-    [result[i], result[randomIndex]] = [
-      result[randomIndex],
-      result[i],
-    ];
+    const randomIndex = Math.floor(Math.random() * (i + 1));
+    [result[i], result[randomIndex]] = [result[randomIndex], result[i]];
   }
 
   return result;
 }
 
-function createCards(
-  difficulty: Difficulty
-): Card[] {
-  const pairCount =
-    DIFFICULTIES[difficulty].pairs;
+function createCards(difficulty: Difficulty): Card[] {
+  const pairCount = DIFFICULTIES[difficulty].pairs;
 
-  const selectedSymbols = shuffle(SYMBOLS).slice(
-    0,
-    pairCount
-  );
+  const selectedSymbols = shuffle(SYMBOLS).slice(0, pairCount);
 
-  const cards = selectedSymbols.flatMap(
-    (symbol) => [
-      {
-        id: Math.random(),
-        symbol,
-        matched: false,
-      },
-      {
-        id: Math.random(),
-        symbol,
-        matched: false,
-      },
-    ]
-  );
+  const cards = selectedSymbols.flatMap((symbol) => [
+    {
+      id: Math.random(),
+      symbol,
+      matched: false,
+    },
+    {
+      id: Math.random(),
+      symbol,
+      matched: false,
+    },
+  ]);
 
   return shuffle(cards);
 }
 
 export default function MemoryMatchPage() {
-  /*
-   * Today's Daily Challenge
-   */
   const dailyChallenge = getDailyChallenge();
 
-  const isDailyChallenge =
-    dailyChallenge.game === "memory-match";
+  const isDailyChallenge = dailyChallenge.game === "memory-match";
 
-  const initialDifficulty: Difficulty =
-    isDailyChallenge
-      ? dailyChallenge.difficulty
-      : "normal";
+  const initialDifficulty: Difficulty = isDailyChallenge
+    ? dailyChallenge.difficulty
+    : "normal";
 
   const [difficulty, setDifficulty] =
-    useState<Difficulty>(
-      initialDifficulty
-    );
+    useState<Difficulty>(initialDifficulty);
 
   const [cards, setCards] = useState<Card[]>(() =>
-    createCards(initialDifficulty)
+    createCards(initialDifficulty),
   );
 
-  const [flipped, setFlipped] = useState<number[]>(
-    []
-  );
-
+  const [flipped, setFlipped] = useState<number[]>([]);
   const [moves, setMoves] = useState(0);
-
-  const [matchedPairs, setMatchedPairs] =
-    useState(0);
-
-  const [gameOver, setGameOver] =
-    useState(false);
-
-  const [checking, setChecking] =
-    useState(false);
-
-  const [xpEarned, setXpEarned] =
-    useState<number | null>(null);
-
+  const [matchedPairs, setMatchedPairs] = useState(0);
+  const [gameOver, setGameOver] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [xpEarned, setXpEarned] = useState<number | null>(null);
   const [time, setTime] = useState(0);
+  const [started, setStarted] = useState(false);
+  const [dailyBonusEarned, setDailyBonusEarned] = useState(false);
 
-  const [started, setStarted] =
-    useState(false);
-
-  const [dailyBonusEarned, setDailyBonusEarned] =
-    useState(false);
-
-  /*
-   * Start a new game.
-   */
-  const startGame = (
-    selectedDifficulty: Difficulty
-  ) => {
+  const startGame = (selectedDifficulty: Difficulty) => {
     setDifficulty(selectedDifficulty);
-    setCards(
-      createCards(selectedDifficulty)
-    );
+    setCards(createCards(selectedDifficulty));
     setFlipped([]);
     setMoves(0);
     setMatchedPairs(0);
@@ -174,13 +130,8 @@ export default function MemoryMatchPage() {
     setDailyBonusEarned(false);
   };
 
-  /*
-   * Timer
-   */
   useEffect(() => {
-    if (!started || gameOver) {
-      return;
-    }
+    if (!started || gameOver) return;
 
     const timer = window.setInterval(() => {
       setTime((previous) => previous + 1);
@@ -191,150 +142,72 @@ export default function MemoryMatchPage() {
     };
   }, [started, gameOver]);
 
-  /*
-   * Check two flipped cards.
-   *
-   * The effect intentionally depends on the
-   * complete game state that the delayed check
-   * needs. The timeout is cleaned up whenever
-   * those values change.
-   */
   useEffect(() => {
-    if (
-      flipped.length !== 2 ||
-      !started ||
-      gameOver
-    ) {
-      return;
-    }
+    if (flipped.length !== 2 || !started || gameOver) return;
 
-    const [firstIndex, secondIndex] =
-      flipped;
+    const [firstIndex, secondIndex] = flipped;
 
     const firstCard = cards[firstIndex];
     const secondCard = cards[secondIndex];
 
-    if (!firstCard || !secondCard) {
-      return;
-    }
+    if (!firstCard || !secondCard) return;
 
     const currentDifficulty = difficulty;
     const currentMoves = moves;
-    const currentMatchedPairs =
-      matchedPairs;
+    const currentMatchedPairs = matchedPairs;
     const currentTime = time;
 
     const timer = window.setTimeout(() => {
-      const isMatch =
-        firstCard.symbol ===
-        secondCard.symbol;
+      const isMatch = firstCard.symbol === secondCard.symbol;
 
       if (isMatch) {
         setCards((previous) =>
-          previous.map(
-            (card, index) =>
-              index === firstIndex ||
-              index === secondIndex
-                ? {
-                    ...card,
-                    matched: true,
-                  }
-                : card
-          )
+          previous.map((card, index) =>
+            index === firstIndex || index === secondIndex
+              ? { ...card, matched: true }
+              : card,
+          ),
         );
 
-        const newMatchedPairs =
-          currentMatchedPairs + 1;
+        const newMatchedPairs = currentMatchedPairs + 1;
+        const totalPairs = DIFFICULTIES[currentDifficulty].pairs;
 
-        const totalPairs =
-          DIFFICULTIES[
-            currentDifficulty
-          ].pairs;
+        setMatchedPairs(newMatchedPairs);
 
-        setMatchedPairs(
-          newMatchedPairs
-        );
-
-        if (
-          newMatchedPairs ===
-          totalPairs
-        ) {
-          const baseXP =
-            DIFFICULTIES[
-              currentDifficulty
-            ].xp;
+        if (newMatchedPairs === totalPairs) {
+          const baseXP = DIFFICULTIES[currentDifficulty].xp;
 
           const efficiencyBonus =
             currentMoves <= totalPairs
               ? 20
-              : currentMoves <=
-                  totalPairs * 1.5
+              : currentMoves <= totalPairs * 1.5
                 ? 10
                 : 0;
 
           const speedBonus =
-            currentTime <=
-            totalPairs * 8
-              ? 10
-              : 0;
+            currentTime <= totalPairs * 8 ? 10 : 0;
 
           const totalXP =
-            baseXP +
-            efficiencyBonus +
-            speedBonus;
+            baseXP + efficiencyBonus + speedBonus;
 
-          /*
-           * Daily Challenge
-           *
-           * completeDailyChallenge() handles:
-           * - +50 XP
-           * - once-per-day protection
-           */
           const dailyCompleted =
-            completeDailyChallenge(
-              "memory-match"
-            );
+            completeDailyChallenge("memory-match");
 
-          /*
-           * Daily Challenge gives +10 score.
-           */
           const finalScore =
             currentMoves +
             (dailyCompleted
               ? DAILY_CHALLENGE_BONUS_POINTS
               : 0);
 
-          /*
-           * Display normal game XP plus
-           * the Daily Challenge reward.
-           *
-           * completeDailyChallenge() already
-           * added the actual +50 XP.
-           */
           const displayedXP =
-            totalXP +
-            (dailyCompleted
-              ? 50
-              : 0);
+            totalXP + (dailyCompleted ? 50 : 0);
 
-          setXpEarned(
-            displayedXP
-          );
-
-          setDailyBonusEarned(
-            dailyCompleted
-          );
-
+          setXpEarned(displayedXP);
+          setDailyBonusEarned(dailyCompleted);
           setGameOver(true);
 
-          recordGame(
-            finalScore,
-            totalXP
-          );
-
-          unlockGameAchievement(
-            "memory-master"
-          );
+          recordGame(finalScore, totalXP);
+          unlockGameAchievement("memory-master");
         }
       }
 
@@ -356,9 +229,7 @@ export default function MemoryMatchPage() {
     gameOver,
   ]);
 
-  const handleCardClick = (
-    index: number
-  ) => {
+  const handleCardClick = (index: number) => {
     if (
       !started ||
       gameOver ||
@@ -370,65 +241,33 @@ export default function MemoryMatchPage() {
       return;
     }
 
-    const nextFlipped = [
-      ...flipped,
-      index,
-    ];
+    const nextFlipped = [...flipped, index];
 
-    /*
-     * When the second card is selected,
-     * immediately lock the board and count
-     * the move.
-     */
     if (nextFlipped.length === 2) {
       setChecking(true);
-      setMoves(
-        (previous) => previous + 1
-      );
+      setMoves((previous) => previous + 1);
     }
 
     setFlipped(nextFlipped);
   };
 
-  const isVisible = (
-    index: number
-  ) => {
-    return (
-      flipped.includes(index) ||
-      cards[index].matched
-    );
+  const isVisible = (index: number) =>
+    flipped.includes(index) || cards[index].matched;
+
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+
+    return `${String(minutes).padStart(2, "0")}:${String(
+      remainingSeconds,
+    ).padStart(2, "0")}`;
   };
 
-  const formatTime = (
-    seconds: number
-  ) => {
-    const minutes =
-      Math.floor(seconds / 60);
-
-    const remainingSeconds =
-      seconds % 60;
-
-    return `${String(
-      minutes
-    ).padStart(
-      2,
-      "0"
-    )}:${String(
-      remainingSeconds
-    ).padStart(
-      2,
-      "0"
-    )}`;
-  };
-
-  const currentDifficulty =
-    DIFFICULTIES[difficulty];
+  const currentDifficulty = DIFFICULTIES[difficulty];
 
   const progress =
     currentDifficulty.pairs > 0
-      ? (matchedPairs /
-          currentDifficulty.pairs) *
-        100
+      ? (matchedPairs / currentDifficulty.pairs) * 100
       : 0;
 
   return (
@@ -440,13 +279,10 @@ export default function MemoryMatchPage() {
       description="Flip two cards at a time and remember where every symbol is hiding."
       maxWidth="lg"
     >
-      {/* Daily Challenge */}
-      <GameDailyChallenge
-        gameId="memory-match"
-      />
+      <GameDailyChallenge gameId="memory-match" />
 
-      {/* Difficulty Selector */}
-      <div className="mx-auto mt-8 max-w-2xl">
+      {/* Difficulty */}
+      <div className="mx-auto mt-4 max-w-2xl sm:mt-4">
         <div className="mb-3 flex items-center justify-between">
           <p className="text-xs font-black uppercase tracking-[0.2em] text-white/30">
             Difficulty
@@ -460,77 +296,66 @@ export default function MemoryMatchPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-3 gap-2 sm:gap-3">
-          {(
-            Object.keys(
-              DIFFICULTIES
-            ) as Difficulty[]
-          ).map((level) => {
-            const selected =
-              difficulty === level;
+        <div className="grid grid-cols-3 gap-1.5 sm:gap-3">
+          {(Object.keys(DIFFICULTIES) as Difficulty[]).map(
+            (level) => {
+              const selected = difficulty === level;
+              const difficultyLocked =
+                started && !gameOver;
 
-            const difficultyLocked =
-              started && !gameOver;
-
-            return (
-              <button
-                key={level}
-                type="button"
-                onClick={() =>
-                  setDifficulty(level)
-                }
-                disabled={
-                  difficultyLocked
-                }
-                className={`group rounded-2xl border p-3 text-left transition-all duration-200 sm:p-4 ${
-                  selected
-                    ? "border-cyan-300/30 bg-cyan-300/8 shadow-[0_0_30px_rgba(103,232,249,0.05)]"
-                    : "border-white/10 bg-white/[0.035] hover:-translate-y-0.5 hover:bg-white/6"
-                } ${
-                  difficultyLocked
-                    ? "cursor-not-allowed opacity-50"
-                    : ""
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xl">
-                    {level === "easy"
-                      ? "🌱"
-                      : level === "normal"
-                        ? "⚡"
-                        : "🔥"}
-                  </span>
-
-                  {selected && (
-                    <span className="h-2 w-2 rounded-full bg-cyan-300 shadow-[0_0_10px_rgba(103,232,249,0.8)]" />
-                  )}
-                </div>
-
-                <p
-                  className={`mt-2 text-sm font-black ${
+              return (
+                <button
+                  key={level}
+                  type="button"
+                  onClick={() => setDifficulty(level)}
+                  disabled={difficultyLocked}
+                  className={`group rounded-2xl border p-2.5 text-left transition-all duration-200 sm:p-4 ${
                     selected
-                      ? "text-cyan-200"
-                      : "text-white/70"
+                      ? "border-cyan-300/30 bg-cyan-300/8 shadow-[0_0_30px_rgba(103,232,249,0.05)]"
+                      : "border-white/10 bg-white/[0.035] hover:-translate-y-0.5 hover:bg-white/6"
+                  } ${
+                    difficultyLocked
+                      ? "cursor-not-allowed opacity-50"
+                      : ""
                   }`}
                 >
-                  {DIFFICULTIES[level].label}
-                </p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xl">
+                      {level === "easy"
+                        ? "🌱"
+                        : level === "normal"
+                          ? "⚡"
+                          : "🔥"}
+                    </span>
 
-                <p className="mt-1 text-xs text-white/30">
-                  {
-                    DIFFICULTIES[level]
-                      .description
-                  }
-                </p>
-              </button>
-            );
-          })}
+                    {selected && (
+                      <span className="h-2 w-2 rounded-full bg-cyan-300 shadow-[0_0_10px_rgba(103,232,249,0.8)]" />
+                    )}
+                  </div>
+
+                  <p
+                    className={`mt-2 text-sm font-black ${
+                      selected
+                        ? "text-cyan-200"
+                        : "text-white/70"
+                    }`}
+                  >
+                    {DIFFICULTIES[level].label}
+                  </p>
+
+                  <p className="mt-1 text-xs text-white/30">
+                    {DIFFICULTIES[level].description}
+                  </p>
+                </button>
+              );
+            },
+          )}
         </div>
       </div>
 
       {/* Stats */}
-      <div className="mx-auto mt-5 grid max-w-2xl grid-cols-3 gap-2 sm:gap-3">
-        <div className="mp-card rounded-2xl p-3 text-center sm:p-4">
+      <div className="mx-auto mt-3 grid max-w-2xl grid-cols-3 gap-1.5 sm:mt-5 sm:gap-3">
+        <div className="mp-card rounded-2xl p-2 text-center sm:p-4">
           <p className="text-[10px] font-black uppercase tracking-widest text-white/30 sm:text-xs">
             Moves
           </p>
@@ -540,21 +365,20 @@ export default function MemoryMatchPage() {
           </p>
         </div>
 
-        <div className="mp-card rounded-2xl p-3 text-center sm:p-4">
+        <div className="mp-card rounded-2xl p-2 text-center sm:p-4">
           <p className="text-[10px] font-black uppercase tracking-widest text-white/30 sm:text-xs">
             Pairs
           </p>
 
           <p className="mt-1 text-xl font-black text-cyan-300 sm:text-2xl">
             {matchedPairs}
-
             <span className="text-white/25">
               /{currentDifficulty.pairs}
             </span>
           </p>
         </div>
 
-        <div className="mp-card rounded-2xl p-3 text-center sm:p-4">
+        <div className="mp-card rounded-2xl p-2 text-center sm:p-4">
           <p className="text-[10px] font-black uppercase tracking-widest text-white/30 sm:text-xs">
             Time
           </p>
@@ -567,7 +391,7 @@ export default function MemoryMatchPage() {
 
       {/* Progress */}
       {started && !gameOver && (
-        <div className="mx-auto mt-5 max-w-2xl">
+        <div className="mx-auto mt-3 max-w-2xl sm:mt-5">
           <div className="mb-2 flex items-center justify-between text-xs">
             <span className="font-bold text-white/30">
               Match progress
@@ -581,19 +405,17 @@ export default function MemoryMatchPage() {
           <div className="h-1.5 overflow-hidden rounded-full bg-white/6">
             <div
               className="h-full rounded-full bg-linear-to-r from-cyan-300 via-purple-400 to-pink-300 transition-all duration-500"
-              style={{
-                width: `${progress}%`,
-              }}
+              style={{ width: `${progress}%` }}
             />
           </div>
         </div>
       )}
 
-      {/* Game Board */}
-      <section className="mp-card mp-fade-up mx-auto mt-6 max-w-2xl rounded-4xl p-5 shadow-2xl sm:mt-8 sm:p-8">
+      {/* Main Game */}
+      <section className="mp-card mp-fade-up mx-auto mt-3 w-full max-w-2xl rounded-3xl p-3 shadow-2xl sm:mt-5 sm:rounded-4xl sm:p-6">
         {started && !gameOver && (
           <>
-            <div className="mb-5 flex items-center justify-between">
+            <div className="mb-4 flex items-center justify-between sm:mb-3">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.18em] text-white/25">
                   Find the pairs
@@ -611,58 +433,50 @@ export default function MemoryMatchPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-4 gap-2.5 sm:gap-3">
-              {cards.map(
-                (card, index) => {
-                  const visible =
-                    isVisible(index);
+            {/* Card Grid */}
+            <div className="mx-auto grid w-full max-w-lg grid-cols-4 gap-1.5 sm:gap-3">
+              {cards.map((card, index) => {
+                const visible = isVisible(index);
 
-                  return (
-                    <button
-                      key={card.id}
-                      type="button"
-                      onClick={() =>
-                        handleCardClick(
-                          index
-                        )
-                      }
-                      disabled={
-                        !started ||
-                        gameOver ||
-                        checking ||
-                        visible
-                      }
-                      aria-label={
-                        visible
-                          ? `Memory card ${card.symbol}`
-                          : `Hidden memory card ${
-                              index + 1
-                            }`
-                      }
-                      className={`group relative aspect-square overflow-hidden rounded-2xl border transition-all duration-200 sm:rounded-3xl ${
-                        visible
-                          ? "border-cyan-300/20 bg-linear-to-br from-cyan-300/11 to-purple-300/5 shadow-lg shadow-cyan-400/3"
-                          : "border-white/[0.07] bg-white/[0.035] hover:-translate-y-1 hover:border-cyan-300/20 hover:bg-white/6.5 hover:shadow-xl hover:shadow-cyan-400/3 active:scale-95"
-                      }`}
-                    >
-                      <div className="pointer-events-none absolute inset-0 bg-linear-to-br from-white/4 to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
+                return (
+                  <button
+                    key={card.id}
+                    type="button"
+                    onClick={() => handleCardClick(index)}
+                    disabled={
+                      !started ||
+                      gameOver ||
+                      checking ||
+                      visible
+                    }
+                    aria-label={
+                      visible
+                        ? `Memory card ${card.symbol}`
+                        : `Hidden memory card ${index + 1}`
+                    }
+                    className={`group relative aspect-square overflow-hidden rounded-xl border transition-all duration-200 sm:rounded-3xl ${
+                      visible
+                        ? "border-cyan-300/20 bg-linear-to-br from-cyan-300/11 to-purple-300/5 shadow-lg shadow-cyan-400/3"
+                        : "border-white/[0.07] bg-white/[0.035] hover:-translate-y-1 hover:border-cyan-300/20 hover:bg-white/6.5 hover:shadow-xl hover:shadow-cyan-400/3 active:scale-95"
+                    }`}
+                  >
+                    <div className="pointer-events-none absolute inset-0 bg-linear-to-br from-white/4 to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
 
-                      {visible ? (
-                        <span className="relative flex h-full items-center justify-center text-3xl animate-[pop_0.2s_ease-out] sm:text-4xl md:text-5xl">
-                          {card.symbol}
-                        </span>
-                      ) : (
-                        <span className="relative flex h-full items-center justify-center text-2xl font-black text-white/16 transition-transform duration-200 group-hover:scale-110 group-hover:text-cyan-200/30 sm:text-3xl">
-                          ?
-                        </span>
-                      )}
-                    </button>
-                  );
-                }
-              )}
+                    {visible ? (
+                      <span className="relative flex h-full items-center justify-center text-2xl animate-[pop_0.2s_ease-out] sm:text-4xl md:text-5xl">
+                        {card.symbol}
+                      </span>
+                    ) : (
+                      <span className="relative flex h-full items-center justify-center text-2xl font-black text-white/16 transition-transform duration-200 group-hover:scale-110 group-hover:text-cyan-200/30 sm:text-3xl">
+                        ?
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
 
-            <div className="mt-5 flex items-center justify-center gap-2 text-xs text-white/25">
+            <div className="mt-3 flex items-center justify-center gap-2 text-[10px] text-white/25 sm:mt-5 sm:text-xs">
               <span className="h-1.5 w-1.5 rounded-full bg-cyan-300/50" />
 
               {checking
@@ -674,12 +488,12 @@ export default function MemoryMatchPage() {
 
         {/* Start Screen */}
         {!started && !gameOver && (
-          <div className="flex min-h-105 flex-col items-center justify-center px-3 py-10 text-center sm:min-h-115">
+          <div className="flex min-h-80 flex-col items-center justify-center px-3 py-6 text-center sm:min-h-115 sm:py-10">
             <div className="flex h-20 w-20 items-center justify-center rounded-[1.75rem] border border-cyan-300/10 bg-cyan-300/5 text-4xl shadow-xl shadow-cyan-400/4">
               🎴
             </div>
 
-            <p className="mt-6 text-xs font-black uppercase tracking-[0.2em] text-cyan-300/50">
+            <p className="mt-3 text-xs font-black uppercase tracking-[0.2em] text-cyan-300/50 sm:mt-4">
               Ready?
             </p>
 
@@ -695,35 +509,27 @@ export default function MemoryMatchPage() {
               pairs using as few moves as possible.
             </p>
 
-            <div className="mt-6 flex items-center gap-2">
+            <div className="mt-4 flex items-center gap-2">
               <div className="rounded-xl border border-white/[0.07] bg-white/[0.035] px-3 py-2 text-xs font-bold text-white/40">
-                {currentDifficulty.pairs *
-                  2}{" "}
-                cards
+                {currentDifficulty.pairs * 2} cards
               </div>
 
               <div className="rounded-xl border border-white/[0.07] bg-white/[0.035] px-3 py-2 text-xs font-bold text-white/40">
-                +{currentDifficulty.xp}{" "}
-                base XP
+                +{currentDifficulty.xp} base XP
               </div>
             </div>
 
             {isDailyChallenge && (
               <div className="mt-4 rounded-xl border border-purple-300/10 bg-purple-300/5 px-3 py-2 text-xs font-bold text-purple-200/60">
-                🎯 Today&apos;s Daily
-                Challenge ·{" "}
+                🎯 Today&apos;s Daily Challenge ·{" "}
                 {dailyChallenge.difficulty.toUpperCase()}
               </div>
             )}
 
             <button
               type="button"
-              onClick={() =>
-                startGame(
-                  difficulty
-                )
-              }
-              className="mp-button mt-7 bg-white px-7 py-3.5 text-sm text-black shadow-xl shadow-white/5 hover:bg-cyan-50"
+              onClick={() => startGame(difficulty)}
+              className="mp-button mt-5 bg-white px-7 py-3.5 text-sm text-black shadow-xl shadow-white/5 hover:bg-cyan-50 sm:mt-4"
             >
               🎮 Start Game
             </button>
@@ -732,12 +538,12 @@ export default function MemoryMatchPage() {
 
         {/* Result Screen */}
         {gameOver && (
-          <div className="flex min-h-105 flex-col items-center justify-center px-3 py-10 text-center sm:min-h-115">
+          <div className="flex min-h-80 flex-col items-center justify-center px-3 py-6 text-center sm:min-h-115 sm:py-10">
             <div className="mp-float flex h-20 w-20 items-center justify-center rounded-[1.75rem] border border-yellow-300/10 bg-yellow-300/5 text-4xl">
               🏆
             </div>
 
-            <p className="mt-6 text-xs font-black uppercase tracking-[0.2em] text-yellow-300/60">
+            <p className="mt-3 text-xs font-black uppercase tracking-[0.2em] text-yellow-300/60 sm:mt-4">
               Challenge Complete
             </p>
 
@@ -753,7 +559,7 @@ export default function MemoryMatchPage() {
               moves.
             </p>
 
-            <div className="mt-6 grid w-full max-w-sm grid-cols-2 gap-3">
+            <div className="mt-4 grid w-full max-w-sm grid-cols-2 gap-3">
               <div className="rounded-2xl border border-white/[0.07] bg-white/[0.035] p-4">
                 <p className="text-[10px] font-black uppercase tracking-[0.15em] text-white/25">
                   Time
@@ -786,8 +592,7 @@ export default function MemoryMatchPage() {
                 </p>
 
                 <p className="mt-1 text-xs text-white/30">
-                  Today&apos;s challenge
-                  reward has been added.
+                  Today&apos;s challenge reward has been added.
                 </p>
               </div>
             )}
@@ -796,14 +601,10 @@ export default function MemoryMatchPage() {
               Added to your MindPlay progress
             </p>
 
-            <div className="mt-7 flex w-full max-w-sm flex-col gap-2.5 sm:flex-row">
+            <div className="mt-4 flex w-full max-w-sm flex-col gap-2.5 sm:flex-row">
               <button
                 type="button"
-                onClick={() =>
-                  startGame(
-                    difficulty
-                  )
-                }
+                onClick={() => startGame(difficulty)}
                 className="mp-button flex-1 bg-white px-6 py-3.5 text-sm text-black hover:bg-cyan-50"
               >
                 Play Again
@@ -820,12 +621,10 @@ export default function MemoryMatchPage() {
         )}
       </section>
 
-      {/* Tip */}
-      <div className="mx-auto mt-5 max-w-2xl rounded-2xl border border-white/6 bg-white/2.5 p-4 sm:p-5">
+      {/* Memory Tip */}
+      <div className="mx-auto mt-5 hidden max-w-2xl rounded-2xl border border-white/6 bg-white/2.5 p-4 sm:block sm:p-5">
         <div className="flex gap-3">
-          <span className="text-lg">
-            💡
-          </span>
+          <span className="text-lg">💡</span>
 
           <div>
             <p className="text-sm font-black">
@@ -833,9 +632,8 @@ export default function MemoryMatchPage() {
             </p>
 
             <p className="mt-1 text-xs leading-6 text-white/35 sm:text-sm">
-              Remember positions instead of
-              just symbols. Group nearby
-              cards together in your mind.
+              Remember positions instead of just symbols.
+              Group nearby cards together in your mind.
             </p>
           </div>
         </div>

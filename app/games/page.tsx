@@ -10,6 +10,7 @@ import {
 import { getLevelProgress } from "@/lib/levels";
 import PlayerFooterText from "@/components/PlayerFooterText";
 import PlayerBrand from "@/components/PlayerBrand";
+import AccountMenu from "@/components/AccountMenu";
 
 type GameCategory =
   | "MEMORY"
@@ -201,12 +202,42 @@ const categories: Array<"ALL" | GameCategory> = [
   "LOGIC",
 ];
 
+function shuffleGames(gameList: Game[]): Game[] {
+  const shuffled = [...gameList];
+
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const randomIndex = Math.floor(
+      Math.random() * (index + 1)
+    );
+
+    [shuffled[index], shuffled[randomIndex]] = [
+      shuffled[randomIndex],
+      shuffled[index],
+    ];
+  }
+
+  return shuffled;
+}
+
 export default function GamesPage() {
   const [progress, setProgress] =
     useState<MindPlayProgress | null>(null);
 
   const [activeCategory, setActiveCategory] =
     useState<"ALL" | GameCategory>("ALL");
+
+  const [shuffledGames, setShuffledGames] =
+    useState<Game[]>(games);
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      setShuffledGames(shuffleGames(games));
+    });
+
+    return () => {
+      cancelAnimationFrame(frame);
+    };
+  }, []);
 
   useEffect(() => {
     const update = () => {
@@ -226,13 +257,13 @@ export default function GamesPage() {
 
   const filteredGames = useMemo(() => {
     if (activeCategory === "ALL") {
-      return games;
+      return shuffledGames;
     }
 
-    return games.filter(
+    return shuffledGames.filter(
       (game) => game.category === activeCategory
     );
-  }, [activeCategory]);
+  }, [activeCategory, shuffledGames]);
 
   return (
     <main className="min-h-screen overflow-hidden">
@@ -246,20 +277,29 @@ export default function GamesPage() {
       </div>
 
       {/* Navigation */}
-      <nav className="mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-6 sm:px-8">
+      <nav className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-5 py-6 sm:px-8">
         <Link
           href="/"
-          className="group flex items-center gap-2 text-lg font-black tracking-tight"
+          className="group flex min-w-0 items-center gap-2 text-lg font-black tracking-tight"
         >
           <PlayerBrand />
         </Link>
 
-        <Link
-          href="/"
-          className="mp-button border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white/70 hover:bg-white/9 hover:text-white"
-        >
-          ← Home
-        </Link>
+        <div className="flex shrink-0 items-center gap-2">
+          <AccountMenu />
+
+          <Link
+            href="/"
+            aria-label="Home"
+            className="mp-button border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white/70 hover:bg-white/9 hover:text-white sm:px-4"
+          >
+            <span className="sm:hidden">🏚️</span>
+
+            <span className="hidden sm:inline">
+              🏚️ Home
+            </span>
+          </Link>
+        </div>
       </nav>
 
       {/* Main content */}

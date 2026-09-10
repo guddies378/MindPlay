@@ -333,7 +333,7 @@ export default function OddOneOutPage() {
     timeLeft <= 5 && started;
 
   return (
-    <main className="min-h-screen overflow-hidden bg-transparent text-white">
+    <main className="min-h-[100dvh] overflow-hidden bg-transparent text-white">
       {/* Background */}
 
       <div className="mp-ambient-background pointer-events-none fixed inset-0 overflow-hidden">
@@ -376,7 +376,7 @@ export default function OddOneOutPage() {
             Visual Challenge
           </p>
 
-          <h1 className="mt-2 text-4xl font-black tracking-tight sm:text-5xl">
+          <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
             Odd{" "}
             <span className="mp-gradient-text">
               One Out
@@ -397,7 +397,7 @@ export default function OddOneOutPage() {
 
         {/* Difficulty */}
 
-        <div className="mx-auto mt-8 max-w-2xl">
+        <div className="mx-auto mt-4 max-w-2xl">
           <div className="mb-3 flex items-center justify-between">
             <p className="text-xs font-black uppercase tracking-[0.2em] text-white/30">
               Difficulty
@@ -550,7 +550,7 @@ export default function OddOneOutPage() {
 
         {/* Game Card */}
 
-        <div className="mp-card mp-fade-up mx-auto mt-6 max-w-2xl rounded-4xl p-5 shadow-2xl sm:mt-8 sm:p-8">
+        <div className="mp-card mp-fade-up mx-auto mt-4 max-w-2xl rounded-4xl p-5 shadow-2xl sm:mt-4 sm:p-8">
           {/* Start */}
 
           {!started && !gameOver && (
@@ -559,7 +559,7 @@ export default function OddOneOutPage() {
                 👀
               </div>
 
-              <p className="mt-6 text-xs font-black uppercase tracking-[0.25em] text-cyan-300/50">
+              <p className="mt-4 text-xs font-black uppercase tracking-[0.25em] text-cyan-300/50">
                 {
                   DIFFICULTIES[
                     difficulty
@@ -578,7 +578,7 @@ export default function OddOneOutPage() {
                 out.
               </p>
 
-              <div className="mt-6 flex items-center justify-center gap-2">
+              <div className="mt-4 flex items-center justify-center gap-2">
                 <div className="rounded-xl border border-white/[0.07] bg-white/[0.035] px-3 py-2 text-xs font-bold text-white/40">
                   {DIFFICULTIES[difficulty].time}s timer
                 </div>
@@ -599,7 +599,7 @@ export default function OddOneOutPage() {
                 onClick={() =>
                   startGame(difficulty)
                 }
-                className="mp-button mt-7 rounded-2xl bg-white px-7 py-3.5 text-sm font-black text-[#080b14] shadow-lg hover:bg-cyan-100"
+                className="mp-button mt-4 rounded-2xl bg-white px-7 py-3.5 text-sm font-black text-[#080b14] shadow-lg hover:bg-cyan-100"
               >
                 Start Game
                 <span className="ml-2">
@@ -613,7 +613,7 @@ export default function OddOneOutPage() {
 
           {started && !gameOver && (
             <div className="text-center">
-              <div className="mb-6 flex items-center justify-between">
+              <div className="mb-4 flex items-center justify-between">
                 <div className="text-left">
                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/25">
                     Visual Scan
@@ -748,7 +748,7 @@ export default function OddOneOutPage() {
                 🏆
               </div>
 
-              <p className="mt-6 text-xs font-black uppercase tracking-[0.25em] text-fuchsia-300/60">
+              <p className="mt-4 text-xs font-black uppercase tracking-[0.25em] text-fuchsia-300/60">
                 Challenge Complete
               </p>
 
@@ -766,7 +766,7 @@ export default function OddOneOutPage() {
 
               {/* Results */}
 
-              <div className="mt-7 grid grid-cols-3 gap-2 sm:gap-3">
+              <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-3">
                 <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
                   <p className="text-[10px] font-black uppercase tracking-wider text-white/25">
                     Score
@@ -826,7 +826,7 @@ export default function OddOneOutPage() {
                 onClick={() =>
                   startGame(difficulty)
                 }
-                className="mp-button mt-6 rounded-2xl bg-white px-7 py-3.5 text-sm font-black text-[#080b14] hover:bg-cyan-100"
+                className="mp-button mt-4 rounded-2xl bg-white px-7 py-3.5 text-sm font-black text-[#080b14] hover:bg-cyan-100"
               >
                 Play Again
                 <span className="ml-2">
@@ -839,7 +839,7 @@ export default function OddOneOutPage() {
 
         {/* Tip */}
 
-        <div className="mp-card mx-auto mt-6 max-w-2xl rounded-2xl p-5">
+        <div className="mp-card mx-auto mt-4 max-w-2xl rounded-2xl p-5">
           <div className="flex gap-3">
             <span className="text-xl">
               👀
@@ -863,7 +863,7 @@ export default function OddOneOutPage() {
 
       {/* Footer */}
 
-      <footer className="relative z-10 border-t border-white/5 py-8 text-center">
+      <footer className="mindplay-footer hidden relative z-10 border-t border-white/5 py-8 text-center">
         <PlayerFooterText>
           🧠 MindPlay{" "}
           <span className="mx-2">•</span>{" "}

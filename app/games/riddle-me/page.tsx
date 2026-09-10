@@ -706,7 +706,7 @@ export default function RiddleMePage() {
 
       {/* Difficulty */}
 
-      <div className="mx-auto mt-8 max-w-2xl">
+      <div className="mx-auto mt-4 max-w-2xl">
         <div className="mb-3 flex items-center justify-between">
           <p className="text-xs font-black uppercase tracking-[0.2em] text-white/30">
             Difficulty
@@ -846,7 +846,7 @@ export default function RiddleMePage() {
 
       {/* Game Card */}
 
-      <div className="mp-card mp-fade-up mx-auto mt-6 max-w-2xl rounded-4xl p-5 shadow-2xl sm:mt-8 sm:p-8">
+      <div className="mp-card mp-fade-up mx-auto mt-4 max-w-2xl rounded-4xl p-5 shadow-2xl sm:mt-4 sm:p-8">
         {/* Start */}
 
         {!started && !gameOver && (
@@ -855,7 +855,7 @@ export default function RiddleMePage() {
               🧠
             </div>
 
-            <p className="mt-6 text-xs font-black uppercase tracking-[0.25em] text-cyan-300/50">
+            <p className="mt-4 text-xs font-black uppercase tracking-[0.25em] text-cyan-300/50">
               {DIFFICULTIES[difficulty].label} Mode
             </p>
 
@@ -868,7 +868,7 @@ export default function RiddleMePage() {
               before the clock hits zero.
             </p>
 
-            <div className="mt-6 flex items-center justify-center gap-2">
+            <div className="mt-4 flex items-center justify-center gap-2">
               <div className="rounded-xl border border-white/[0.07] bg-white/[0.035] px-3 py-2 text-xs font-bold text-white/40">
                 {DIFFICULTIES[difficulty].time}s timer
               </div>
@@ -889,7 +889,7 @@ export default function RiddleMePage() {
               onClick={() =>
                 startGame(difficulty)
               }
-              className="mp-button mt-7 rounded-2xl bg-white px-7 py-3.5 text-sm font-black text-[#080b14] shadow-lg hover:bg-cyan-100"
+              className="mp-button mt-4 rounded-2xl bg-white px-7 py-3.5 text-sm font-black text-[#080b14] shadow-lg hover:bg-cyan-100"
             >
               Start Game
               <span className="ml-2">→</span>
@@ -901,7 +901,7 @@ export default function RiddleMePage() {
 
         {started && !gameOver && (
           <div className="text-center">
-            <div className="mb-5 flex items-center justify-between">
+            <div className="mb-3 flex items-center justify-between">
               <div className="text-left">
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/25">
                   Current Challenge
@@ -1050,7 +1050,7 @@ export default function RiddleMePage() {
               🏆
             </div>
 
-            <p className="mt-6 text-xs font-black uppercase tracking-[0.25em] text-fuchsia-300/60">
+            <p className="mt-4 text-xs font-black uppercase tracking-[0.25em] text-fuchsia-300/60">
               Challenge Complete
             </p>
 
@@ -1068,7 +1068,7 @@ export default function RiddleMePage() {
 
             {/* Result stats */}
 
-            <div className="mt-7 grid grid-cols-3 gap-2 sm:gap-3">
+            <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-3">
               <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
                 <p className="text-[10px] font-black uppercase tracking-wider text-white/25">
                   Score
@@ -1139,7 +1139,7 @@ export default function RiddleMePage() {
               onClick={() =>
                 startGame(difficulty)
               }
-              className="mp-button mt-6 rounded-2xl bg-white px-7 py-3.5 text-sm font-black text-[#080b14] hover:bg-cyan-100"
+              className="mp-button mt-4 rounded-2xl bg-white px-7 py-3.5 text-sm font-black text-[#080b14] hover:bg-cyan-100"
             >
               Play Again
 
@@ -1153,7 +1153,7 @@ export default function RiddleMePage() {
 
       {/* Tip */}
 
-      <div className="mp-card mx-auto mt-6 max-w-2xl rounded-2xl p-5">
+      <div className="mp-card mx-auto mt-4 max-w-2xl rounded-2xl p-5">
         <div className="flex gap-3">
           <span className="text-xl">
             💡

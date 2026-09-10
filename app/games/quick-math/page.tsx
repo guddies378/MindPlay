@@ -50,27 +50,40 @@ const DIFFICULTIES = {
   },
 };
 
-function randomNumber(min: number, max: number) {
+function randomNumber(
+  min: number,
+  max: number,
+) {
   return (
-    Math.floor(Math.random() * (max - min + 1)) +
-    min
+    Math.floor(
+      Math.random() * (max - min + 1),
+    ) + min
   );
 }
 
 function createQuestion(
-  difficulty: Difficulty
+  difficulty: Difficulty,
 ): Question {
-  const settings = DIFFICULTIES[difficulty];
+  const settings =
+    DIFFICULTIES[difficulty];
 
   const operator =
     settings.operations[
       Math.floor(
-        Math.random() * settings.operations.length
+        Math.random() *
+          settings.operations.length,
       )
     ];
 
-  let a = randomNumber(1, settings.maxNumber);
-  let b = randomNumber(1, settings.maxNumber);
+  let a = randomNumber(
+    1,
+    settings.maxNumber,
+  );
+
+  let b = randomNumber(
+    1,
+    settings.maxNumber,
+  );
 
   if (operator === "-") {
     if (b > a) {
@@ -95,8 +108,11 @@ function createQuestion(
   }
 
   if (operator === "÷") {
-    const divisor = randomNumber(2, 12);
-    const answer = randomNumber(1, 12);
+    const divisor =
+      randomNumber(2, 12);
+
+    const answer =
+      randomNumber(1, 12);
 
     return {
       a: divisor * answer,
@@ -120,50 +136,66 @@ export default function QuickMathPage() {
 
   const [question, setQuestion] =
     useState<Question>(() =>
-      createQuestion("normal")
+      createQuestion("normal"),
     );
 
-  const [answer, setAnswer] = useState("");
+  const [answer, setAnswer] =
+    useState("");
 
-  const [score, setScore] = useState(0);
+  const [score, setScore] =
+    useState(0);
 
-  const [correct, setCorrect] = useState(0);
+  const [correct, setCorrect] =
+    useState(0);
 
-  const [wrong, setWrong] = useState(0);
+  const [wrong, setWrong] =
+    useState(0);
 
-  const [timeLeft, setTimeLeft] = useState(
-    DIFFICULTIES.normal.time
-  );
+  const [timeLeft, setTimeLeft] =
+    useState(
+      DIFFICULTIES.normal.time,
+    );
 
-  const [started, setStarted] = useState(false);
+  const [started, setStarted] =
+    useState(false);
 
-  const [gameOver, setGameOver] = useState(false);
+  const [gameOver, setGameOver] =
+    useState(false);
 
-  const [feedback, setFeedback] = useState<
-    "correct" | "wrong" | null
-  >(null);
+  const [feedback, setFeedback] =
+    useState<
+      "correct" | "wrong" | null
+    >(null);
 
-  const [xpEarned, setXpEarned] = useState<
-    number | null
-  >(null);
+  const [xpEarned, setXpEarned] =
+    useState<number | null>(null);
 
   const [
     dailyChallengeCompleted,
     setDailyChallengeCompleted,
   ] = useState(false);
 
-  const dailyChallenge = getDailyChallenge();
+  const dailyChallenge =
+    getDailyChallenge();
 
   const isDailyChallenge =
-    dailyChallenge.game === "quick-math";
+    dailyChallenge.game ===
+    "quick-math";
 
+  /*
+   * Start a new game.
+   */
   const startGame = (
-    selectedDifficulty: Difficulty
+    selectedDifficulty: Difficulty,
   ) => {
-    setDifficulty(selectedDifficulty);
+    setDifficulty(
+      selectedDifficulty,
+    );
 
     setQuestion(
-      createQuestion(selectedDifficulty)
+      createQuestion(
+        selectedDifficulty,
+      ),
     );
 
     setAnswer("");
@@ -175,7 +207,9 @@ export default function QuickMathPage() {
     setWrong(0);
 
     setTimeLeft(
-      DIFFICULTIES[selectedDifficulty].time
+      DIFFICULTIES[
+        selectedDifficulty
+      ].time,
     );
 
     setStarted(true);
@@ -186,7 +220,9 @@ export default function QuickMathPage() {
 
     setXpEarned(null);
 
-    setDailyChallengeCompleted(false);
+    setDailyChallengeCompleted(
+      false,
+    );
   };
 
   /*
@@ -198,86 +234,110 @@ export default function QuickMathPage() {
     }
 
     if (timeLeft <= 0) {
-      const timeout = window.setTimeout(() => {
-        setGameOver(true);
+      const timeout =
+        window.setTimeout(() => {
+          setGameOver(true);
 
-        const baseXP =
-          DIFFICULTIES[difficulty].xp;
+          const baseXP =
+            DIFFICULTIES[difficulty]
+              .xp;
 
-        const scoreBonus = Math.min(
-          30,
-          Math.floor(score / 5)
-        );
+          const scoreBonus =
+            Math.min(
+              30,
+              Math.floor(
+                score / 5,
+              ),
+            );
 
-        const totalXP =
-          baseXP + scoreBonus;
+          const totalXP =
+            baseXP + scoreBonus;
 
-        /*
-         * Daily Challenge
-         *
-         * completeDailyChallenge() handles:
-         *
-         * +50 XP
-         * once-per-day protection
-         */
-        const dailyCompleted =
-          completeDailyChallenge(
-            "quick-math"
+          /*
+           * Daily Challenge
+           *
+           * completeDailyChallenge()
+           * handles:
+           * - +50 XP
+           * - once-per-day protection
+           */
+          const dailyCompleted =
+            completeDailyChallenge(
+              "quick-math",
+            );
+
+          setDailyChallengeCompleted(
+            dailyCompleted,
           );
 
-        setDailyChallengeCompleted(
-          dailyCompleted
-        );
+          /*
+           * Daily Challenge gives
+           * +10 score.
+           */
+          const finalScore =
+            score +
+            (dailyCompleted
+              ? DAILY_CHALLENGE_BONUS_POINTS
+              : 0);
 
-        /*
-         * Daily Challenge gives +10 score.
-         */
-        const finalScore =
-          score +
-          (dailyCompleted
-            ? DAILY_CHALLENGE_BONUS_POINTS
-            : 0);
+          /*
+           * Display normal game XP
+           * plus Daily Challenge XP.
+           *
+           * completeDailyChallenge()
+           * already adds the +50 XP.
+           */
+          const displayedXP =
+            totalXP +
+            (dailyCompleted
+              ? 50
+              : 0);
 
-        /*
-         * Display normal game XP plus
-         * the Daily Challenge XP.
-         *
-         * IMPORTANT:
-         * completeDailyChallenge() already adds
-         * the +50 XP, so recordGame() receives
-         * only the normal game XP.
-         */
-        const displayedXP =
-          totalXP +
-          (dailyCompleted ? 50 : 0);
+          setScore(finalScore);
 
-        setScore(finalScore);
+          setXpEarned(
+            displayedXP,
+          );
 
-        setXpEarned(displayedXP);
+          /*
+           * Save overall progress.
+           */
+          recordGame(
+            finalScore,
+            totalXP,
+          );
 
-        recordGame(
-          finalScore,
-          totalXP
-        );
-
-        unlockGameAchievement(
-          "math-machine"
-        );
-      }, 0);
+          /*
+           * 🏆 Math Machine
+           *
+           * Unlock when the player
+           * completes a Quick Math
+           * session.
+           */
+          unlockGameAchievement(
+            "math-machine",
+          );
+        }, 0);
 
       return () => {
-        window.clearTimeout(timeout);
+        window.clearTimeout(
+          timeout,
+        );
       };
     }
 
-    const timer = window.setTimeout(() => {
-      setTimeLeft(
-        (previous) => previous - 1
-      );
-    }, 1000);
+    const timer =
+      window.setTimeout(() => {
+        setTimeLeft(
+          (previous) =>
+            previous - 1,
+        );
+      }, 1000);
 
     return () => {
-      window.clearTimeout(timer);
+      window.clearTimeout(
+        timer,
+      );
     };
   }, [
     started,
@@ -287,6 +347,9 @@ export default function QuickMathPage() {
     score,
   ]);
 
+  /*
+   * Submit answer.
+   */
   const submitAnswer = () => {
     if (
       !started ||
@@ -296,23 +359,30 @@ export default function QuickMathPage() {
       return;
     }
 
-    const numericAnswer = Number(answer);
+    const numericAnswer =
+      Number(answer);
 
     if (
-      numericAnswer === question.answer
+      numericAnswer ===
+      question.answer
     ) {
       setScore(
-        (previous) => previous + 10
+        (previous) =>
+          previous + 10,
       );
 
       setCorrect(
-        (previous) => previous + 1
+        (previous) =>
+          previous + 1,
       );
 
-      setFeedback("correct");
+      setFeedback(
+        "correct",
+      );
     } else {
       setWrong(
-        (previous) => previous + 1
+        (previous) =>
+          previous + 1,
       );
 
       setFeedback("wrong");
@@ -324,13 +394,18 @@ export default function QuickMathPage() {
       setFeedback(null);
 
       setQuestion(
-        createQuestion(difficulty)
+        createQuestion(
+          difficulty,
+        ),
       );
     }, 350);
   };
 
+  /*
+   * Enter key support.
+   */
   const handleKeyDown = (
-    event: React.KeyboardEvent<HTMLInputElement>
+    event: React.KeyboardEvent<HTMLInputElement>,
   ) => {
     if (event.key === "Enter") {
       submitAnswer();
@@ -339,7 +414,8 @@ export default function QuickMathPage() {
 
   const timePercentage =
     (timeLeft /
-      DIFFICULTIES[difficulty].time) *
+      DIFFICULTIES[difficulty]
+        .time) *
     100;
 
   return (
@@ -359,7 +435,7 @@ export default function QuickMathPage() {
 
       {/* Difficulty */}
 
-      <div className="mx-auto mt-8 max-w-2xl">
+      <div className="mx-auto mt-4 max-w-2xl">
         <div className="mb-3 flex items-center justify-between">
           <p className="text-xs font-black uppercase tracking-[0.2em] text-white/30">
             Difficulty
@@ -368,7 +444,12 @@ export default function QuickMathPage() {
           <p className="text-xs text-white/30">
             Base XP{" "}
             <span className="font-bold text-cyan-300">
-              +{DIFFICULTIES[difficulty].xp}
+              +
+              {
+                DIFFICULTIES[
+                  difficulty
+                ].xp
+              }
             </span>
           </p>
         </div>
@@ -376,7 +457,7 @@ export default function QuickMathPage() {
         <div className="grid grid-cols-3 gap-2 sm:gap-3">
           {(
             Object.keys(
-              DIFFICULTIES
+              DIFFICULTIES,
             ) as Difficulty[]
           ).map((level) => {
             const selected =
@@ -390,9 +471,13 @@ export default function QuickMathPage() {
                 key={level}
                 type="button"
                 onClick={() =>
-                  setDifficulty(level)
+                  setDifficulty(
+                    level,
+                  )
                 }
-                disabled={difficultyLocked}
+                disabled={
+                  difficultyLocked
+                }
                 className={`group rounded-2xl border p-3 text-left transition-all duration-200 sm:p-4 ${
                   selected
                     ? "border-cyan-300/30 bg-cyan-300/8 shadow-[0_0_30px_rgba(103,232,249,0.05)]"
@@ -405,9 +490,11 @@ export default function QuickMathPage() {
               >
                 <div className="flex items-center justify-between">
                   <span className="text-xl">
-                    {level === "easy"
+                    {level ===
+                    "easy"
                       ? "🌱"
-                      : level === "normal"
+                      : level ===
+                          "normal"
                         ? "⚡"
                         : "🔥"}
                   </span>
@@ -424,15 +511,26 @@ export default function QuickMathPage() {
                       : "text-white/70"
                   }`}
                 >
-                  {DIFFICULTIES[level].label}
+                  {
+                    DIFFICULTIES[
+                      level
+                    ].label
+                  }
                 </p>
 
                 <p className="mt-1 text-xs text-white/30">
                   {
-                    DIFFICULTIES[level]
-                      .description
+                    DIFFICULTIES[
+                      level
+                    ].description
                   }{" "}
-                  · {DIFFICULTIES[level].time}s
+                  ·{" "}
+                  {
+                    DIFFICULTIES[
+                      level
+                    ].time
+                  }
+                  s
                 </p>
               </button>
             );
@@ -470,14 +568,17 @@ export default function QuickMathPage() {
 
           <p
             className={`mt-1 text-xl font-black transition-colors sm:text-2xl ${
-              timeLeft <= 5 && started
+              timeLeft <= 5 &&
+              started
                 ? "text-red-300"
                 : "text-white"
             }`}
           >
             {started
               ? timeLeft
-              : DIFFICULTIES[difficulty].time}
+              : DIFFICULTIES[
+                  difficulty
+                ].time}
             s
           </p>
         </div>
@@ -520,7 +621,7 @@ export default function QuickMathPage() {
 
       {/* Game Card */}
 
-      <section className="mp-card mp-fade-up mx-auto mt-6 max-w-2xl rounded-4xl p-5 shadow-2xl sm:mt-8 sm:p-8">
+      <section className="mp-card mp-fade-up mx-auto mt-4 max-w-2xl rounded-4xl p-5 shadow-2xl sm:mt-4 sm:p-8">
         {/* Start */}
 
         {!started && !gameOver && (
@@ -529,7 +630,7 @@ export default function QuickMathPage() {
               🧮
             </div>
 
-            <p className="mt-6 text-xs font-black uppercase tracking-[0.25em] text-cyan-300/50">
+            <p className="mt-4 text-xs font-black uppercase tracking-[0.25em] text-cyan-300/50">
               Ready?
             </p>
 
@@ -538,17 +639,23 @@ export default function QuickMathPage() {
             </h2>
 
             <p className="mt-3 max-w-md text-sm leading-6 text-white/40">
-              Answer as many equations as
-              possible in{" "}
-              {DIFFICULTIES[difficulty].time}{" "}
+              Answer as many
+              equations as possible
+              in{" "}
+              {
+                DIFFICULTIES[
+                  difficulty
+                ].time
+              }{" "}
               seconds.
             </p>
 
-            <div className="mt-6 flex items-center gap-2">
+            <div className="mt-4 flex items-center gap-2">
               <div className="rounded-xl border border-white/[0.07] bg-white/[0.035] px-3 py-2 text-xs font-bold text-white/40">
                 {
-                  DIFFICULTIES[difficulty]
-                    .time
+                  DIFFICULTIES[
+                    difficulty
+                  ].time
                 }{" "}
                 seconds
               </div>
@@ -560,16 +667,19 @@ export default function QuickMathPage() {
 
             {isDailyChallenge && (
               <div className="mt-4 rounded-xl border border-purple-300/10 bg-purple-300/5 px-3 py-2 text-xs font-bold text-purple-200/60">
-                🎯 Today&apos;s Daily Challenge
+                🎯 Today&apos;s Daily
+                Challenge
               </div>
             )}
 
             <button
               type="button"
               onClick={() =>
-                startGame(difficulty)
+                startGame(
+                  difficulty,
+                )
               }
-              className="mp-button mt-7 bg-white px-7 py-3.5 text-sm text-black shadow-xl shadow-white/5 hover:bg-yellow-50"
+              className="mp-button mt-4 bg-white px-7 py-3.5 text-sm text-black shadow-xl shadow-white/5 hover:bg-yellow-50"
             >
               ⚡ Start Game
             </button>
@@ -580,21 +690,23 @@ export default function QuickMathPage() {
 
         {started && !gameOver && (
           <div className="text-center">
-            <div className="mb-5 flex items-center justify-between">
+            <div className="mb-3 flex items-center justify-between">
               <div className="text-left">
                 <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/25">
                   Solve this
                 </p>
 
                 <p className="mt-1 text-xs font-bold text-white/40">
-                  +10 points per correct answer
+                  +10 points per correct
+                  answer
                 </p>
               </div>
 
               <div className="rounded-full border border-white/10 bg-white/4 px-3 py-1.5 text-xs font-bold text-white/40">
                 {
-                  DIFFICULTIES[difficulty]
-                    .label
+                  DIFFICULTIES[
+                    difficulty
+                  ].label
                 }
               </div>
             </div>
@@ -603,9 +715,11 @@ export default function QuickMathPage() {
 
             <div
               className={`relative flex min-h-42.5 items-center justify-center overflow-hidden rounded-[1.75rem] border px-4 transition-all duration-200 sm:min-h-47.5 ${
-                feedback === "correct"
+                feedback ===
+                "correct"
                   ? "border-green-300/25 bg-green-300/[0.07]"
-                  : feedback === "wrong"
+                  : feedback ===
+                      "wrong"
                     ? "border-red-300/25 bg-red-300/[0.07]"
                     : "border-white/[0.07] bg-white/2.5"
               }`}
@@ -614,16 +728,20 @@ export default function QuickMathPage() {
 
               <div
                 className={`relative text-4xl font-black tracking-tight transition-all sm:text-6xl ${
-                  feedback === "correct"
+                  feedback ===
+                  "correct"
                     ? "animate-[pop_0.2s_ease-out] text-green-200"
-                    : feedback === "wrong"
+                    : feedback ===
+                        "wrong"
                       ? "animate-[pop_0.2s_ease-out] text-red-200"
                       : "text-white"
                 }`}
               >
                 {question.a}{" "}
                 <span className="mx-1 text-cyan-300/80 sm:mx-2">
-                  {question.operator}
+                  {
+                    question.operator
+                  }
                 </span>{" "}
                 {question.b}{" "}
                 <span className="mx-1 text-white/25 sm:mx-2">
@@ -638,15 +756,19 @@ export default function QuickMathPage() {
             {/* Feedback */}
 
             <div className="mt-4 min-h-5">
-              {feedback === "correct" && (
+              {feedback ===
+                "correct" && (
                 <p className="animate-[pop_0.2s_ease-out] text-sm font-black text-green-300">
-                  ✓ Correct! Keep going!
+                  ✓ Correct! Keep
+                  going!
                 </p>
               )}
 
-              {feedback === "wrong" && (
+              {feedback ===
+                "wrong" && (
                 <p className="animate-[pop_0.2s_ease-out] text-sm font-black text-red-300">
-                  ✕ Not quite. Next one!
+                  ✕ Not quite. Next
+                  one!
                 </p>
               )}
             </div>
@@ -659,12 +781,17 @@ export default function QuickMathPage() {
                 inputMode="numeric"
                 autoFocus
                 value={answer}
-                onChange={(event) =>
+                onChange={(
+                  event,
+                ) =>
                   setAnswer(
-                    event.target.value
+                    event.target
+                      .value,
                   )
                 }
-                onKeyDown={handleKeyDown}
+                onKeyDown={
+                  handleKeyDown
+                }
                 placeholder="Your answer"
                 aria-label="Your answer"
                 className="min-w-0 flex-1 rounded-2xl border border-white/8 bg-black/20 px-4 py-4 text-center text-xl font-black outline-none transition placeholder:text-white/20 focus:border-cyan-300/30 focus:bg-black/30 sm:px-5"
@@ -672,7 +799,9 @@ export default function QuickMathPage() {
 
               <button
                 type="button"
-                onClick={submitAnswer}
+                onClick={
+                  submitAnswer
+                }
                 className="mp-button shrink-0 bg-white px-5 py-4 text-sm text-black hover:bg-cyan-50 sm:px-7"
               >
                 Enter
@@ -680,11 +809,15 @@ export default function QuickMathPage() {
             </div>
 
             <div className="mt-5 flex items-center justify-center gap-2 text-xs text-white/25">
-              <span>⌨️ Press Enter</span>
+              <span>
+                ⌨️ Press Enter
+              </span>
 
               <span>•</span>
 
-              <span>Think fast</span>
+              <span>
+                Think fast
+              </span>
             </div>
           </div>
         )}
@@ -697,7 +830,7 @@ export default function QuickMathPage() {
               🏆
             </div>
 
-            <p className="mt-6 text-xs font-black uppercase tracking-[0.25em] text-fuchsia-300/60">
+            <p className="mt-4 text-xs font-black uppercase tracking-[0.25em] text-fuchsia-300/60">
               Challenge Complete
             </p>
 
@@ -715,7 +848,7 @@ export default function QuickMathPage() {
 
             {/* Results */}
 
-            <div className="mt-6 grid w-full max-w-sm grid-cols-3 gap-2.5">
+            <div className="mt-4 grid w-full max-w-sm grid-cols-3 gap-2.5">
               <div className="rounded-2xl border border-cyan-300/10 bg-cyan-300/[0.035] p-3.5">
                 <p className="text-[10px] font-black uppercase tracking-[0.12em] text-white/25">
                   Score
@@ -755,7 +888,8 @@ export default function QuickMathPage() {
               </p>
 
               <p className="mt-1 text-xs text-white/30">
-                Added to your MindPlay progress
+                Added to your MindPlay
+                progress
               </p>
             </div>
 
@@ -772,19 +906,22 @@ export default function QuickMathPage() {
                 </p>
 
                 <p className="mt-1 text-xs text-white/30">
-                  Today&apos;s challenge reward
-                  has been added.
+                  Today&apos;s challenge
+                  reward has been
+                  added.
                 </p>
               </div>
             )}
 
             {/* Actions */}
 
-            <div className="mt-7 flex w-full max-w-sm flex-col gap-2.5 sm:flex-row">
+            <div className="mt-4 flex w-full max-w-sm flex-col gap-2.5 sm:flex-row">
               <button
                 type="button"
                 onClick={() =>
-                  startGame(difficulty)
+                  startGame(
+                    difficulty,
+                  )
                 }
                 className="mp-button flex-1 bg-white px-6 py-3.5 text-sm text-black hover:bg-yellow-50"
               >
@@ -806,7 +943,9 @@ export default function QuickMathPage() {
 
       <div className="mx-auto mt-5 max-w-2xl rounded-2xl border border-white/6 bg-white/2.5 p-4 sm:p-5">
         <div className="flex gap-3">
-          <span className="text-lg">💡</span>
+          <span className="text-lg">
+            💡
+          </span>
 
           <div>
             <p className="text-sm font-black">
@@ -814,10 +953,11 @@ export default function QuickMathPage() {
             </p>
 
             <p className="mt-1 text-xs leading-6 text-white/35 sm:text-sm">
-              Look for shortcuts and patterns
-              instead of calculating everything
-              the long way. Speed comes with
-              practice.
+              Look for shortcuts and
+              patterns instead of
+              calculating everything
+              the long way. Speed
+              comes with practice.
             </p>
           </div>
         </div>

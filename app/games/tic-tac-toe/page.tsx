@@ -596,7 +596,7 @@ export default function TicTacToePage() {
 
       {/* Scoreboard */}
 
-      <div className="mx-auto mt-8 grid max-w-2xl grid-cols-3 gap-2 sm:gap-3">
+      <div className="mx-auto mt-4 grid max-w-2xl grid-cols-3 gap-2 sm:gap-3">
         <div className="mp-card rounded-2xl p-3 text-center sm:p-4">
           <div className="flex items-center justify-center gap-1.5">
             <span className="text-xs">
@@ -673,8 +673,8 @@ export default function TicTacToePage() {
 
       {/* Game Board */}
 
-      <div className="mp-card mp-fade-up mx-auto mt-6 max-w-2xl rounded-4xl p-4 shadow-2xl sm:mt-8 sm:p-6">
-        <div className="mb-5 flex items-center justify-between">
+      <div className="mp-card mp-fade-up mx-auto mt-4 max-w-2xl rounded-4xl p-4 shadow-2xl sm:mt-4 sm:p-6">
+        <div className="mb-3 flex items-center justify-between">
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/25">
               Battle Board
@@ -792,7 +792,7 @@ export default function TicTacToePage() {
 
       {/* Controls */}
 
-      <div className="mx-auto mt-6 max-w-2xl space-y-5">
+      <div className="mx-auto mt-4 max-w-2xl space-y-5">
         {/* Difficulty */}
 
         <div>
@@ -980,7 +980,7 @@ export default function TicTacToePage() {
       {/* Game Result */}
 
       {gameFinished && (
-        <div className="mx-auto mt-6 max-w-2xl rounded-2xl border border-white/10 bg-white/[0.035] p-5">
+        <div className="mx-auto mt-4 max-w-2xl rounded-2xl border border-white/10 bg-white/[0.035] p-5">
           <div className="text-center">
             <p className="text-xs font-black uppercase tracking-[0.2em] text-white/30">
               Game Complete
@@ -1035,7 +1035,7 @@ export default function TicTacToePage() {
 
       {/* Tip */}
 
-      <div className="mp-card mx-auto mt-6 max-w-2xl rounded-2xl p-5">
+      <div className="mp-card mx-auto mt-4 max-w-2xl rounded-2xl p-5">
         <div className="flex gap-3">
           <span className="text-xl">
             🧠

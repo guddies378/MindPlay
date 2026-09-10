@@ -449,7 +449,7 @@ export default function WordScramblePage() {
 
       {/* Difficulty */}
 
-      <div className="mx-auto mt-8 max-w-2xl">
+      <div className="mx-auto mt-4 max-w-2xl">
         <div className="mb-3 flex items-center justify-between">
           <p className="text-xs font-black uppercase tracking-[0.2em] text-white/30">
             Difficulty
@@ -598,7 +598,7 @@ export default function WordScramblePage() {
 
       {/* Game Card */}
 
-      <div className="mp-card mp-fade-up mx-auto mt-6 max-w-2xl rounded-4xl p-5 shadow-2xl sm:mt-8 sm:p-8">
+      <div className="mp-card mp-fade-up mx-auto mt-4 max-w-2xl rounded-4xl p-5 shadow-2xl sm:mt-4 sm:p-8">
         {/* Start Screen */}
 
         {!started &&
@@ -608,7 +608,7 @@ export default function WordScramblePage() {
                 🔀
               </div>
 
-              <p className="mt-6 text-xs font-black uppercase tracking-[0.25em] text-cyan-300/50">
+              <p className="mt-4 text-xs font-black uppercase tracking-[0.25em] text-cyan-300/50">
                 {
                   DIFFICULTIES[
                     difficulty
@@ -628,7 +628,7 @@ export default function WordScramblePage() {
                 you can.
               </p>
 
-              <div className="mx-auto mt-6 grid max-w-sm grid-cols-3 gap-2">
+              <div className="mx-auto mt-4 grid max-w-sm grid-cols-3 gap-2">
                 <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-3">
                   <p className="text-lg font-black text-cyan-300">
                     +{DIFFICULTIES[difficulty].xp}{" "}
@@ -675,7 +675,7 @@ export default function WordScramblePage() {
                     difficulty
                   )
                 }
-                className="mp-button mt-7 rounded-2xl bg-white px-7 py-3.5 text-sm font-black text-[#080b14] shadow-lg hover:bg-cyan-100"
+                className="mp-button mt-4 rounded-2xl bg-white px-7 py-3.5 text-sm font-black text-[#080b14] shadow-lg hover:bg-cyan-100"
               >
                 Start Game
                 <span className="ml-2">
@@ -690,7 +690,7 @@ export default function WordScramblePage() {
         {started &&
           !gameOver && (
             <div className="text-center">
-              <div className="mb-6 flex items-center justify-between">
+              <div className="mb-4 flex items-center justify-between">
                 <div className="text-left">
                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/25">
                     Word Puzzle
@@ -800,7 +800,7 @@ export default function WordScramblePage() {
 
               {/* Answer */}
 
-              <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+              <div className="mt-4 flex flex-col gap-2 sm:flex-row">
                 <input
                   type="text"
                   autoComplete="off"
@@ -879,7 +879,7 @@ export default function WordScramblePage() {
               🏆
             </div>
 
-            <p className="mt-6 text-xs font-black uppercase tracking-[0.25em] text-fuchsia-300/60">
+            <p className="mt-4 text-xs font-black uppercase tracking-[0.25em] text-fuchsia-300/60">
               Challenge Complete
             </p>
 
@@ -897,7 +897,7 @@ export default function WordScramblePage() {
 
             {/* Results */}
 
-            <div className="mt-7 grid grid-cols-3 gap-2 sm:gap-3">
+            <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-3">
               <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
                 <p className="text-[10px] font-black uppercase tracking-wider text-white/25">
                   Score
@@ -971,7 +971,7 @@ export default function WordScramblePage() {
                   difficulty
                 )
               }
-              className="mp-button mt-6 rounded-2xl bg-white px-7 py-3.5 text-sm font-black text-[#080b14] hover:bg-cyan-100"
+              className="mp-button mt-4 rounded-2xl bg-white px-7 py-3.5 text-sm font-black text-[#080b14] hover:bg-cyan-100"
             >
               Play Again
 
@@ -985,7 +985,7 @@ export default function WordScramblePage() {
 
       {/* Tip */}
 
-      <div className="mp-card mx-auto mt-6 max-w-2xl rounded-2xl p-5">
+      <div className="mp-card mx-auto mt-4 max-w-2xl rounded-2xl p-5">
         <div className="flex gap-3">
           <span className="text-xl">
             💡

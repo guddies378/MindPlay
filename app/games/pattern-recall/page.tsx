@@ -553,7 +553,7 @@ export default function PatternRecallPage() {
     }
 
     return (
-      <main className="min-h-screen px-4 py-8 sm:px-6">
+      <main className="min-h-[100dvh] overflow-hidden px-4 py-4 sm:px-6">
         <div className="mx-auto flex min-h-[85vh] max-w-3xl items-center justify-center">
           <section className="mp-card mp-fade-up w-full rounded-3xl p-6 text-center sm:p-10">
             <div className="mb-3 text-6xl">
@@ -572,7 +572,7 @@ export default function PatternRecallPage() {
               {performance}
             </p>
 
-            <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
               <div className="rounded-2xl border border-white/10 bg-white/4 p-4">
                 <div className="text-2xl font-black text-cyan-300">
                   {score}
@@ -631,7 +631,7 @@ export default function PatternRecallPage() {
               </div>
             )}
 
-            <div className="mt-6 rounded-2xl border border-white/10 bg-white/2.5 p-4">
+            <div className="mt-4 rounded-2xl border border-white/10 bg-white/2.5 p-4">
               <div className="flex justify-between text-sm">
                 <span className="text-white/50">
                   Correct Rounds
@@ -663,7 +663,7 @@ export default function PatternRecallPage() {
               </div>
             </div>
 
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row">
               <button
                 onClick={startGame}
                 className="mp-button flex-1 bg-white px-6 py-4 text-black"
@@ -686,7 +686,7 @@ export default function PatternRecallPage() {
 
   if (gameState === "feedback") {
     return (
-      <main className="min-h-screen px-4 py-8 sm:px-6">
+      <main className="min-h-[100dvh] overflow-hidden px-4 py-4 sm:px-6">
         <div className="mx-auto flex min-h-[85vh] max-w-3xl items-center justify-center">
           <section className="mp-card mp-fade-up w-full rounded-3xl p-6 text-center sm:p-10">
             <div className="text-5xl">
@@ -713,7 +713,7 @@ export default function PatternRecallPage() {
                 : "The pattern didn't match."}
             </p>
 
-            <div className="mx-auto mt-8 max-w-md rounded-3xl border border-white/10 bg-white/2.5 p-6">
+            <div className="mx-auto mt-4 max-w-md rounded-3xl border border-white/10 bg-white/2.5 p-6">
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-white/30">
                 Correct Pattern
               </p>
@@ -748,7 +748,7 @@ export default function PatternRecallPage() {
               </div>
             </div>
 
-            <div className="mt-6 flex items-center justify-center gap-6 text-sm">
+            <div className="mt-4 flex items-center justify-center gap-6 text-sm">
               <span className="text-white/50">
                 Score:{" "}
                 <strong className="text-white">
@@ -769,7 +769,7 @@ export default function PatternRecallPage() {
 
             <button
               onClick={continueGame}
-              className="mp-button mt-8 w-full bg-white px-6 py-4 text-black sm:w-auto sm:min-w-60"
+              className="mp-button mt-4 w-full bg-white px-6 py-4 text-black sm:w-auto sm:min-w-60"
             >
               {round >= config.rounds
                 ? "🏁 See Results"
@@ -786,9 +786,9 @@ export default function PatternRecallPage() {
     gameState === "playing"
   ) {
     return (
-      <main className="min-h-screen px-4 py-8 sm:px-6">
+      <main className="min-h-[100dvh] overflow-hidden px-4 py-4 sm:px-6">
         <div className="mx-auto max-w-3xl">
-          <div className="mb-5 flex items-center justify-between">
+          <div className="mb-3 flex items-center justify-between">
             <Link
               href="/"
               className="text-sm font-bold text-white/40 transition hover:text-white"
@@ -809,7 +809,7 @@ export default function PatternRecallPage() {
           </div>
 
           {isDailyChallenge && (
-            <div className="mb-5 rounded-2xl border border-purple-300/15 bg-purple-300/5 px-4 py-3 text-center">
+            <div className="mb-3 rounded-2xl border border-purple-300/15 bg-purple-300/5 px-4 py-3 text-center">
               <p className="text-xs font-black uppercase tracking-[0.18em] text-purple-300/70">
                 🎯 Daily Challenge
               </p>
@@ -821,8 +821,8 @@ export default function PatternRecallPage() {
             </div>
           )}
 
-          <section className="mp-card rounded-3xl p-5 sm:p-8">
-            <div className="mb-6 flex items-center justify-between">
+          <section className="mp-card rounded-3xl p-4 sm:p-6">
+            <div className="mb-4 flex items-center justify-between">
               <div>
                 <div className="text-xs font-bold uppercase tracking-[0.2em] text-white/30">
                   Score
@@ -867,7 +867,7 @@ export default function PatternRecallPage() {
             </div>
 
             {gameState === "playing" && (
-              <div className="mb-6 h-2 overflow-hidden rounded-full bg-white/10">
+              <div className="mb-4 h-2 overflow-hidden rounded-full bg-white/10">
                 <div
                   className="h-full rounded-full transition-all duration-100"
                   style={{
@@ -894,7 +894,7 @@ export default function PatternRecallPage() {
             </div>
 
             <div
-              className="mx-auto mt-8 grid max-w-105 gap-2 sm:gap-3"
+              className="mx-auto mt-4 grid max-w-105 gap-2 sm:gap-3"
               style={{
                 gridTemplateColumns: `repeat(${config.gridSize}, minmax(0, 1fr))`,
               }}
@@ -945,7 +945,7 @@ export default function PatternRecallPage() {
             </div>
 
             {gameState === "showing" ? (
-              <div className="mt-8 text-center">
+              <div className="mt-4 text-center">
                 <p className="text-sm font-bold text-cyan-300">
                   🧠 Lock it in...
                 </p>
@@ -955,7 +955,7 @@ export default function PatternRecallPage() {
                 </p>
               </div>
             ) : (
-              <div className="mt-8 text-center">
+              <div className="mt-4 text-center">
                 <p className="text-sm text-white/40">
                   Select exactly{" "}
                   <strong className="text-white">
@@ -985,9 +985,9 @@ export default function PatternRecallPage() {
   }
 
   return (
-    <main className="min-h-screen px-4 py-8 sm:px-6">
+    <main className="min-h-[100dvh] overflow-hidden px-4 py-4 sm:px-6">
       <div className="mx-auto flex min-h-[85vh] max-w-3xl items-center justify-center">
-        <section className="mp-card mp-fade-up w-full rounded-3xl p-6 sm:p-10">
+        <section className="mp-card mp-fade-up w-full rounded-3xl p-4 sm:p-6">
           <div className="text-center">
             <div className="mb-3 text-6xl">
               🟦
@@ -1012,7 +1012,7 @@ export default function PatternRecallPage() {
           </div>
 
           {isDailyChallenge && (
-            <div className="mt-6 rounded-2xl border border-purple-300/15 bg-purple-300/5 p-4 text-center">
+            <div className="mt-4 rounded-2xl border border-purple-300/15 bg-purple-300/5 p-4 text-center">
               <p className="text-xs font-black uppercase tracking-[0.18em] text-purple-300/70">
                 🎯 Today&apos;s Daily Challenge
               </p>
@@ -1029,7 +1029,7 @@ export default function PatternRecallPage() {
             </div>
           )}
 
-          <div className="mt-8 grid gap-3 sm:grid-cols-3">
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
             {(
               Object.keys(
                 DIFFICULTIES
@@ -1082,7 +1082,7 @@ export default function PatternRecallPage() {
             })}
           </div>
 
-          <div className="mt-8 rounded-2xl border border-white/10 bg-white/2.5 p-5">
+          <div className="mt-4 rounded-2xl border border-white/10 bg-white/2.5 p-5">
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
                 <div className="text-2xl font-black text-cyan-300">
@@ -1118,7 +1118,7 @@ export default function PatternRecallPage() {
 
           <button
             onClick={startGame}
-            className="mp-button mt-8 w-full bg-white px-6 py-5 text-lg text-black"
+            className="mp-button mt-4 w-full bg-white px-6 py-5 text-lg text-black"
           >
             🟦 Start Pattern Recall
           </button>

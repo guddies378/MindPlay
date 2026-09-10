@@ -39,14 +39,13 @@ const STORAGE_KEY = "mindplay-daily-challenge";
 
 const CHALLENGES: Omit<
   DailyChallenge,
-  "id" | "date"
+  "id" | "date" | "difficulty"
 >[] = [
   {
     game: "memory-match",
     title: "Memory Master",
     description: "Complete a Memory Match challenge.",
     icon: "🧠",
-    difficulty: "normal",
     rewardXP: DAILY_CHALLENGE_XP,
     achievementId: "memory-master",
   },
@@ -55,7 +54,6 @@ const CHALLENGES: Omit<
     title: "Math Rush",
     description: "Complete a Quick Math challenge.",
     icon: "⚡",
-    difficulty: "hard",
     rewardXP: DAILY_CHALLENGE_XP,
     achievementId: "math-machine",
   },
@@ -64,7 +62,6 @@ const CHALLENGES: Omit<
     title: "Word Hunter",
     description: "Complete a Word Scramble challenge.",
     icon: "🔤",
-    difficulty: "normal",
     rewardXP: DAILY_CHALLENGE_XP,
     achievementId: "word-wizard",
   },
@@ -73,7 +70,6 @@ const CHALLENGES: Omit<
     title: "Riddle Master",
     description: "Solve a Riddle Me challenge.",
     icon: "🧩",
-    difficulty: "hard",
     rewardXP: DAILY_CHALLENGE_XP,
     achievementId: "riddle-solver",
   },
@@ -82,7 +78,6 @@ const CHALLENGES: Omit<
     title: "Sharp Eyes",
     description: "Complete an Odd One Out challenge.",
     icon: "👀",
-    difficulty: "hard",
     rewardXP: DAILY_CHALLENGE_XP,
     achievementId: "sharp-eyes",
   },
@@ -91,7 +86,6 @@ const CHALLENGES: Omit<
     title: "Think Ahead",
     description: "Complete a Tic-Tac-Toe challenge.",
     icon: "❌⭕",
-    difficulty: "normal",
     rewardXP: DAILY_CHALLENGE_XP,
     achievementId: "strategy-master",
   },
@@ -100,7 +94,6 @@ const CHALLENGES: Omit<
     title: "Lightning Reflexes",
     description: "Complete a Reaction Rush challenge.",
     icon: "⚡",
-    difficulty: "hard",
     rewardXP: DAILY_CHALLENGE_XP,
     achievementId: "lightning-reflexes",
   },
@@ -109,7 +102,6 @@ const CHALLENGES: Omit<
     title: "Number Vault",
     description: "Complete a Number Memory challenge.",
     icon: "🔢",
-    difficulty: "hard",
     rewardXP: DAILY_CHALLENGE_XP,
     achievementId: "number-vault",
   },
@@ -118,7 +110,6 @@ const CHALLENGES: Omit<
     title: "Color Focus",
     description: "Complete a Color Clash challenge.",
     icon: "🎨",
-    difficulty: "hard",
     rewardXP: DAILY_CHALLENGE_XP,
     achievementId: "color-focus",
   },
@@ -127,7 +118,6 @@ const CHALLENGES: Omit<
     title: "Pattern Master",
     description: "Complete a Pattern Recall challenge.",
     icon: "🟦",
-    difficulty: "hard",
     rewardXP: DAILY_CHALLENGE_XP,
     achievementId: "pattern-master",
   },
@@ -136,7 +126,6 @@ const CHALLENGES: Omit<
     title: "Sequence Master",
     description: "Complete a Sequence Master challenge.",
     icon: "🔁",
-    difficulty: "hard",
     rewardXP: DAILY_CHALLENGE_XP,
     achievementId: "sequence-master",
   },
@@ -145,7 +134,6 @@ const CHALLENGES: Omit<
     title: "Logic Rush",
     description: "Complete a Logic Rush challenge.",
     icon: "🧠",
-    difficulty: "hard",
     rewardXP: DAILY_CHALLENGE_XP,
     achievementId: "logic-rush",
   },
@@ -179,16 +167,36 @@ function hashString(value: string): number {
   return Math.abs(hash);
 }
 
+function getDailyDifficulty(
+  date: string
+): DailyChallengeDifficulty {
+  const difficulties: DailyChallengeDifficulty[] = [
+    "easy",
+    "normal",
+    "hard",
+  ];
+
+  const difficultyIndex =
+    hashString(`${date}-difficulty`) %
+    difficulties.length;
+
+  return difficulties[difficultyIndex];
+}
+
 export function getDailyChallenge(): DailyChallenge {
   const date = getToday();
-  const index =
+
+  const gameIndex =
     hashString(date) % CHALLENGES.length;
 
-  const challenge = CHALLENGES[index];
+  const challenge = CHALLENGES[gameIndex];
+
+  const difficulty = getDailyDifficulty(date);
 
   return {
     ...challenge,
-    id: `${date}-${challenge.game}`,
+    difficulty,
+    id: `${date}-${challenge.game}-${difficulty}`,
     date,
   };
 }

@@ -1,7 +1,10 @@
 import {
+  setAchievementUser,
   syncProgressAchievements,
   unlockGameAchievement,
 } from "./achievements";
+
+import { supabase } from "@/lib/supabase";
 
 export { unlockGameAchievement };
 
@@ -23,7 +26,8 @@ const DEFAULT_PROGRESS: MindPlayProgress = {
   bestScore: 0,
 };
 
-const UPDATE_EVENT = "mindplay-progress-updated";
+const UPDATE_EVENT =
+  "mindplay-progress-updated";
 
 function isBrowser() {
   return typeof window !== "undefined";
@@ -34,8 +38,16 @@ function notifyUpdate() {
     return;
   }
 
-  window.dispatchEvent(new Event(UPDATE_EVENT));
+  window.dispatchEvent(
+    new Event(UPDATE_EVENT),
+  );
 }
+
+/*
+ * ==========================================
+ * LOCAL PROGRESS
+ * ==========================================
+ */
 
 export function getProgress(): MindPlayProgress {
   if (!isBrowser()) {
@@ -43,7 +55,8 @@ export function getProgress(): MindPlayProgress {
   }
 
   try {
-    const saved = localStorage.getItem(STORAGE_KEY);
+    const saved =
+      localStorage.getItem(STORAGE_KEY);
 
     if (!saved) {
       return DEFAULT_PROGRESS;
@@ -60,155 +73,486 @@ export function getProgress(): MindPlayProgress {
   }
 }
 
-function saveProgress(progress: MindPlayProgress) {
+function saveProgress(
+  progress: MindPlayProgress,
+) {
   if (!isBrowser()) {
     return;
   }
 
   localStorage.setItem(
     STORAGE_KEY,
-    JSON.stringify(progress)
+    JSON.stringify(progress),
   );
 
   notifyUpdate();
 }
 
-function getToday(): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
+/*
+ * ==========================================
+ * DATE HELPERS
+ * ==========================================
+ */
 
-  return `${year}-${month}-${day}`;
+function getToday(): string {
+  return new Date()
+    .toISOString()
+    .slice(0, 10);
 }
 
 function getYesterday(): string {
-  const yesterday = new Date();
+  const date = new Date();
 
-  yesterday.setDate(
-    yesterday.getDate() - 1
+  date.setDate(
+    date.getDate() - 1,
   );
 
-  const year = yesterday.getFullYear();
-  const month = String(
-    yesterday.getMonth() + 1
-  ).padStart(2, "0");
-  const day = String(
-    yesterday.getDate()
-  ).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
+  return date
+    .toISOString()
+    .slice(0, 10);
 }
+
+/*
+ * ==========================================
+ * SAVE PROGRESS TO SUPABASE
+ * ==========================================
+ *
+ * Overall progress belongs to the
+ * currently logged-in Supabase user.
+ */
+
+async function saveProgressToSupabase(
+  progress: MindPlayProgress,
+) {
+  if (!isBrowser()) {
+    return;
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  /*
+   * No authenticated user.
+   *
+   * Clear the active achievement user so
+   * achievements cannot accidentally be
+   * saved for another account.
+   */
+  if (!user) {
+    setAchievementUser(null);
+    return;
+  }
+
+  /*
+   * Tell the achievement system which
+   * Supabase account is currently active.
+   */
+  setAchievementUser(user.id);
+
+  const { error } =
+    await supabase
+      .from("overall_progress")
+      .upsert(
+        {
+          user_id: user.id,
+          xp: progress.xp,
+          games_played:
+            progress.gamesPlayed,
+          streak: progress.streak,
+          best_score:
+            progress.bestScore,
+          last_played:
+            progress.lastPlayed,
+          updated_at:
+            new Date().toISOString(),
+        },
+        {
+          onConflict: "user_id",
+        },
+      );
+
+  if (error) {
+    console.error(
+      "Failed to save progress to Supabase:",
+      error.message,
+    );
+  }
+}
+
+/*
+ * ==========================================
+ * LOAD PROGRESS FROM SUPABASE
+ * ==========================================
+ */
+
+export async function loadProgressFromSupabase(): Promise<
+  MindPlayProgress | null
+> {
+  if (!isBrowser()) {
+    return null;
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  /*
+   * No logged-in user means there is
+   * no account-specific progress to load.
+   */
+  if (!user) {
+    setAchievementUser(null);
+    return null;
+  }
+
+  /*
+   * Set the active achievement account
+   * as soon as we know the Supabase user.
+   */
+  setAchievementUser(user.id);
+
+  const { data, error } =
+    await supabase
+      .from("overall_progress")
+      .select(
+        "xp, games_played, streak, best_score, last_played",
+      )
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+  if (error) {
+    console.error(
+      "Failed to load progress from Supabase:",
+      error.message,
+    );
+
+    return null;
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  return {
+    xp: data.xp,
+    gamesPlayed:
+      data.games_played,
+    streak: data.streak,
+    bestScore:
+      data.best_score,
+    lastPlayed:
+      data.last_played,
+  };
+}
+
+/*
+ * ==========================================
+ * SYNC LOCAL PROGRESS WITH SUPABASE
+ * ==========================================
+ *
+ * If cloud progress exists:
+ *     cloud progress becomes the source
+ *     of truth.
+ *
+ * If no cloud progress exists:
+ *     existing local progress is uploaded
+ *     to the newly logged-in account.
+ */
+
+export async function syncLocalProgressToSupabase(): Promise<void> {
+  if (!isBrowser()) {
+    return;
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  /*
+   * No logged-in user.
+   *
+   * Make sure the achievement system does
+   * not continue using the previous account.
+   */
+  if (!user) {
+    setAchievementUser(null);
+    return;
+  }
+
+  /*
+   * IMPORTANT:
+   *
+   * Set the active achievement user BEFORE
+   * reading or synchronizing achievements.
+   */
+  setAchievementUser(user.id);
+
+  const {
+    data: cloudProgress,
+    error,
+  } = await supabase
+    .from("overall_progress")
+    .select(
+      "xp, games_played, streak, best_score, last_played",
+    )
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (error) {
+    console.error(
+      "Failed to check cloud progress:",
+      error.message,
+    );
+
+    return;
+  }
+
+  /*
+   * ========================================
+   * EXISTING ACCOUNT
+   * ========================================
+   */
+
+  if (cloudProgress) {
+    const progress: MindPlayProgress =
+      {
+        xp: cloudProgress.xp,
+        gamesPlayed:
+          cloudProgress.games_played,
+        streak:
+          cloudProgress.streak,
+        bestScore:
+          cloudProgress.best_score,
+        lastPlayed:
+          cloudProgress.last_played,
+      };
+
+    saveProgress(progress);
+
+    /*
+     * Re-check progression achievements
+     * using THIS user's progress.
+     */
+    syncProgressAchievements(
+      progress.xp,
+      progress.gamesPlayed,
+      progress.streak,
+    );
+
+    return;
+  }
+
+  /*
+   * ========================================
+   * NEW ACCOUNT
+   * ========================================
+   *
+   * There is no cloud progress yet.
+   *
+   * We currently preserve your existing
+   * behavior and upload the local progress.
+   *
+   * IMPORTANT:
+   * Achievements are now account-specific,
+   * so the new account will NOT read the
+   * previous account's achievement list.
+   */
+
+  const localProgress =
+    getProgress();
+
+  await saveProgressToSupabase(
+    localProgress,
+  );
+
+  syncProgressAchievements(
+    localProgress.xp,
+    localProgress.gamesPlayed,
+    localProgress.streak,
+  );
+}
+
+/*
+ * ==========================================
+ * RECORD GAME
+ * ==========================================
+ */
 
 export function recordGame(
   score = 0,
-  xpEarned = 10
+  xpEarned = 10,
 ): MindPlayProgress {
-  const progress = getProgress();
+  const currentProgress =
+    getProgress();
+
   const today = getToday();
-  const yesterday = getYesterday();
 
-  let streak = progress.streak;
+  const yesterday =
+    getYesterday();
 
-  if (progress.lastPlayed === today) {
-    streak = Math.max(
-      streak,
-      1
-    );
-  } else if (
-    progress.lastPlayed === yesterday
+  let streak =
+    currentProgress.streak;
+
+  if (
+    currentProgress.lastPlayed ===
+    today
   ) {
-    streak += 1;
+    streak =
+      currentProgress.streak;
+  } else if (
+    currentProgress.lastPlayed ===
+    yesterday
+  ) {
+    streak =
+      currentProgress.streak + 1;
   } else {
     streak = 1;
   }
 
-  const updatedProgress: MindPlayProgress = {
-    xp:
-      progress.xp +
-      Math.max(0, xpEarned),
+  const updatedProgress: MindPlayProgress =
+    {
+      xp:
+        currentProgress.xp +
+        xpEarned,
 
-    gamesPlayed:
-      progress.gamesPlayed + 1,
+      gamesPlayed:
+        currentProgress.gamesPlayed +
+        1,
 
-    streak,
+      streak,
 
-    lastPlayed: today,
+      lastPlayed: today,
 
-    bestScore: Math.max(
-      progress.bestScore,
-      score
-    ),
-  };
+      bestScore: Math.max(
+        currentProgress.bestScore,
+        score,
+      ),
+    };
 
-  saveProgress(updatedProgress);
+  /*
+   * Save locally for immediate UI updates.
+   */
+  saveProgress(
+    updatedProgress,
+  );
 
+  /*
+   * Unlock progression achievements
+   * for the currently active account.
+   */
   syncProgressAchievements(
     updatedProgress.xp,
     updatedProgress.gamesPlayed,
-    updatedProgress.streak
+    updatedProgress.streak,
+  );
+
+  /*
+   * Save account progress to Supabase.
+   */
+  void saveProgressToSupabase(
+    updatedProgress,
   );
 
   return updatedProgress;
 }
+
+/*
+ * ==========================================
+ * ADD XP
+ * ==========================================
+ */
 
 export function addXP(
-  amount: number
+  amount: number,
 ): MindPlayProgress {
-  const progress = getProgress();
+  const currentProgress =
+    getProgress();
 
-  const updatedProgress: MindPlayProgress = {
-    ...progress,
-    xp:
-      progress.xp +
-      Math.max(0, amount),
-  };
+  const updatedProgress: MindPlayProgress =
+    {
+      ...currentProgress,
 
-  saveProgress(updatedProgress);
+      xp:
+        currentProgress.xp +
+        amount,
+    };
 
-  // Keep XP-based achievements in sync
-  // even when XP comes from a Daily Challenge.
+  saveProgress(
+    updatedProgress,
+  );
+
+  /*
+   * XP achievements are checked
+   * for the active account.
+   */
   syncProgressAchievements(
     updatedProgress.xp,
     updatedProgress.gamesPlayed,
-    updatedProgress.streak
+    updatedProgress.streak,
+  );
+
+  void saveProgressToSupabase(
+    updatedProgress,
   );
 
   return updatedProgress;
 }
 
+/*
+ * ==========================================
+ * RESET PROGRESS
+ * ==========================================
+ */
+
 export function resetProgress(): MindPlayProgress {
-  saveProgress(DEFAULT_PROGRESS);
+  saveProgress(
+    DEFAULT_PROGRESS,
+  );
+
+  void saveProgressToSupabase(
+    DEFAULT_PROGRESS,
+  );
 
   return DEFAULT_PROGRESS;
 }
 
+/*
+ * ==========================================
+ * SUBSCRIBE TO PROGRESS UPDATES
+ * ==========================================
+ */
+
 export function subscribeToProgress(
-  callback: () => void
+  callback: () => void,
 ): () => void {
   if (!isBrowser()) {
     return () => {};
   }
 
+  const handleUpdate = () => {
+    callback();
+  };
+
   window.addEventListener(
     UPDATE_EVENT,
-    callback
+    handleUpdate,
   );
 
   window.addEventListener(
     "storage",
-    callback
+    handleUpdate,
   );
 
   return () => {
     window.removeEventListener(
       UPDATE_EVENT,
-      callback
+      handleUpdate,
     );
 
     window.removeEventListener(
       "storage",
-      callback
+      handleUpdate,
     );
   };
 }

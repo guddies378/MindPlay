@@ -481,7 +481,7 @@ export default function ColorClashPage() {
         : 0;
 
     return (
-      <main className="min-h-screen bg-[#080b14] px-6 py-16 text-white">
+      <main className="min-h-[100dvh] overflow-hidden bg-[#080b14] px-4 py-4 sm:px-6 sm:py-5 text-white">
         <div className="mx-auto flex min-h-[70vh] max-w-3xl items-center justify-center">
           <div className="w-full rounded-3xl border border-white/10 bg-white/3 p-8 text-center shadow-2xl sm:p-12">
             <div className="text-6xl">
@@ -492,11 +492,11 @@ export default function ColorClashPage() {
               Color Clash Complete
             </p>
 
-            <h1 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">
+            <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
               Great Focus!
             </h1>
 
-            <div className="mt-10 grid gap-4 sm:grid-cols-3">
+            <div className="mt-5 grid gap-4 sm:grid-cols-3">
               <div className="rounded-2xl border border-white/10 bg-white/3 p-5">
                 <p className="text-xs font-bold uppercase tracking-wider text-white/30">
                   Score
@@ -528,7 +528,7 @@ export default function ColorClashPage() {
               </div>
             </div>
 
-            <div className="mt-6 rounded-2xl border border-yellow-300/10 bg-yellow-300/5 p-5">
+            <div className="mt-4 rounded-2xl border border-yellow-300/10 bg-yellow-300/5 p-5">
               <p className="text-xs font-black uppercase tracking-[0.2em] text-white/30">
                 XP Earned
               </p>
@@ -538,7 +538,7 @@ export default function ColorClashPage() {
               </div>
             </div>
 
-            <p className="mx-auto mt-6 max-w-md text-sm leading-6 text-white/40">
+            <p className="mx-auto mt-4 max-w-md text-sm leading-6 text-white/40">
               You answered {correct} correctly
               and missed {wrong}. Keep playing to
               sharpen your focus and reaction speed.
@@ -556,7 +556,7 @@ export default function ColorClashPage() {
               </div>
             )}
 
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:justify-center">
               <button
                 onClick={startGame}
                 className="rounded-2xl bg-white px-6 py-3 text-sm font-black text-black transition hover:scale-[1.02]"
@@ -591,9 +591,9 @@ export default function ColorClashPage() {
         : 0;
 
     return (
-      <main className="min-h-screen bg-[#080b14] px-4 py-8 text-white sm:px-6 sm:py-12">
+      <main className="min-h-[100dvh] overflow-hidden bg-[#080b14] px-4 py-3 text-white sm:px-6 sm:py-4 sm:py-12">
         <div className="mx-auto max-w-4xl">
-          <div className="mb-8">
+          <div className="mb-4">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.25em] text-white/30">
@@ -640,7 +640,7 @@ export default function ColorClashPage() {
                 Choose the display color
               </p>
 
-              <div className="mt-8">
+              <div className="mt-4">
                 <p
                   className="text-5xl font-black tracking-tight sm:text-7xl"
                   style={{
@@ -659,7 +659,7 @@ export default function ColorClashPage() {
               </div>
             </div>
 
-            <div className="mx-auto mt-8 max-w-xl">
+            <div className="mx-auto mt-4 max-w-xl">
               <div className="mb-2 flex items-center justify-between text-xs font-bold text-white/30">
                 <span>Time</span>
 
@@ -681,7 +681,7 @@ export default function ColorClashPage() {
               </div>
             </div>
 
-            <div className="mx-auto mt-10 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-3">
+            <div className="mx-auto mt-5 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-3">
               {options.map(
                 (color) => (
                   <button
@@ -716,7 +716,7 @@ export default function ColorClashPage() {
               )}
             </div>
 
-            <div className="mt-8 flex items-center justify-center gap-6 text-sm">
+            <div className="mt-4 flex items-center justify-center gap-6 text-sm">
               <div>
                 <span className="text-white/30">
                   Combo
@@ -738,7 +738,7 @@ export default function ColorClashPage() {
 
             {lastCorrect !== null && (
               <div
-                className={`mt-6 text-center text-sm font-black ${
+                className={`mt-4 text-center text-sm font-black ${
                   lastCorrect
                     ? "text-green-300"
                     : "text-red-300"
@@ -756,14 +756,14 @@ export default function ColorClashPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#080b14] px-6 py-16 text-white">
+    <main className="min-h-[100dvh] overflow-hidden bg-[#080b14] px-4 py-4 sm:px-6 sm:py-5 text-white">
       <div className="mx-auto flex min-h-[70vh] max-w-3xl items-center justify-center">
         <div className="w-full text-center">
           <div className="text-7xl">
             🎨
           </div>
 
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
             <p className="text-sm font-bold uppercase tracking-[0.25em] text-white/30">
               MindPlay Game #9
             </p>
@@ -805,7 +805,7 @@ export default function ColorClashPage() {
             </div>
           )}
 
-          <div className="mx-auto mt-10 max-w-md">
+          <div className="mx-auto mt-5 max-w-md">
             <div className="grid grid-cols-3 gap-2 rounded-2xl border border-white/10 bg-white/3 p-2">
               {(
                 Object.keys(
@@ -866,7 +866,7 @@ export default function ColorClashPage() {
 
             <button
               onClick={startGame}
-              className="mt-6 w-full rounded-2xl bg-white px-6 py-4 text-sm font-black text-black transition hover:scale-[1.02] active:scale-[0.99]"
+              className="mt-4 w-full rounded-2xl bg-white px-6 py-4 text-sm font-black text-black transition hover:scale-[1.02] active:scale-[0.99]"
             >
               Start Game
             </button>

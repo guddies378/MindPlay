@@ -12,6 +12,9 @@ import PlayerFooterText from "@/components/PlayerFooterText";
 import PlayerBrand from "@/components/PlayerBrand";
 import DailyChallenge from "@/components/DailyChallenge";
 import DeveloperSupport from "@/components/DeveloperSupport";
+import AccountMenu from "@/components/AccountMenu";
+import Feedback from "@/app/components/Feedback";
+import Achievements from "@/app/components/Achievements";
 
 type GameCategory =
   | "ALL"
@@ -183,12 +186,42 @@ const categories: GameCategory[] = [
   "LOGIC",
 ];
 
+function shuffleGames(gameList: Game[]): Game[] {
+  const shuffled = [...gameList];
+
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const randomIndex = Math.floor(
+      Math.random() * (index + 1)
+    );
+
+    [shuffled[index], shuffled[randomIndex]] = [
+      shuffled[randomIndex],
+      shuffled[index],
+    ];
+  }
+
+  return shuffled;
+}
+
 export default function HomePage() {
   const [progress, setProgress] =
     useState<MindPlayProgress | null>(null);
 
   const [activeCategory, setActiveCategory] =
     useState<GameCategory>("ALL");
+
+  const [shuffledGames, setShuffledGames] =
+    useState<Game[]>(games);
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      setShuffledGames(shuffleGames(games));
+    });
+
+    return () => {
+      cancelAnimationFrame(frame);
+    };
+  }, []);
 
   useEffect(() => {
     const update = () => {
@@ -209,13 +242,13 @@ export default function HomePage() {
 
   const filteredGames = useMemo(() => {
     if (activeCategory === "ALL") {
-      return games;
+      return shuffledGames;
     }
 
-    return games.filter(
+    return shuffledGames.filter(
       (game) => game.tag === activeCategory
     );
-  }, [activeCategory]);
+  }, [activeCategory, shuffledGames]);
 
   return (
     <main className="min-h-screen overflow-hidden">
@@ -229,20 +262,29 @@ export default function HomePage() {
       </div>
 
       {/* Navigation */}
-      <nav className="mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-6 sm:px-8">
+      <nav className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-5 py-6 sm:px-8">
         <Link
           href="/"
-          className="group flex items-center gap-2 text-lg font-black tracking-tight"
+          className="group flex min-w-0 items-center gap-2 text-lg font-black tracking-tight"
         >
           <PlayerBrand />
         </Link>
 
-        <Link
-          href="/games"
-          className="mp-button border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white/70 hover:bg-white/9 hover:text-white"
-        >
-          All Games →
-        </Link>
+        <div className="flex shrink-0 items-center gap-2">
+          <AccountMenu />
+
+          <Link
+            href="/games"
+            aria-label="All Games"
+            className="mp-button border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white/70 hover:bg-white/9 hover:text-white sm:px-4"
+          >
+            <span className="sm:hidden">🎮</span>
+
+            <span className="hidden sm:inline">
+              All Games →
+            </span>
+          </Link>
+        </div>
       </nav>
 
       {/* Hero */}
@@ -392,16 +434,20 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Daily challenge */}
-      <DailyChallenge />
+      {/* Achievements + Daily Challenge */}
+      <div className="mt-8 space-y-1">
+        <Achievements />
+
+        <DailyChallenge />
+      </div>
 
       {/* Games */}
       <section
         id="games"
-        className="mx-auto w-full max-w-6xl px-5 pb-16 pt-16 sm:px-8 sm:pt-20"
+        className="mx-auto w-full max-w-6xl px-5 pb-10 pt-10 sm:px-8 sm:pt-14"
       >
         {/* Heading */}
-        <div className="mb-7">
+        <div className="mb-4">
           <div className="flex items-end justify-between gap-4">
             <div>
               <p className="mb-2 text-xs font-black uppercase tracking-[0.2em] text-cyan-300/60">
@@ -423,7 +469,7 @@ export default function HomePage() {
         </div>
 
         {/* Category filters */}
-        <div className="mb-7 overflow-x-auto pb-1">
+        <div className="mb-5 overflow-x-auto pb-1">
           <div className="flex min-w-max gap-2">
             {categories.map((category) => {
               const active =
@@ -432,6 +478,7 @@ export default function HomePage() {
               return (
                 <button
                   key={category}
+                  type="button"
                   onClick={() =>
                     setActiveCategory(category)
                   }
@@ -449,7 +496,7 @@ export default function HomePage() {
         </div>
 
         {/* Game count on mobile */}
-        <div className="mb-4 text-xs text-white/30 sm:hidden">
+        <div className="mb-3 text-xs text-white/30 sm:hidden">
           Showing {filteredGames.length}{" "}
           {filteredGames.length === 1
             ? "game"
@@ -484,7 +531,7 @@ export default function HomePage() {
                   </span>
                 </div>
 
-                <h3 className="mt-5 text-xl font-black">
+                <h3 className="mt-4 text-xl font-black">
                   {game.title}
                 </h3>
 
@@ -492,7 +539,7 @@ export default function HomePage() {
                   {game.description}
                 </p>
 
-                <div className="mt-5 flex items-center justify-between">
+                <div className="mt-4 flex items-center justify-between">
                   <span
                     className={`text-sm font-bold transition ${accent.action}`}
                   >
@@ -518,6 +565,7 @@ export default function HomePage() {
             </p>
 
             <button
+              type="button"
               onClick={() => setActiveCategory("ALL")}
               className="mt-4 text-sm font-bold text-cyan-300 hover:text-cyan-200"
             >
@@ -527,8 +575,12 @@ export default function HomePage() {
         )}
       </section>
 
-      {/* Developer Support */}
-      <DeveloperSupport />
+      {/* Developer Support + Feedback */}
+      <div className="space-y-5 mt-10">
+        <DeveloperSupport />
+
+        <Feedback />
+      </div>
 
       {/* Footer */}
       <footer className="border-t border-white/6 px-5 py-8 text-center sm:px-8">
