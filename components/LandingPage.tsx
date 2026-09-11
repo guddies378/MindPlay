@@ -265,7 +265,7 @@ export default function LandingPage({
 
             <h2 className="text-4xl font-bold leading-[1.05] tracking-[-0.045em] sm:text-5xl lg:text-6xl">
               You don&apos;t need hours
-              <br className="hidden sm:block" />
+              <br />
               to challenge your mind.
             </h2>
 
@@ -419,8 +419,8 @@ export default function LandingPage({
             </h2>
 
             <p className="mx-auto mt-10 max-w-md text-base font-medium leading-7 text-white/30">
-              Start your first challenge and see what
-              you can do.
+              Your first challenge awaits.
+              Think fast. Make it count.
             </p>
 
             <button

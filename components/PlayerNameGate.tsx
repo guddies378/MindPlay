@@ -888,7 +888,7 @@ export default function PlayerNameGate({
                   }
                   type="button"
                 >
-                  ← BACK TO LANDING
+                  ← BACK
                 </button>
               )}
 
