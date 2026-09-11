@@ -1,5 +1,6 @@
 "use client";
 
+import GameShell from "@/components/GameShell";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { recordGame } from "@/lib/progress";
@@ -329,63 +330,25 @@ export default function ReactionRushPage() {
       : 0;
 
   return (
-    <main className="min-h-[100dvh] overflow-hidden px-4 py-3 text-white sm:px-6 sm:py-4 lg:px-8">
+    <GameShell
+      icon="⚡"
+      category="SPEED"
+      title="Reaction"
+      highlightedTitle="Rush"
+      description="Wait for the signal. Then react as fast as possible."
+      maxWidth="lg"
+    >
       <div className="mx-auto max-w-5xl">
-        {/* Header */}
-
-        <header className="mb-4 flex items-center justify-between">
-          <Link
-            href="/games"
-            className="group flex items-center gap-2 text-sm font-bold text-white/40 transition hover:text-white"
-          >
-            <span className="transition-transform group-hover:-translate-x-1">
-              ←
-            </span>
-            Back to Arcade
-          </Link>
-
-          <div className="rounded-full border border-white/10 bg-white/4 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-white/35">
-            Reaction Game
-          </div>
-        </header>
-
-        {/* Title */}
-
-        <section className="mp-fade-up mb-4 text-center">
-          <div className="mb-2 text-4xl">
-            ⚡
-          </div>
-
-          <p className="text-xs font-black uppercase tracking-[0.25em] text-cyan-300/60">
-            Reaction Rush
-          </p>
-
-          <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
-            How fast are you?
-          </h1>
-
-          <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-white/40">
-            Wait for the signal. Then react as fast
-            as possible. But don&apos;t click early.
-          </p>
-
-          {isDailyChallenge && (
-            <div className="mx-auto mt-4 inline-flex items-center gap-2 rounded-full border border-fuchsia-300/15 bg-fuchsia-300/5 px-4 py-2 text-xs font-bold text-fuchsia-200/70">
-              🌟 Today&apos;s Daily Challenge
-            </div>
-          )}
-        </section>
-
         {/* Difficulty */}
 
         {gameState === "idle" && (
           <section className="mp-fade-up mb-4">
             <div className="mb-3 flex items-center justify-between">
-              <p className="text-xs font-black uppercase tracking-wider text-white/30">
+              <p className="text-xs font-black uppercase tracking-wider text-white/50">
                 Select difficulty
               </p>
 
-              <p className="text-xs font-bold text-white/20">
+              <p className="text-xs font-bold text-white/40">
                 Faster = more points
               </p>
             </div>
@@ -432,12 +395,12 @@ export default function ReactionRushPage() {
                       {item.label}
                     </h2>
 
-                    <p className="mt-1 text-xs text-white/35">
+                    <p className="mt-1 text-xs text-white/55">
                       {item.description}
                     </p>
 
                     <div className="mt-4 flex items-center justify-between text-[10px] font-black uppercase tracking-wider">
-                      <span className="text-white/25">
+                      <span className="text-white/45">
                         {item.rounds} rounds
                       </span>
 
@@ -475,7 +438,7 @@ export default function ReactionRushPage() {
               gameState !== "finished" && (
                 <div className="mb-4 grid grid-cols-3 gap-2 sm:gap-3">
                   <div className="rounded-2xl border border-white/[0.07] bg-white/2.5 p-3 text-center">
-                    <p className="text-[9px] font-black uppercase tracking-wider text-white/25">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-white/45">
                       Round
                     </p>
 
@@ -485,7 +448,7 @@ export default function ReactionRushPage() {
                   </div>
 
                   <div className="rounded-2xl border border-white/[0.07] bg-white/2.5 p-3 text-center">
-                    <p className="text-[9px] font-black uppercase tracking-wider text-white/25">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-white/45">
                       Score
                     </p>
 
@@ -495,7 +458,7 @@ export default function ReactionRushPage() {
                   </div>
 
                   <div className="rounded-2xl border border-white/[0.07] bg-white/2.5 p-3 text-center">
-                    <p className="text-[9px] font-black uppercase tracking-wider text-white/25">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-white/45">
                       Best
                     </p>
 
@@ -513,7 +476,7 @@ export default function ReactionRushPage() {
             {gameState !== "idle" &&
               gameState !== "finished" && (
                 <div className="mb-4">
-                  <div className="mb-2 flex justify-between text-[9px] font-black uppercase tracking-wider text-white/20">
+                  <div className="mb-2 flex justify-between text-[9px] font-black uppercase tracking-wider text-white/40">
                     <span>Progress</span>
 
                     <span>
@@ -547,18 +510,18 @@ export default function ReactionRushPage() {
                   Ready?
                 </h2>
 
-                <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-white/35">
+                <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-white/55">
                   The screen will tell you when to
                   click. Don&apos;t click before it turns
                   green.
                 </p>
 
                 <div className="mt-4 flex flex-wrap justify-center gap-3">
-                  <div className="rounded-full border border-white/10 bg-white/3 px-4 py-2 text-xs font-bold text-white/40">
+                  <div className="rounded-full border border-white/10 bg-white/3 px-4 py-2 text-xs font-bold text-white/60">
                     🎯 +10–100 points
                   </div>
 
-                  <div className="rounded-full border border-white/10 bg-white/3 px-4 py-2 text-xs font-bold text-white/40">
+                  <div className="rounded-full border border-white/10 bg-white/3 px-4 py-2 text-xs font-bold text-white/60">
                     🚫 False start = 0
                   </div>
                 </div>
@@ -591,7 +554,7 @@ export default function ReactionRushPage() {
                 type="button"
                 onClick={handleBoardClick}
                 className={[
-                  "flex min-h-90 w-full select-none flex-col items-center justify-center rounded-3xl border transition-all duration-200 sm:min-h-105",
+                  "flex min-h-[clamp(12rem,45dvh,24rem)] w-full select-none flex-col items-center justify-center rounded-3xl border transition-all duration-200 sm:min-h-[clamp(14rem,48dvh,28rem)]",
                   gameState === "ready"
                     ? "border-emerald-300/20 bg-emerald-400/8 active:scale-[0.99]"
                     : "border-white/[0.07] bg-white/2.5 active:scale-[0.99]",
@@ -608,7 +571,7 @@ export default function ReactionRushPage() {
                       Wait...
                     </p>
 
-                    <p className="mt-2 text-sm font-bold text-white/30">
+                    <p className="mt-2 text-sm font-bold text-white/50">
                       Don&apos;t click yet!
                     </p>
 
@@ -628,7 +591,7 @@ export default function ReactionRushPage() {
                       CLICK!
                     </p>
 
-                    <p className="mt-3 text-sm font-bold text-white/35">
+                    <p className="mt-3 text-sm font-bold text-white/55">
                       NOW! NOW! NOW!
                     </p>
                   </>
@@ -650,14 +613,14 @@ export default function ReactionRushPage() {
                       TOO EARLY!
                     </p>
 
-                    <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-white/35">
+                    <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-white/55">
                       You clicked before the
                       signal. Stay focused and
                       wait for green.
                     </p>
 
                     <div className="mx-auto mt-4 max-w-sm rounded-3xl border border-orange-300/10 bg-orange-300/5 p-5">
-                      <p className="text-xs font-black uppercase tracking-wider text-white/25">
+                      <p className="text-xs font-black uppercase tracking-wider text-white/45">
                         Round score
                       </p>
 
@@ -680,7 +643,7 @@ export default function ReactionRushPage() {
                           : "👏"}
                     </div>
 
-                    <p className="mt-5 text-xs font-black uppercase tracking-[0.2em] text-white/30">
+                    <p className="mt-5 text-xs font-black uppercase tracking-[0.2em] text-white/50">
                       Reaction Time
                     </p>
 
@@ -690,7 +653,7 @@ export default function ReactionRushPage() {
                       )}
                     </p>
 
-                    <p className="mt-3 text-sm font-bold text-white/35">
+                    <p className="mt-3 text-sm font-bold text-white/55">
                       {reactionTime !== null &&
                       reactionTime <=
                         config.target
@@ -700,7 +663,7 @@ export default function ReactionRushPage() {
 
                     <div className="mx-auto mt-4 max-w-sm rounded-3xl border border-white/[0.07] bg-white/2.5 p-5">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-white/30">
+                        <span className="text-xs font-bold text-white/50">
                           Round points
                         </span>
 
@@ -753,7 +716,7 @@ export default function ReactionRushPage() {
 
                 <div className="mx-auto mt-4 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
                   <div className="rounded-3xl border border-white/[0.07] bg-white/2.5 p-5">
-                    <p className="text-[9px] font-black uppercase tracking-wider text-white/25">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-white/45">
                       Score
                     </p>
 
@@ -763,7 +726,7 @@ export default function ReactionRushPage() {
                   </div>
 
                   <div className="rounded-3xl border border-white/[0.07] bg-white/2.5 p-5">
-                    <p className="text-[9px] font-black uppercase tracking-wider text-white/25">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-white/45">
                       Best
                     </p>
 
@@ -775,7 +738,7 @@ export default function ReactionRushPage() {
                   </div>
 
                   <div className="rounded-3xl border border-white/[0.07] bg-white/2.5 p-5">
-                    <p className="text-[9px] font-black uppercase tracking-wider text-white/25">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-white/45">
                       Average
                     </p>
 
@@ -787,7 +750,7 @@ export default function ReactionRushPage() {
                   </div>
 
                   <div className="rounded-3xl border border-emerald-300/10 bg-emerald-300/4 p-5">
-                    <p className="text-[9px] font-black uppercase tracking-wider text-white/25">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-white/45">
                       XP Earned
                     </p>
 
@@ -808,7 +771,7 @@ export default function ReactionRushPage() {
                 <div className="mx-auto mt-4 max-w-2xl rounded-3xl border border-white/[0.07] bg-white/2.5 p-5 text-left">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs font-black uppercase tracking-wider text-white/25">
+                      <p className="text-xs font-black uppercase tracking-wider text-white/45">
                         Performance
                       </p>
 
@@ -861,60 +824,7 @@ export default function ReactionRushPage() {
             )}
           </div>
         </section>
-
-        {/* Tips */}
-
-        <section className="mt-4 grid gap-3 sm:grid-cols-3">
-          <div className="rounded-3xl border border-white/[0.07] bg-white/2.5 p-5">
-            <div className="text-xl">
-              👀
-            </div>
-
-            <h3 className="mt-3 text-sm font-black">
-              Stay focused
-            </h3>
-
-            <p className="mt-1 text-xs leading-5 text-white/30">
-              Don&apos;t stare at the button. Watch
-              for the signal.
-            </p>
-          </div>
-
-          <div className="rounded-3xl border border-white/[0.07] bg-white/2.5 p-5">
-            <div className="text-xl">
-              🧘
-            </div>
-
-            <h3 className="mt-3 text-sm font-black">
-              Don&apos;t rush
-            </h3>
-
-            <p className="mt-1 text-xs leading-5 text-white/30">
-              Clicking early means you lose the
-              round.
-            </p>
-          </div>
-
-          <div className="rounded-3xl border border-white/[0.07] bg-white/2.5 p-5">
-            <div className="text-xl">
-              🔥
-            </div>
-
-            <h3 className="mt-3 text-sm font-black">
-              Beat yourself
-            </h3>
-
-            <p className="mt-1 text-xs leading-5 text-white/30">
-              Your real opponent is your previous
-              best.
-            </p>
-          </div>
-        </section>
-
-        <footer className="mindplay-footer hidden mt-5 pb-4 text-center text-xs text-white/20">
-          MindPlay · Train your brain. Have fun.
-        </footer>
       </div>
-    </main>
+    </GameShell>
   );
 }

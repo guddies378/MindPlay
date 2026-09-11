@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   getProgress,
   subscribeToProgress,
@@ -138,42 +138,49 @@ const accentStyles: Record<
     icon: string;
     category: string;
     action: string;
+    glow: string;
   }
 > = {
   cyan: {
     icon: "group-hover:bg-cyan-300/10 group-hover:border-cyan-300/20",
     category: "text-cyan-300/70",
     action: "text-cyan-300/70 group-hover:text-cyan-200",
+    glow: "group-hover:bg-cyan-300/[0.035]",
   },
 
   yellow: {
     icon: "group-hover:bg-yellow-300/10 group-hover:border-yellow-300/20",
     category: "text-yellow-300/70",
     action: "text-yellow-300/70 group-hover:text-yellow-200",
+    glow: "group-hover:bg-yellow-300/[0.025]",
   },
 
   purple: {
     icon: "group-hover:bg-purple-300/10 group-hover:border-purple-300/20",
     category: "text-purple-300/70",
     action: "text-purple-300/70 group-hover:text-purple-200",
+    glow: "group-hover:bg-purple-300/[0.025]",
   },
 
   pink: {
     icon: "group-hover:bg-pink-300/10 group-hover:border-pink-300/20",
     category: "text-pink-300/70",
     action: "text-pink-300/70 group-hover:text-pink-200",
+    glow: "group-hover:bg-pink-300/[0.025]",
   },
 
   blue: {
     icon: "group-hover:bg-blue-300/10 group-hover:border-blue-300/20",
     category: "text-blue-300/70",
     action: "text-blue-300/70 group-hover:text-blue-200",
+    glow: "group-hover:bg-blue-300/[0.025]",
   },
 
   green: {
     icon: "group-hover:bg-green-300/10 group-hover:border-green-300/20",
     category: "text-green-300/70",
     action: "text-green-300/70 group-hover:text-green-200",
+    glow: "group-hover:bg-green-300/[0.025]",
   },
 };
 
@@ -191,7 +198,7 @@ function shuffleGames(gameList: Game[]): Game[] {
 
   for (let index = shuffled.length - 1; index > 0; index -= 1) {
     const randomIndex = Math.floor(
-      Math.random() * (index + 1)
+      Math.random() * (index + 1),
     );
 
     [shuffled[index], shuffled[randomIndex]] = [
@@ -204,6 +211,8 @@ function shuffleGames(gameList: Game[]): Game[] {
 }
 
 export default function HomePage() {
+  const pageRef = useRef<HTMLElement>(null);
+
   const [progress, setProgress] =
     useState<MindPlayProgress | null>(null);
 
@@ -212,6 +221,46 @@ export default function HomePage() {
 
   const [shuffledGames, setShuffledGames] =
     useState<Game[]>(games);
+
+  /* =========================
+     SCROLL REVEAL
+  ========================== */
+
+  useEffect(() => {
+    const page = pageRef.current;
+
+    if (!page) return;
+
+    const elements =
+      page.querySelectorAll<HTMLElement>(
+        "[data-reveal]",
+      );
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      {
+        threshold: 0.08,
+        rootMargin: "0px 0px -50px 0px",
+      },
+    );
+
+    elements.forEach((element) => {
+      observer.observe(element);
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
+  /* =========================
+     SHUFFLE GAMES
+  ========================== */
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
@@ -222,6 +271,10 @@ export default function HomePage() {
       cancelAnimationFrame(frame);
     };
   }, []);
+
+  /* =========================
+     PROGRESS
+  ========================== */
 
   useEffect(() => {
     const update = () => {
@@ -246,26 +299,76 @@ export default function HomePage() {
     }
 
     return shuffledGames.filter(
-      (game) => game.tag === activeCategory
+      (game) => game.tag === activeCategory,
     );
   }, [activeCategory, shuffledGames]);
 
   return (
-    <main className="min-h-screen overflow-hidden">
-      {/* Background decorations */}
-      <div className="mp-ambient-background pointer-events-none fixed inset-0 -z-10">
-        <div className="absolute -left-45 -top-45 h-112.5 w-112.5 rounded-full bg-cyan-400/[0.07] blur-[120px]" />
+    <main
+      ref={pageRef}
+      className="min-h-screen overflow-hidden bg-[#050505] text-white"
+    >
+      {/* =========================
+          ANIMATION STYLES
+      ========================== */}
 
-        <div className="absolute -right-45 top-[30%] h-112.5 w-112.5 rounded-full bg-purple-500/[0.07] blur-[130px]" />
+      <style jsx>{`
+        [data-reveal] {
+          opacity: 0;
+          transform: translateY(35px);
+          transition:
+            opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1),
+            transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+        }
 
-        <div className="absolute -bottom-50 left-[35%] h-100 w-100 rounded-full bg-pink-500/5 blur-[130px]" />
+        [data-reveal].is-visible {
+          opacity: 1;
+          transform: translateY(0);
+        }
+
+        .game-card {
+          opacity: 0;
+          transform: translateY(25px);
+          animation: gameReveal 0.8s
+            cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        @keyframes gameReveal {
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          [data-reveal],
+          .game-card {
+            opacity: 1 !important;
+            transform: none !important;
+            animation: none !important;
+            transition: none !important;
+          }
+        }
+      `}</style>
+
+      {/* =========================
+          AMBIENT BACKGROUND
+      ========================== */}
+
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute -left-60 -top-60 h-162.5 w-162.5 rounded-full bg-cyan-400/[0.035] blur-[150px]" />
+
+        <div className="absolute -right-60 top-[35%] h-162.5 w-162.5 rounded-full bg-fuchsia-500/2.5 blur-[150px]" />
       </div>
 
-      {/* Navigation */}
-      <nav className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-5 py-6 sm:px-8">
+      {/* =========================
+          NAVIGATION
+      ========================== */}
+
+      <nav className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-6 py-6 sm:px-8">
         <Link
           href="/"
-          className="group flex min-w-0 items-center gap-2 text-lg font-black tracking-tight"
+          className="group flex min-w-0 items-center gap-2"
         >
           <PlayerBrand />
         </Link>
@@ -276,9 +379,11 @@ export default function HomePage() {
           <Link
             href="/games"
             aria-label="All Games"
-            className="mp-button border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white/70 hover:bg-white/9 hover:text-white sm:px-4"
+            className="rounded-full border border-white/10 bg-white/[0.035] px-3 py-2.5 text-sm font-semibold text-white/65 transition-all duration-300 hover:-translate-y-0.5 hover:border-white/15 hover:bg-white/[0.07] hover:text-white sm:px-5"
           >
-            <span className="sm:hidden">🎮</span>
+            <span className="sm:hidden">
+              🎮
+            </span>
 
             <span className="hidden sm:inline">
               All Games →
@@ -287,83 +392,112 @@ export default function HomePage() {
         </div>
       </nav>
 
-      {/* Hero */}
-      <section className="mx-auto w-full max-w-6xl px-5 pb-12 pt-10 sm:px-8 sm:pb-16 sm:pt-16">
-        <div className="mx-auto max-w-3xl text-center">
-          <div className="mp-fade-up mb-5 inline-flex items-center gap-2 rounded-full border border-cyan-300/10 bg-cyan-300/5 px-4 py-2 text-xs font-bold tracking-wide text-cyan-200/80">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-300" />
-            YOUR BRAIN. YOUR GAME.
-          </div>
+      {/* =========================
+          HERO
+      ========================== */}
 
-          <h1 className="mp-fade-up text-5xl font-black tracking-[-0.04em] sm:text-7xl">
-            Play.
-            <br />
-
-            <span className="mp-gradient-text">
-              Think. Repeat.
-            </span>
-          </h1>
-
-          <p className="mp-fade-up mx-auto mt-6 max-w-xl text-sm leading-7 text-white/50 sm:text-base">
-            Quick games designed to challenge your memory,
-            speed, logic, and focus.
-          </p>
-
-          <div className="mp-fade-up mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-            <Link
-              href="/games"
-              className="mp-button bg-white px-7 py-3.5 text-sm text-black shadow-xl shadow-white/5 hover:bg-cyan-50"
+      <section className="relative">
+        <div className="mx-auto w-full max-w-6xl px-6 pb-20 pt-16 sm:px-8 sm:pb-28 sm:pt-24">
+          <div className="mx-auto max-w-4xl text-center">
+            <div
+              data-reveal
+              className="mb-7 inline-flex items-center gap-2 rounded-full border border-white/8 bg-white/2.5 px-4 py-2 text-xs font-bold tracking-wide text-white/45"
             >
-              🎮 Start Playing
-            </Link>
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-300" />
 
-            <a
-              href="#games"
-              className="mp-button border border-white/10 bg-white/4 px-7 py-3.5 text-sm text-white/70 hover:bg-white/8 hover:text-white"
+              YOUR BRAIN. YOUR GAME.
+            </div>
+
+            <div data-reveal>
+  <h1 className="text-center font-extrabold leading-[0.86] tracking-[-0.3em]">
+    <span className="block text-[clamp(4rem,10vw,8rem)]">
+      Play.
+    </span>
+
+    <span className="mt-4 block whitespace-nowrap text-[clamp(3rem,10vw,8rem)] tracking-[-0.045em] bg-linear-to-r from-cyan-300 via-white to-fuchsia-400 bg-clip-text text-transparent">
+      Think. Grow.
+    </span>
+  </h1>
+</div>
+
+            <p
+              data-reveal
+              className="mx-auto mt-8 max-w-xl text-base font-medium leading-8 text-white/35 sm:text-lg"
             >
-              Explore Games ↓
-            </a>
+              Think curious. Play smart.
+            </p>
+
+            <div
+              data-reveal
+              className="mt-9 flex flex-col justify-center gap-3 sm:flex-row"
+            >
+              <Link
+                href="/games"
+                className="group inline-flex items-center justify-center gap-2 rounded-full bg-white px-7 py-3.5 text-sm font-bold text-black transition-all duration-300 hover:-translate-y-0.5 hover:bg-cyan-300"
+              >
+                🎮 Start Playing
+
+                <span className="transition-transform duration-300 group-hover:translate-x-1">
+                  →
+                </span>
+              </Link>
+
+              <a
+                href="#games"
+                className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/2 px-7 py-3.5 text-sm font-semibold text-white/55 transition-all duration-300 hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/5 hover:text-white"
+              >
+                Explore Games ↓
+              </a>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Player progress */}
-      <section className="mx-auto w-full max-w-6xl px-5 sm:px-8">
-        <div className="mp-card rounded-4xl p-5 sm:p-7">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+      {/* =========================
+          PLAYER PROGRESS
+      ========================== */}
+
+      <section
+        data-reveal
+        className="mx-auto w-full max-w-6xl px-6 sm:px-8"
+      >
+        <div className="rounded-3xl border border-white/[0.07] bg-white/2.5 p-6 sm:p-8">
+          <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
             {/* Level */}
+
             <div className="flex items-center gap-4">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/[0.07] text-xl font-black">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/6 text-xl font-extrabold">
                 {levelProgress.level}
               </div>
 
-              <div className="min-w-0">
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-white/35">
-                  Current Level
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-white/30">
+                  Current level
                 </p>
 
-                <p className="mt-1 text-lg font-black">
+                <p className="mt-1 text-lg font-bold">
                   Level {levelProgress.level}
                 </p>
               </div>
             </div>
 
             {/* XP */}
+
             <div className="w-full max-w-md">
               <div className="mb-2 flex items-center justify-between text-xs">
-                <span className="font-bold text-white/50">
+                <span className="font-semibold text-white/35">
                   Progress
                 </span>
 
-                <span className="font-bold text-cyan-300/80">
+                <span className="font-bold text-cyan-300/75">
                   {levelProgress.xpIntoLevel}/
                   {levelProgress.xpNeeded} XP
                 </span>
               </div>
 
-              <div className="h-2.5 overflow-hidden rounded-full bg-white/[0.07]">
+              <div className="h-2 overflow-hidden rounded-full bg-white/[0.07]">
                 <div
-                  className="h-full rounded-full bg-linear-to-r from-cyan-300 via-purple-400 to-pink-300 transition-all duration-700"
+                  className="h-full rounded-full bg-linear-to-r from-cyan-300 via-purple-400 to-fuchsia-300 transition-all duration-700"
                   style={{
                     width: `${levelProgress.percentage}%`,
                   }}
@@ -372,16 +506,18 @@ export default function HomePage() {
             </div>
 
             {/* Streak */}
-            <div className="flex items-center gap-3 rounded-2xl border border-orange-300/10 bg-orange-300/4 px-4 py-3">
+
+            <div className="flex items-center gap-3">
               <span className="text-2xl">🔥</span>
 
               <div>
-                <p className="text-xs font-black uppercase tracking-wider text-white/35">
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-white/30">
                   Streak
                 </p>
 
-                <p className="text-lg font-black text-orange-200">
-                  {streak} day{streak === 1 ? "" : "s"}
+                <p className="text-lg font-bold text-orange-200">
+                  {streak} day
+                  {streak === 1 ? "" : "s"}
                 </p>
               </div>
             </div>
@@ -389,87 +525,98 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Stats */}
-      <section className="mx-auto w-full max-w-6xl px-5 pt-5 sm:px-8">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div className="mp-card rounded-2xl p-4">
-            <p className="text-xs font-bold uppercase tracking-wider text-white/30">
-              Games
-            </p>
+      {/* =========================
+          STATS
+      ========================== */}
 
-            <p className="mt-1 text-2xl font-black">
-              {gamesPlayed}
-            </p>
-          </div>
+      <section
+        data-reveal
+        className="mx-auto w-full max-w-6xl px-6 pt-4 sm:px-8"
+      >
+        <div className="grid grid-cols-2 border-y border-white/6 sm:grid-cols-4">
+          <Stat
+            label="Games"
+            value={gamesPlayed.toString()}
+          />
 
-          <div className="mp-card rounded-2xl p-4">
-            <p className="text-xs font-bold uppercase tracking-wider text-white/30">
-              XP
-            </p>
+          <Stat
+            label="XP"
+            value={xp.toString()}
+            accent="cyan"
+          />
 
-            <p className="mt-1 text-2xl font-black text-cyan-300">
-              {xp}
-            </p>
-          </div>
+          <Stat
+            label="Streak"
+            value={`🔥 ${streak}`}
+            accent="orange"
+          />
 
-          <div className="mp-card rounded-2xl p-4">
-            <p className="text-xs font-bold uppercase tracking-wider text-white/30">
-              Streak
-            </p>
-
-            <p className="mt-1 text-2xl font-black text-orange-300">
-              🔥 {streak}
-            </p>
-          </div>
-
-          <div className="mp-card rounded-2xl p-4">
-            <p className="text-xs font-bold uppercase tracking-wider text-white/30">
-              Best Score
-            </p>
-
-            <p className="mt-1 text-2xl font-black text-purple-300">
-              {bestScore}
-            </p>
-          </div>
+          <Stat
+            label="Best score"
+            value={bestScore.toString()}
+            accent="purple"
+          />
         </div>
       </section>
 
-      {/* Achievements + Daily Challenge */}
-      <div className="mt-8 space-y-1">
-        <Achievements />
+      {/* =========================
+          ACHIEVEMENTS
+      ========================== */}
 
+      <div
+        data-reveal
+        className="mt-10"
+      >
+        <Achievements />
+      </div>
+
+      {/* =========================
+          DAILY CHALLENGE
+      ========================== */}
+
+      <div
+        data-reveal
+        className="mt-2"
+      >
         <DailyChallenge />
       </div>
 
-      {/* Games */}
+      {/* =========================
+          GAMES
+      ========================== */}
+
       <section
         id="games"
-        className="mx-auto w-full max-w-6xl px-5 pb-10 pt-10 sm:px-8 sm:pt-14"
+        className="mx-auto w-full max-w-6xl px-6 pb-20 pt-24 sm:px-8 sm:pt-32"
       >
-        {/* Heading */}
-        <div className="mb-4">
-          <div className="flex items-end justify-between gap-4">
-            <div>
-              <p className="mb-2 text-xs font-black uppercase tracking-[0.2em] text-cyan-300/60">
-                Game Arcade
-              </p>
-
-              <h2 className="text-3xl font-black tracking-tight sm:text-4xl">
-                Pick a game
-              </h2>
-            </div>
-
-            <p className="hidden text-sm text-white/30 sm:block">
-              {filteredGames.length}{" "}
-              {filteredGames.length === 1
-                ? "game"
-                : "games"}
+        <div
+          data-reveal
+          className="mb-12 flex items-end justify-between gap-6"
+        >
+          <div>
+            <p className="mb-4 text-sm font-bold text-cyan-300/60">
+              Game library
             </p>
+
+            <h2 className="text-4xl font-extrabold tracking-[-0.045em] sm:text-5xl lg:text-6xl">
+              Pick a game.
+            </h2>
           </div>
+
+          <p className="hidden pb-1 text-sm font-medium text-white/25 sm:block">
+            {filteredGames.length}{" "}
+            {filteredGames.length === 1
+              ? "game"
+              : "games"}
+          </p>
         </div>
 
-        {/* Category filters */}
-        <div className="mb-5 overflow-x-auto pb-1">
+        {/* Categories */}
+
+        <div
+          data-reveal
+          className="mb-8 overflow-x-auto pb-2"
+        >
           <div className="flex min-w-max gap-2">
             {categories.map((category) => {
               const active =
@@ -482,10 +629,10 @@ export default function HomePage() {
                   onClick={() =>
                     setActiveCategory(category)
                   }
-                  className={`rounded-full border px-4 py-2.5 text-xs font-black tracking-wider transition ${
+                  className={`rounded-full border px-4 py-2.5 text-xs font-bold tracking-wide transition-all duration-300 ${
                     active
                       ? "border-cyan-300/30 bg-cyan-300/10 text-cyan-200"
-                      : "border-white/10 bg-white/3 text-white/40 hover:bg-white/6 hover:text-white/70"
+                      : "border-white/10 bg-white/2 text-white/35 hover:border-white/15 hover:bg-white/5 hover:text-white/70"
                   }`}
                 >
                   {category}
@@ -495,8 +642,9 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Game count on mobile */}
-        <div className="mb-3 text-xs text-white/30 sm:hidden">
+        {/* Mobile count */}
+
+        <div className="mb-5 text-xs font-medium text-white/25 sm:hidden">
           Showing {filteredGames.length}{" "}
           {filteredGames.length === 1
             ? "game"
@@ -504,51 +652,59 @@ export default function HomePage() {
         </div>
 
         {/* Game cards */}
+
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filteredGames.map((game, index) => {
-            const accent = accentStyles[game.accent];
+            const accent =
+              accentStyles[game.accent];
 
             return (
               <Link
                 key={game.href}
                 href={game.href}
-                className="mp-card mp-card-hover group rounded-[1.75rem] p-5"
+                className={`game-card group relative overflow-hidden rounded-3xl border border-white/[0.07] bg-white/2.5 p-6 transition-all duration-500 hover:-translate-y-1 hover:border-white/13 hover:bg-white/4 ${accent.glow}`}
                 style={{
-                  animationDelay: `${index * 60}ms`,
+                  animationDelay: `${index * 70}ms`,
                 }}
               >
-                <div className="flex items-start justify-between">
-                  <div
-                    className={`flex h-14 w-14 items-center justify-center rounded-2xl border border-white/6 bg-white/6 text-3xl transition-all duration-200 ${accent.icon}`}
-                  >
-                    {game.icon}
+                {/* Subtle card glow */}
+
+                <div className="pointer-events-none absolute -right-20 -top-20 h-40 w-40 rounded-full opacity-0 blur-[80px] transition-opacity duration-500 group-hover:opacity-100" />
+
+                <div className="relative">
+                  <div className="flex items-start justify-between">
+                    <div
+                      className={`flex h-14 w-14 items-center justify-center rounded-2xl border border-white/6 bg-white/4.5 text-3xl transition-all duration-500 group-hover:scale-105 ${accent.icon}`}
+                    >
+                      {game.icon}
+                    </div>
+
+                    <span
+                      className={`rounded-full border border-white/8 bg-white/2.5 px-2.5 py-1 text-[10px] font-bold tracking-wide ${accent.category}`}
+                    >
+                      {game.tag}
+                    </span>
                   </div>
 
-                  <span
-                    className={`rounded-full border border-white/10 bg-white/4 px-2.5 py-1 text-[10px] font-black tracking-wider ${accent.category}`}
-                  >
-                    {game.tag}
-                  </span>
-                </div>
+                  <h3 className="mt-7 text-xl font-extrabold tracking-tight transition-transform duration-500 group-hover:translate-x-0.5">
+                    {game.title}
+                  </h3>
 
-                <h3 className="mt-4 text-xl font-black">
-                  {game.title}
-                </h3>
+                  <p className="mt-2 min-h-12 text-sm font-medium leading-6 text-white/35">
+                    {game.description}
+                  </p>
 
-                <p className="mt-2 min-h-12 text-sm leading-6 text-white/45">
-                  {game.description}
-                </p>
+                  <div className="mt-7 flex items-center justify-between">
+                    <span
+                      className={`text-sm font-bold transition-colors duration-300 ${accent.action}`}
+                    >
+                      Play game
+                    </span>
 
-                <div className="mt-4 flex items-center justify-between">
-                  <span
-                    className={`text-sm font-bold transition ${accent.action}`}
-                  >
-                    Play game
-                  </span>
-
-                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/6 text-sm text-white/40 transition group-hover:translate-x-1 group-hover:bg-white/10 group-hover:text-white">
-                    →
-                  </span>
+                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/5 text-sm text-white/30 transition-all duration-300 group-hover:translate-x-1 group-hover:bg-white/9 group-hover:text-white">
+                      →
+                    </span>
+                  </div>
                 </div>
               </Link>
             );
@@ -556,18 +712,21 @@ export default function HomePage() {
         </div>
 
         {/* Empty state */}
+
         {filteredGames.length === 0 && (
-          <div className="mp-card rounded-3xl p-10 text-center">
+          <div className="rounded-3xl border border-white/[0.07] bg-white/2.5 p-10 text-center">
             <div className="text-4xl">🤔</div>
 
-            <p className="mt-4 font-black">
+            <p className="mt-4 font-bold">
               No games found
             </p>
 
             <button
               type="button"
-              onClick={() => setActiveCategory("ALL")}
-              className="mt-4 text-sm font-bold text-cyan-300 hover:text-cyan-200"
+              onClick={() =>
+                setActiveCategory("ALL")
+              }
+              className="mt-4 text-sm font-bold text-cyan-300 transition-colors hover:text-cyan-200"
             >
               Show all games
             </button>
@@ -575,19 +734,67 @@ export default function HomePage() {
         )}
       </section>
 
-      {/* Developer Support + Feedback */}
-      <div className="space-y-5 mt-10">
+      {/* =========================
+          SUPPORT
+      ========================== */}
+
+      <div
+        data-reveal
+        className="mx-auto max-w-6xl space-y-5 px-6 pb-20 sm:px-8"
+      >
         <DeveloperSupport />
 
         <Feedback />
       </div>
 
-      {/* Footer */}
-      <footer className="border-t border-white/6 px-5 py-8 text-center sm:px-8">
-        <PlayerFooterText>
-          MindPlay · Think. Play. Conquer.
-        </PlayerFooterText>
+      {/* =========================
+          FOOTER
+      ========================== */}
+
+      <footer className="border-t border-white/6">
+        <div className="mx-auto max-w-6xl px-6 py-10 text-center sm:px-8">
+          <PlayerFooterText>
+            MindPlay ·  Play. Think. Grow.
+          </PlayerFooterText>
+        </div>
       </footer>
     </main>
+  );
+}
+
+/* =========================
+   STAT
+========================== */
+
+function Stat({
+  label,
+  value,
+  accent,
+}: {
+  label: string;
+  value: string;
+  accent?: "cyan" | "orange" | "purple";
+}) {
+  const valueColor =
+    accent === "cyan"
+      ? "text-cyan-300"
+      : accent === "orange"
+        ? "text-orange-300"
+        : accent === "purple"
+          ? "text-purple-300"
+          : "text-white";
+
+  return (
+    <div className="border-b border-white/6 p-5 transition-colors duration-300 hover:bg-white/1.5 sm:border-b-0 sm:border-r sm:p-6 sm:last:border-r-0">
+      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/25">
+        {label}
+      </p>
+
+      <p
+        className={`mt-2 text-2xl font-extrabold tracking-tight ${valueColor}`}
+      >
+        {value}
+      </p>
+    </div>
   );
 }

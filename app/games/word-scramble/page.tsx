@@ -451,11 +451,11 @@ export default function WordScramblePage() {
 
       <div className="mx-auto mt-4 max-w-2xl">
         <div className="mb-3 flex items-center justify-between">
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-white/30">
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-white/50">
             Difficulty
           </p>
 
-          <p className="text-xs text-white/30">
+          <p className="text-xs text-white/50">
             Base XP{" "}
             <span className="font-bold text-cyan-300">
               +{DIFFICULTIES[difficulty].xp}
@@ -519,7 +519,7 @@ export default function WordScramblePage() {
                   }
                 </p>
 
-                <p className="mt-1 text-xs text-white/30">
+                <p className="mt-1 text-xs text-white/50">
                   {DIFFICULTIES[level].time}{" "}
                   seconds
                 </p>
@@ -533,7 +533,7 @@ export default function WordScramblePage() {
 
       <div className="mx-auto mt-5 grid max-w-2xl grid-cols-3 gap-2 sm:gap-3">
         <div className="mp-card rounded-2xl p-3 text-center sm:p-4">
-          <p className="text-[10px] font-black uppercase tracking-widest text-white/30 sm:text-xs">
+          <p className="text-[10px] font-black uppercase tracking-widest text-white/50 sm:text-xs">
             Score
           </p>
 
@@ -543,7 +543,7 @@ export default function WordScramblePage() {
         </div>
 
         <div className="mp-card rounded-2xl p-3 text-center sm:p-4">
-          <p className="text-[10px] font-black uppercase tracking-widest text-white/30 sm:text-xs">
+          <p className="text-[10px] font-black uppercase tracking-widest text-white/50 sm:text-xs">
             Solved
           </p>
 
@@ -553,7 +553,7 @@ export default function WordScramblePage() {
         </div>
 
         <div className="mp-card rounded-2xl p-3 text-center sm:p-4">
-          <p className="text-[10px] font-black uppercase tracking-widest text-white/30 sm:text-xs">
+          <p className="text-[10px] font-black uppercase tracking-widest text-white/50 sm:text-xs">
             Time
           </p>
 
@@ -621,7 +621,7 @@ export default function WordScramblePage() {
                 Unscramble the word
               </h2>
 
-              <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-white/40">
+              <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-white/60">
                 Rearrange the letters
                 before time runs out.
                 Solve as many words as
@@ -635,7 +635,7 @@ export default function WordScramblePage() {
                     XP
                   </p>
 
-                  <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/25">
+                  <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/45">
                     Base XP
                   </p>
                 </div>
@@ -646,7 +646,7 @@ export default function WordScramblePage() {
                     s
                   </p>
 
-                  <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/25">
+                  <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/45">
                     Timer
                   </p>
                 </div>
@@ -656,7 +656,7 @@ export default function WordScramblePage() {
                     +XP
                   </p>
 
-                  <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/25">
+                  <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/45">
                     Reward
                   </p>
                 </div>
@@ -692,7 +692,7 @@ export default function WordScramblePage() {
             <div className="text-center">
               <div className="mb-4 flex items-center justify-between">
                 <div className="text-left">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/25">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/45">
                     Word Puzzle
                   </p>
 
@@ -701,7 +701,7 @@ export default function WordScramblePage() {
                   </p>
                 </div>
 
-                <div className="rounded-full border border-white/10 bg-white/4 px-3 py-1.5 text-xs font-bold text-white/40">
+                <div className="rounded-full border border-white/10 bg-white/4 px-3 py-1.5 text-xs font-bold text-white/60">
                   +10 points
                 </div>
               </div>
@@ -783,7 +783,7 @@ export default function WordScramblePage() {
                         true
                       )
                     }
-                    className="mp-button rounded-full border border-white/10 bg-white/[0.035] px-4 py-2 text-xs text-white/45 hover:bg-white/[0.07] hover:text-white/70"
+                    className="mp-button rounded-full border border-white/10 bg-white/[0.035] px-4 py-2 text-xs text-white/65 hover:bg-white/[0.07] hover:text-white/70"
                   >
                     💡 Need a hint?
                   </button>
@@ -822,7 +822,7 @@ export default function WordScramblePage() {
                   }
                   className={[
                     "min-w-0 flex-1 rounded-2xl border bg-black/20 px-5 py-4 text-center text-lg font-black uppercase outline-none transition",
-                    "placeholder:text-white/20",
+                    "placeholder:40",
                     "focus:border-cyan-300/30 focus:bg-black/30",
                     feedback ===
                     "correct"
@@ -844,13 +844,13 @@ export default function WordScramblePage() {
                     answer.trim() ===
                       ""
                   }
-                  className="mp-button rounded-2xl bg-white px-6 py-4 text-sm font-black text-[#080b14] hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-40"
+                  className="mp-button rounded-2xl bg-white px-6 py-4 text-sm font-black text-[#080b14] hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-text-white/40"
                 >
                   Check
                 </button>
               </div>
 
-              <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-[11px] text-white/25">
+              <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-[11px] text-white/45">
                 <span>
                   +10 points
                 </span>
@@ -887,7 +887,7 @@ export default function WordScramblePage() {
               Time&apos;s up!
             </h2>
 
-            <p className="mt-2 text-sm text-white/40">
+            <p className="mt-2 text-sm text-white/60">
               You solved{" "}
               <span className="font-black text-white">
                 {correct}
@@ -899,7 +899,7 @@ export default function WordScramblePage() {
 
             <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-3">
               <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-                <p className="text-[10px] font-black uppercase tracking-wider text-white/25">
+                <p className="text-[10px] font-black uppercase tracking-wider text-white/45">
                   Score
                 </p>
 
@@ -909,7 +909,7 @@ export default function WordScramblePage() {
               </div>
 
               <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-                <p className="text-[10px] font-black uppercase tracking-wider text-white/25">
+                <p className="text-[10px] font-black uppercase tracking-wider text-white/45">
                   Solved
                 </p>
 
@@ -919,7 +919,7 @@ export default function WordScramblePage() {
               </div>
 
               <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-                <p className="text-[10px] font-black uppercase tracking-wider text-white/25">
+                <p className="text-[10px] font-black uppercase tracking-wider text-white/45">
                   Wrong
                 </p>
 
@@ -940,7 +940,7 @@ export default function WordScramblePage() {
                 +{xpEarned ?? 0} XP
               </p>
 
-              <p className="mt-1 text-xs text-white/30">
+              <p className="mt-1 text-xs text-white/50">
                 Added to your MindPlay progress
               </p>
             </div>
@@ -957,7 +957,7 @@ export default function WordScramblePage() {
                   +50 XP · +10 Score
                 </p>
 
-                <p className="mt-1 text-xs text-white/30">
+                <p className="mt-1 text-xs text-white/50">
                   Today&apos;s challenge
                   reward has been added.
                 </p>
@@ -996,7 +996,7 @@ export default function WordScramblePage() {
               Word tip
             </p>
 
-            <p className="mt-1 text-sm leading-6 text-white/35">
+            <p className="mt-1 text-sm leading-6 text-white/55">
               Look for common letter
               combinations first. Words
               often reveal themselves once

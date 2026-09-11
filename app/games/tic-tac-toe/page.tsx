@@ -320,13 +320,6 @@ export default function TicTacToePage() {
     draws: 0,
   });
 
-  /*
-   * A match is active whenever there are moves
-   * on the board and the game has not finished.
-   *
-   * This prevents changing difficulty or symbol
-   * in the middle of an active match.
-   */
   const gameInProgress =
     board.some((cell) => cell !== null) &&
     winner === null;
@@ -594,53 +587,221 @@ export default function TicTacToePage() {
         gameId="tic-tac-toe"
       />
 
+      {/* Difficulty */}
+
+      <div className="mx-auto mt-3 w-full max-w-2xl">
+        <div className="mb-2 flex items-center justify-between">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50 sm:text-xs">
+            Difficulty
+          </p>
+
+          <p className="text-[10px] text-white/50 sm:text-xs">
+            Current{" "}
+            <span className="font-bold text-cyan-300">
+              {DIFFICULTIES[difficulty].label}
+            </span>
+          </p>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2">
+          {(Object.keys(
+            DIFFICULTIES
+          ) as Difficulty[]).map(
+            (level) => {
+              const active =
+                difficulty === level;
+
+              return (
+                <button
+                  key={level}
+                  onClick={() => {
+                    if (gameInProgress) {
+                      return;
+                    }
+
+                    setDifficulty(
+                      level
+                    );
+                  }}
+                  disabled={gameInProgress}
+                  className={[
+                    "rounded-2xl border p-2.5 text-left transition-all duration-200 sm:p-3",
+                    active
+                      ? "border-cyan-300/30 bg-cyan-300/8 shadow-[0_0_25px_rgba(103,232,249,0.05)]"
+                      : "border-white/10 bg-white/[0.035] hover:bg-white/6",
+                    gameInProgress
+                      ? "cursor-not-allowed opacity-40"
+                      : "",
+                  ].join(" ")}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-lg sm:text-xl">
+                      {
+                        DIFFICULTIES[
+                          level
+                        ].icon
+                      }
+                    </span>
+
+                    {active && (
+                      <span className="h-1.5 w-1.5 rounded-full bg-cyan-300 shadow-[0_0_8px_rgba(103,232,249,0.8)]" />
+                    )}
+                  </div>
+
+                  <p
+                    className={[
+                      "mt-1.5 text-xs font-black sm:text-sm",
+                      active
+                        ? "text-cyan-200"
+                        : "text-white/70",
+                    ].join(" ")}
+                  >
+                    {
+                      DIFFICULTIES[
+                        level
+                      ].label
+                    }
+                  </p>
+
+                  <p className="mt-0.5 text-[9px] text-white/50 sm:text-[11px]">
+                    {
+                      DIFFICULTIES[
+                        level
+                      ].description
+                    }
+                  </p>
+                </button>
+              );
+            }
+          )}
+        </div>
+
+        {gameInProgress && (
+          <p className="mt-1.5 text-center text-[9px] text-white/45 sm:text-[11px]">
+            Difficulty is locked during the match.
+          </p>
+        )}
+      </div>
+
+      {/* Choose Symbol */}
+
+      <div className="mx-auto mt-3 w-full max-w-2xl">
+        <p className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-white/50 sm:text-xs">
+          Choose your symbol
+        </p>
+
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            onClick={() => {
+              if (gameInProgress) {
+                return;
+              }
+
+              resetBoard("X");
+            }}
+            disabled={gameInProgress}
+            className={[
+              "rounded-2xl border p-2.5 transition-all duration-200 sm:p-3",
+              humanPlayer === "X"
+                ? "border-cyan-300/30 bg-cyan-300/8"
+                : "border-white/10 bg-white/[0.035] hover:bg-white/6",
+              gameInProgress
+                ? "cursor-not-allowed opacity-40"
+                : "",
+            ].join(" ")}
+          >
+            <span className="text-xl font-black text-cyan-300 sm:text-2xl">
+              X
+            </span>
+
+            <span className="ml-2 text-xs font-black text-white/70 sm:text-sm">
+              Play as X
+            </span>
+          </button>
+
+          <button
+            onClick={() => {
+              if (gameInProgress) {
+                return;
+              }
+
+              resetBoard("O");
+            }}
+            disabled={gameInProgress}
+            className={[
+              "rounded-2xl border p-2.5 transition-all duration-200 sm:p-3",
+              humanPlayer === "O"
+                ? "border-fuchsia-300/30 bg-fuchsia-300/8"
+                : "border-white/10 bg-white/[0.035] hover:bg-white/6",
+              gameInProgress
+                ? "cursor-not-allowed opacity-40"
+                : "",
+            ].join(" ")}
+          >
+            <span className="text-xl font-black text-fuchsia-300 sm:text-2xl">
+              O
+            </span>
+
+            <span className="ml-2 text-xs font-black text-white/70 sm:text-sm">
+              Play as O
+            </span>
+          </button>
+        </div>
+
+        {gameInProgress && (
+          <p className="mt-1.5 text-center text-[9px] text-white/45 sm:text-[11px]">
+            Your symbol is locked during the match.
+          </p>
+        )}
+      </div>
+
       {/* Scoreboard */}
 
-      <div className="mx-auto mt-4 grid max-w-2xl grid-cols-3 gap-2 sm:gap-3">
-        <div className="mp-card rounded-2xl p-3 text-center sm:p-4">
+      <div className="mx-auto mt-3 grid w-full max-w-2xl grid-cols-3 gap-2">
+        <div className="mp-card rounded-2xl p-2.5 text-center sm:p-3">
           <div className="flex items-center justify-center gap-1.5">
-            <span className="text-xs">
+            <span className="text-[10px]">
               ❌
             </span>
 
-            <p className="text-[10px] font-black uppercase tracking-widest text-white/30 sm:text-xs">
+            <p className="text-[9px] font-black uppercase tracking-widest text-white/50 sm:text-[10px]">
               You
             </p>
           </div>
 
-          <p className="mt-1 text-xl font-black text-cyan-300 sm:text-2xl">
+          <p className="mt-0.5 text-lg font-black text-cyan-300 sm:text-xl">
             {scores.player}
           </p>
         </div>
 
-        <div className="mp-card rounded-2xl p-3 text-center sm:p-4">
+        <div className="mp-card rounded-2xl p-2.5 text-center sm:p-3">
           <div className="flex items-center justify-center gap-1.5">
-            <span className="text-xs">
+            <span className="text-[10px]">
               🤝
             </span>
 
-            <p className="text-[10px] font-black uppercase tracking-widest text-white/30 sm:text-xs">
+            <p className="text-[9px] font-black uppercase tracking-widest text-white/50 sm:text-[10px]">
               Draws
             </p>
           </div>
 
-          <p className="mt-1 text-xl font-black text-white sm:text-2xl">
+          <p className="mt-0.5 text-lg font-black text-white sm:text-xl">
             {scores.draws}
           </p>
         </div>
 
-        <div className="mp-card rounded-2xl p-3 text-center sm:p-4">
+        <div className="mp-card rounded-2xl p-2.5 text-center sm:p-3">
           <div className="flex items-center justify-center gap-1.5">
-            <span className="text-xs">
+            <span className="text-[10px]">
               🤖
             </span>
 
-            <p className="text-[10px] font-black uppercase tracking-widest text-white/30 sm:text-xs">
+            <p className="text-[9px] font-black uppercase tracking-widest text-white/50 sm:text-[10px]">
               AI
             </p>
           </div>
 
-          <p className="mt-1 text-xl font-black text-fuchsia-300 sm:text-2xl">
+          <p className="mt-0.5 text-lg font-black text-fuchsia-300 sm:text-xl">
             {scores.ai}
           </p>
         </div>
@@ -648,10 +809,10 @@ export default function TicTacToePage() {
 
       {/* Status */}
 
-      <div className="mt-5 text-center">
+      <div className="mt-3 text-center">
         <div
           className={[
-            "inline-flex items-center gap-2 rounded-full border px-5 py-2 text-sm font-black transition-all",
+            "inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-black transition-all sm:px-5 sm:py-2 sm:text-sm",
             winner === humanPlayer
               ? "border-emerald-300/20 bg-emerald-300/8 text-emerald-300"
               : winner === aiPlayer
@@ -664,7 +825,7 @@ export default function TicTacToePage() {
           ].join(" ")}
         >
           {thinking && (
-            <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-purple-300" />
+            <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-purple-300 sm:h-2 sm:w-2" />
           )}
 
           {getStatus()}
@@ -673,14 +834,14 @@ export default function TicTacToePage() {
 
       {/* Game Board */}
 
-      <div className="mp-card mp-fade-up mx-auto mt-4 max-w-2xl rounded-4xl p-4 shadow-2xl sm:mt-4 sm:p-6">
-        <div className="mb-3 flex items-center justify-between">
+      <div className="mp-card mp-fade-up mx-auto mt-3 w-full max-w-2xl rounded-4xl p-3 shadow-2xl sm:p-4">
+        <div className="mb-2.5 flex items-center justify-between">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/25">
+            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/45 sm:text-[10px]">
               Battle Board
             </p>
 
-            <p className="mt-1 text-sm font-bold text-white/60">
+            <p className="mt-0.5 text-[11px] font-bold text-white/60 sm:text-sm">
               You are{" "}
               <span
                 className={
@@ -694,13 +855,13 @@ export default function TicTacToePage() {
             </p>
           </div>
 
-          <div className="rounded-full border border-white/10 bg-white/4 px-3 py-1.5 text-xs font-bold text-white/35">
+          <div className="rounded-full border border-white/10 bg-white/4 px-2.5 py-1 text-[10px] font-bold text-white/55 sm:px-3 sm:py-1.5 sm:text-xs">
             {DIFFICULTIES[difficulty].icon}{" "}
             {DIFFICULTIES[difficulty].label}
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
+        <div className="mx-auto grid w-full max-w-105 grid-cols-3 gap-2 sm:gap-2.5">
           {board.map((cell, index) => {
             const winning =
               winningLine.includes(index);
@@ -723,7 +884,7 @@ export default function TicTacToePage() {
                   index + 1
                 }`}
                 className={[
-                  "group relative aspect-square overflow-hidden rounded-3xl border transition-all duration-200",
+                  "group relative aspect-square overflow-hidden rounded-2xl border transition-all duration-200 sm:rounded-3xl",
                   winning
                     ? "scale-[0.97] border-cyan-300/40 bg-cyan-300/12 shadow-[0_0_35px_rgba(103,232,249,0.12)]"
                     : "border-white/10 bg-white/[0.035]",
@@ -732,7 +893,7 @@ export default function TicTacToePage() {
                     : "cursor-default",
                 ].join(" ")}
               >
-                <span className="absolute left-3 top-3 text-[9px] font-black text-white/10 sm:text-[10px]">
+                <span className="absolute left-2 top-2 text-[7px] font-black text-white/10 sm:left-3 sm:top-3 sm:text-[9px]">
                   {String(
                     index + 1
                   ).padStart(2, "0")}
@@ -741,7 +902,7 @@ export default function TicTacToePage() {
                 {cell ? (
                   <span
                     className={[
-                      "relative z-10 text-5xl font-black transition-transform duration-200 sm:text-6xl",
+                      "relative z-10 text-4xl font-black transition-transform duration-200 sm:text-6xl",
                       "animate-[ticPop_220ms_ease-out]",
                       cell === "X"
                         ? "text-cyan-300"
@@ -755,14 +916,14 @@ export default function TicTacToePage() {
                   </span>
                 ) : (
                   playable && (
-                    <span className="text-2xl font-black text-white/0 transition group-hover:text-cyan-300/20">
+                    <span className="text-xl font-black text-white/0 transition group-hover:text-cyan-300/20 sm:text-2xl">
                       +
                     </span>
                   )
                 )}
 
                 {winning && (
-                  <span className="absolute bottom-3 left-1/2 -translate-x-1/2 text-[9px] font-black uppercase tracking-widest text-cyan-300/60">
+                  <span className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[7px] font-black uppercase tracking-widest text-cyan-300/60 sm:bottom-3 sm:text-[9px]">
                     Winner
                   </span>
                 )}
@@ -771,9 +932,7 @@ export default function TicTacToePage() {
           })}
         </div>
 
-        {/* Board footer */}
-
-        <div className="mt-5 flex items-center justify-center gap-2 text-[11px] text-white/25">
+        <div className="mt-3 flex items-center justify-center gap-1.5 text-[9px] text-white/45 sm:mt-4 sm:text-[11px]">
           <span>❌ X</span>
 
           <span>•</span>
@@ -790,186 +949,14 @@ export default function TicTacToePage() {
         </div>
       </div>
 
-      {/* Controls */}
+      {/* Restart */}
 
-      <div className="mx-auto mt-4 max-w-2xl space-y-5">
-        {/* Difficulty */}
-
-        <div>
-          <div className="mb-3 flex items-center justify-between">
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-white/30">
-              Difficulty
-            </p>
-
-            <p className="text-xs text-white/30">
-              Current{" "}
-              <span className="font-bold text-cyan-300">
-                {DIFFICULTIES[difficulty].label}
-              </span>
-            </p>
-          </div>
-
-          <div className="grid grid-cols-3 gap-2 sm:gap-3">
-            {(Object.keys(
-              DIFFICULTIES
-            ) as Difficulty[]).map(
-              (level) => {
-                const active =
-                  difficulty === level;
-
-                return (
-                  <button
-                    key={level}
-                    onClick={() => {
-                      if (gameInProgress) {
-                        return;
-                      }
-
-                      setDifficulty(
-                        level
-                      );
-                    }}
-                    disabled={gameInProgress}
-                    className={[
-                      "group rounded-2xl border p-3 text-left transition-all duration-200 sm:p-4",
-                      active
-                        ? "border-cyan-300/30 bg-cyan-300/8 shadow-[0_0_30px_rgba(103,232,249,0.05)]"
-                        : "border-white/10 bg-white/[0.035] hover:-translate-y-0.5 hover:bg-white/6",
-                      gameInProgress
-                        ? "cursor-not-allowed opacity-40"
-                        : "",
-                    ].join(" ")}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-xl">
-                        {
-                          DIFFICULTIES[
-                            level
-                          ].icon
-                        }
-                      </span>
-
-                      {active && (
-                        <span className="h-2 w-2 rounded-full bg-cyan-300 shadow-[0_0_10px_rgba(103,232,249,0.8)]" />
-                      )}
-                    </div>
-
-                    <p
-                      className={[
-                        "mt-2 text-sm font-black",
-                        active
-                          ? "text-cyan-200"
-                          : "text-white/70",
-                      ].join(" ")}
-                    >
-                      {
-                        DIFFICULTIES[
-                          level
-                        ].label
-                      }
-                    </p>
-
-                    <p className="mt-1 text-[11px] text-white/30">
-                      {
-                        DIFFICULTIES[
-                          level
-                        ].description
-                      }
-                    </p>
-                  </button>
-                );
-              }
-            )}
-          </div>
-
-          {gameInProgress && (
-            <p className="mt-2 text-center text-[11px] text-white/25">
-              Difficulty is locked during the match.
-            </p>
-          )}
-        </div>
-
-        {/* Symbol */}
-
-        <div>
-          <p className="mb-3 text-xs font-black uppercase tracking-[0.2em] text-white/30">
-            Choose your symbol
-          </p>
-
-          <div className="grid grid-cols-2 gap-2 sm:gap-3">
-            <button
-              onClick={() => {
-                if (gameInProgress) {
-                  return;
-                }
-
-                resetBoard("X");
-              }}
-              disabled={gameInProgress}
-              className={[
-                "rounded-2xl border p-4 transition-all duration-200",
-                humanPlayer ===
-                "X"
-                  ? "border-cyan-300/30 bg-cyan-300/8"
-                  : "border-white/10 bg-white/[0.035] hover:bg-white/6",
-                gameInProgress
-                  ? "cursor-not-allowed opacity-40"
-                  : "",
-              ].join(" ")}
-            >
-              <span className="text-2xl font-black text-cyan-300">
-                X
-              </span>
-
-              <span className="ml-2 text-sm font-black text-white/70">
-                Play as X
-              </span>
-            </button>
-
-            <button
-              onClick={() => {
-                if (gameInProgress) {
-                  return;
-                }
-
-                resetBoard("O");
-              }}
-              disabled={gameInProgress}
-              className={[
-                "rounded-2xl border p-4 transition-all duration-200",
-                humanPlayer ===
-                "O"
-                  ? "border-fuchsia-300/30 bg-fuchsia-300/8"
-                  : "border-white/10 bg-white/[0.035] hover:bg-white/6",
-                gameInProgress
-                  ? "cursor-not-allowed opacity-40"
-                  : "",
-              ].join(" ")}
-            >
-              <span className="text-2xl font-black text-fuchsia-300">
-                O
-              </span>
-
-              <span className="ml-2 text-sm font-black text-white/70">
-                Play as O
-              </span>
-            </button>
-          </div>
-
-          {gameInProgress && (
-            <p className="mt-2 text-center text-[11px] text-white/25">
-              Your symbol is locked during the match.
-            </p>
-          )}
-        </div>
-
-        {/* Restart */}
-
+      <div className="mx-auto mt-3 w-full max-w-2xl">
         <button
           onClick={() =>
             resetBoard()
           }
-          className="mp-button w-full rounded-2xl bg-white py-4 text-sm font-black text-[#080b14] hover:bg-cyan-100"
+          className="mp-button w-full rounded-2xl bg-white py-3.5 text-sm font-black text-[#080b14] hover:bg-cyan-100 sm:py-4"
         >
           {gameFinished
             ? "🎮 Play Again"
@@ -980,15 +967,15 @@ export default function TicTacToePage() {
       {/* Game Result */}
 
       {gameFinished && (
-        <div className="mx-auto mt-4 max-w-2xl rounded-2xl border border-white/10 bg-white/[0.035] p-5">
+        <div className="mx-auto mt-3 w-full max-w-2xl rounded-2xl border border-white/10 bg-white/[0.035] p-4 sm:p-5">
           <div className="text-center">
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-white/30">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50 sm:text-xs">
               Game Complete
             </p>
 
             <p
               className={[
-                "mt-2 text-2xl font-black",
+                "mt-1.5 text-xl font-black sm:text-2xl",
                 winner === humanPlayer
                   ? "text-emerald-300"
                   : winner === "draw"
@@ -1003,28 +990,28 @@ export default function TicTacToePage() {
                   : "🤖 AI Wins!"}
             </p>
 
-            <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-              <span className="rounded-xl border border-cyan-300/10 bg-cyan-300/5 px-4 py-2 text-sm font-black text-cyan-300">
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+              <span className="rounded-xl border border-cyan-300/10 bg-cyan-300/5 px-3 py-1.5 text-xs font-black text-cyan-300 sm:px-4 sm:py-2 sm:text-sm">
                 +{gameXP} XP
               </span>
 
-              <span className="rounded-xl border border-white/6 bg-white/3 px-4 py-2 text-sm font-black text-white/50">
+              <span className="rounded-xl border border-white/6 bg-white/3 px-3 py-1.5 text-xs font-black text-white/70 sm:px-4 sm:py-2 sm:text-sm">
                 +{baseScore} score
               </span>
             </div>
 
             {dailyChallengeCompleted &&
               isDailyChallengeGame && (
-                <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-                  <span className="rounded-xl border border-purple-300/10 bg-purple-300/5 px-3 py-2 text-xs font-black text-purple-200/80">
+                <div className="mt-2.5 flex flex-wrap items-center justify-center gap-2">
+                  <span className="rounded-xl border border-purple-300/10 bg-purple-300/5 px-2.5 py-1.5 text-[10px] font-black text-purple-200/80 sm:px-3 sm:text-xs">
                     🎯 Daily Challenge Complete
                   </span>
 
-                  <span className="rounded-xl border border-purple-300/10 bg-purple-300/5 px-3 py-2 text-xs font-black text-purple-200/70">
+                  <span className="rounded-xl border border-purple-300/10 bg-purple-300/5 px-2.5 py-1.5 text-[10px] font-black text-purple-200/70 sm:px-3 sm:text-xs">
                     +50 Bonus XP
                   </span>
 
-                  <span className="rounded-xl border border-white/6 bg-white/3 px-3 py-2 text-xs font-black text-white/40">
+                  <span className="rounded-xl border border-white/6 bg-white/3 px-2.5 py-1.5 text-[10px] font-black text-white/60 sm:px-3 sm:text-xs">
                     +10 Bonus Score
                   </span>
                 </div>
@@ -1035,18 +1022,18 @@ export default function TicTacToePage() {
 
       {/* Tip */}
 
-      <div className="mp-card mx-auto mt-4 max-w-2xl rounded-2xl p-5">
+      <div className="mp-card mx-auto mt-3 w-full max-w-2xl rounded-2xl p-4 sm:p-5">
         <div className="flex gap-3">
-          <span className="text-xl">
+          <span className="text-lg sm:text-xl">
             🧠
           </span>
 
           <div>
-            <p className="text-sm font-black text-white/80">
+            <p className="text-xs font-black text-white/80 sm:text-sm">
               Strategy tip
             </p>
 
-            <p className="mt-1 text-sm leading-6 text-white/35">
+            <p className="mt-1 text-xs leading-5 text-white/55 sm:text-sm sm:leading-6">
               Don&apos;t only think about your
               next move. Look for the move
               that gives you the best position
@@ -1056,12 +1043,12 @@ export default function TicTacToePage() {
         </div>
       </div>
 
-      {/* Daily Challenge Start Badge */}
+      {/* Daily Challenge Badge */}
 
       {isDailyChallengeGame &&
         !dailyChallengeCompleted &&
         !gameFinished && (
-          <div className="mx-auto mt-4 flex w-fit flex-wrap items-center justify-center gap-2 rounded-full border border-purple-300/15 bg-purple-300/5 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-purple-200/70">
+          <div className="mx-auto mt-3 flex w-fit flex-wrap items-center justify-center gap-2 rounded-full border border-purple-300/15 bg-purple-300/5 px-3 py-1.5 text-[9px] font-black uppercase tracking-wider text-purple-200/70 sm:text-[10px]">
             🎯 Daily Challenge
 
             <span className="text-purple-200/40">
@@ -1093,6 +1080,12 @@ export default function TicTacToePage() {
           100% {
             opacity: 1;
             transform: scale(1);
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          :global(.animate-pulse) {
+            animation: none !important;
           }
         }
       `}</style>

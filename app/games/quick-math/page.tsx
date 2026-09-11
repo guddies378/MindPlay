@@ -2,17 +2,9 @@
 
 import { useEffect, useState } from "react";
 
-import GameDailyChallenge from "@/components/GameDailyChallenge";
 import GameShell from "@/components/GameShell";
-
 import { recordGame } from "@/lib/progress";
 import { unlockGameAchievement } from "@/lib/achievements";
-
-import {
-  completeDailyChallenge,
-  DAILY_CHALLENGE_BONUS_POINTS,
-  getDailyChallenge,
-} from "@/lib/dailyChallenge";
 
 type Difficulty = "easy" | "normal" | "hard";
 
@@ -23,42 +15,50 @@ type Question = {
   answer: number;
 };
 
-const DIFFICULTIES = {
+const DIFFICULTIES: Record<
+  Difficulty,
+  {
+    label: string;
+    description: string;
+    maxNumber: number;
+    operations: Question["operator"][];
+    xp: number;
+    time: number;
+  }
+> = {
   easy: {
     label: "Easy",
-    description: "Add & subtract",
+    description:
+      "Warm up with quick addition and subtraction.",
     maxNumber: 10,
-    operations: ["+", "-"] as const,
+    operations: ["+", "-"],
     xp: 20,
     time: 30,
   },
+
   normal: {
     label: "Normal",
-    description: "Mixed operations",
+    description:
+      "Mix things up with multiplication.",
     maxNumber: 20,
-    operations: ["+", "-", "×"] as const,
+    operations: ["+", "-", "×"],
     xp: 35,
     time: 45,
   },
+
   hard: {
     label: "Hard",
-    description: "Everything",
+    description:
+      "Fast calculations with every operation.",
     maxNumber: 50,
-    operations: ["+", "-", "×", "÷"] as const,
+    operations: ["+", "-", "×", "÷"],
     xp: 50,
     time: 60,
   },
 };
 
-function randomNumber(
-  min: number,
-  max: number,
-) {
-  return (
-    Math.floor(
-      Math.random() * (max - min + 1),
-    ) + min
-  );
+function randomNumber(max: number) {
+  return Math.floor(Math.random() * max) + 1;
 }
 
 function createQuestion(
@@ -76,12 +76,10 @@ function createQuestion(
     ];
 
   let a = randomNumber(
-    1,
     settings.maxNumber,
   );
 
   let b = randomNumber(
-    1,
     settings.maxNumber,
   );
 
@@ -89,44 +87,58 @@ function createQuestion(
     if (b > a) {
       [a, b] = [b, a];
     }
-
-    return {
-      a,
-      b,
-      operator,
-      answer: a - b,
-    };
-  }
-
-  if (operator === "×") {
-    return {
-      a,
-      b,
-      operator,
-      answer: a * b,
-    };
   }
 
   if (operator === "÷") {
-    const divisor =
-      randomNumber(2, 12);
+    b = randomNumber(
+      Math.max(
+        2,
+        Math.floor(
+          settings.maxNumber / 2,
+        ),
+      ),
+    );
 
-    const answer =
-      randomNumber(1, 12);
+    const answer = randomNumber(
+      Math.max(
+        2,
+        Math.floor(
+          settings.maxNumber / b,
+        ),
+      ),
+    );
+
+    a = b * answer;
 
     return {
-      a: divisor * answer,
-      b: divisor,
+      a,
+      b,
       operator,
       answer,
     };
+  }
+
+  let answer = 0;
+
+  switch (operator) {
+    case "+":
+      answer = a + b;
+      break;
+
+    case "-":
+      answer = a - b;
+      break;
+
+    case "×":
+      answer = a * b;
+      break;
   }
 
   return {
     a,
     b,
     operator,
-    answer: a + b,
+    answer,
   };
 }
 
@@ -168,177 +180,97 @@ export default function QuickMathPage() {
     >(null);
 
   const [xpEarned, setXpEarned] =
-    useState<number | null>(null);
+    useState(0);
 
-  const [
-    dailyChallengeCompleted,
-    setDailyChallengeCompleted,
-  ] = useState(false);
-
-  const dailyChallenge =
-    getDailyChallenge();
-
-  const isDailyChallenge =
-    dailyChallenge.game ===
-    "quick-math";
-
-  /*
-   * Start a new game.
-   */
-  const startGame = (
-    selectedDifficulty: Difficulty,
-  ) => {
-    setDifficulty(
-      selectedDifficulty,
-    );
-
+  const startGame = () => {
     setQuestion(
-      createQuestion(
-        selectedDifficulty,
-      ),
+      createQuestion(difficulty),
     );
 
     setAnswer("");
-
     setScore(0);
-
     setCorrect(0);
-
     setWrong(0);
 
     setTimeLeft(
-      DIFFICULTIES[
-        selectedDifficulty
-      ].time,
+      DIFFICULTIES[difficulty].time,
     );
 
     setStarted(true);
-
     setGameOver(false);
-
     setFeedback(null);
-
-    setXpEarned(null);
-
-    setDailyChallengeCompleted(
-      false,
-    );
+    setXpEarned(0);
   };
 
   /*
-   * Timer
+   * Countdown timer.
    */
   useEffect(() => {
-    if (!started || gameOver) {
+    if (
+      !started ||
+      gameOver ||
+      timeLeft <= 0
+    ) {
       return;
     }
 
-    if (timeLeft <= 0) {
-      const timeout =
-        window.setTimeout(() => {
-          setGameOver(true);
+    const timer = setTimeout(() => {
+      setTimeLeft(
+        (previous) =>
+          previous - 1,
+      );
+    }, 1000);
 
-          const baseXP =
-            DIFFICULTIES[difficulty]
-              .xp;
+    return () =>
+      clearTimeout(timer);
+  }, [
+    started,
+    gameOver,
+    timeLeft,
+  ]);
 
-          const scoreBonus =
-            Math.min(
-              30,
-              Math.floor(
-                score / 5,
-              ),
-            );
-
-          const totalXP =
-            baseXP + scoreBonus;
-
-          /*
-           * Daily Challenge
-           *
-           * completeDailyChallenge()
-           * handles:
-           * - +50 XP
-           * - once-per-day protection
-           */
-          const dailyCompleted =
-            completeDailyChallenge(
-              "quick-math",
-            );
-
-          setDailyChallengeCompleted(
-            dailyCompleted,
-          );
-
-          /*
-           * Daily Challenge gives
-           * +10 score.
-           */
-          const finalScore =
-            score +
-            (dailyCompleted
-              ? DAILY_CHALLENGE_BONUS_POINTS
-              : 0);
-
-          /*
-           * Display normal game XP
-           * plus Daily Challenge XP.
-           *
-           * completeDailyChallenge()
-           * already adds the +50 XP.
-           */
-          const displayedXP =
-            totalXP +
-            (dailyCompleted
-              ? 50
-              : 0);
-
-          setScore(finalScore);
-
-          setXpEarned(
-            displayedXP,
-          );
-
-          /*
-           * Save overall progress.
-           */
-          recordGame(
-            finalScore,
-            totalXP,
-          );
-
-          /*
-           * 🏆 Math Machine
-           *
-           * Unlock when the player
-           * completes a Quick Math
-           * session.
-           */
-          unlockGameAchievement(
-            "math-machine",
-          );
-        }, 0);
-
-      return () => {
-        window.clearTimeout(
-          timeout,
-        );
-      };
+  /*
+   * Finish the game when the timer
+   * reaches zero.
+   */
+  useEffect(() => {
+    if (
+      !started ||
+      gameOver ||
+      timeLeft > 0
+    ) {
+      return;
     }
 
-    const timer =
-      window.setTimeout(() => {
-        setTimeLeft(
-          (previous) =>
-            previous - 1,
-        );
-      }, 1000);
+    const finishTimer = setTimeout(() => {
+      setGameOver(true);
+      setStarted(false);
 
-    return () => {
-      window.clearTimeout(
-        timer,
+      const baseXP =
+        DIFFICULTIES[difficulty].xp;
+
+      const scoreBonus = Math.min(
+        30,
+        Math.floor(score / 10),
       );
-    };
+
+      const totalXP =
+        baseXP + scoreBonus;
+
+      setXpEarned(totalXP);
+
+      recordGame(
+        score,
+        totalXP,
+      );
+
+      unlockGameAchievement(
+        "math-machine",
+      );
+    }, 0);
+
+    return () =>
+      clearTimeout(finishTimer);
   }, [
     started,
     gameOver,
@@ -347,9 +279,6 @@ export default function QuickMathPage() {
     score,
   ]);
 
-  /*
-   * Submit answer.
-   */
   const submitAnswer = () => {
     if (
       !started ||
@@ -376,9 +305,18 @@ export default function QuickMathPage() {
           previous + 1,
       );
 
-      setFeedback(
-        "correct",
-      );
+      setFeedback("correct");
+      setAnswer("");
+
+      setTimeout(() => {
+        setQuestion(
+          createQuestion(
+            difficulty,
+          ),
+        );
+
+        setFeedback(null);
+      }, 350);
     } else {
       setWrong(
         (previous) =>
@@ -386,24 +324,14 @@ export default function QuickMathPage() {
       );
 
       setFeedback("wrong");
+      setAnswer("");
+
+      setTimeout(() => {
+        setFeedback(null);
+      }, 350);
     }
-
-    setAnswer("");
-
-    window.setTimeout(() => {
-      setFeedback(null);
-
-      setQuestion(
-        createQuestion(
-          difficulty,
-        ),
-      );
-    }, 350);
   };
 
-  /*
-   * Enter key support.
-   */
   const handleKeyDown = (
     event: React.KeyboardEvent<HTMLInputElement>,
   ) => {
@@ -414,8 +342,7 @@ export default function QuickMathPage() {
 
   const timePercentage =
     (timeLeft /
-      DIFFICULTIES[difficulty]
-        .time) *
+      DIFFICULTIES[difficulty].time) *
     100;
 
   return (
@@ -427,541 +354,452 @@ export default function QuickMathPage() {
       description={`Solve as many equations as you can before the ${DIFFICULTIES[difficulty].time}-second countdown ends.`}
       maxWidth="lg"
     >
-      {/* Daily Challenge */}
+      <div className="mt-5 space-y-4 sm:mt-8 sm:space-y-6">
+        {/* Difficulty */}
+        <section className="mp-fade-up">
+          <div className="mb-2 flex items-end justify-between px-1 sm:mb-3">
+            <div>
+              <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/50 sm:text-[10px]">
+                Difficulty
+              </p>
 
-      <GameDailyChallenge
-        gameId="quick-math"
-      />
+              <p className="mt-1 text-xs font-semibold text-white/65 sm:text-sm">
+                Choose your pace.
+              </p>
+            </div>
 
-      {/* Difficulty */}
-
-      <div className="mx-auto mt-4 max-w-2xl">
-        <div className="mb-3 flex items-center justify-between">
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-white/30">
-            Difficulty
-          </p>
-
-          <p className="text-xs text-white/30">
-            Base XP{" "}
-            <span className="font-bold text-cyan-300">
-              +
-              {
-                DIFFICULTIES[
-                  difficulty
-                ].xp
-              }
+            <span className="text-[9px] font-medium text-white/45 sm:text-[10px]">
+              More risk · more XP
             </span>
-          </p>
-        </div>
+          </div>
 
-        <div className="grid grid-cols-3 gap-2 sm:gap-3">
-          {(
-            Object.keys(
-              DIFFICULTIES,
-            ) as Difficulty[]
-          ).map((level) => {
-            const selected =
-              difficulty === level;
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+            {(
+              Object.keys(
+                DIFFICULTIES,
+              ) as Difficulty[]
+            ).map((level) => {
+              const selected =
+                difficulty === level;
 
-            const difficultyLocked =
-              started && !gameOver;
+              return (
+                <button
+                  key={level}
+                  type="button"
+                  onClick={() => {
+                    if (started) {
+                      return;
+                    }
 
-            return (
-              <button
-                key={level}
-                type="button"
-                onClick={() =>
-                  setDifficulty(
-                    level,
-                  )
-                }
-                disabled={
-                  difficultyLocked
-                }
-                className={`group rounded-2xl border p-3 text-left transition-all duration-200 sm:p-4 ${
-                  selected
-                    ? "border-cyan-300/30 bg-cyan-300/8 shadow-[0_0_30px_rgba(103,232,249,0.05)]"
-                    : "border-white/10 bg-white/[0.035] hover:-translate-y-0.5 hover:bg-white/6"
-                } ${
-                  difficultyLocked
-                    ? "cursor-not-allowed opacity-50"
-                    : ""
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xl">
-                    {level ===
-                    "easy"
-                      ? "🌱"
-                      : level ===
-                          "normal"
-                        ? "⚡"
-                        : "🔥"}
-                  </span>
+                    setDifficulty(level);
 
-                  {selected && (
-                    <span className="h-2 w-2 rounded-full bg-cyan-300 shadow-[0_0_10px_rgba(103,232,249,0.8)]" />
-                  )}
-                </div>
+                    setQuestion(
+                      createQuestion(
+                        level,
+                      ),
+                    );
 
-                <p
-                  className={`mt-2 text-sm font-black ${
+                    setTimeLeft(
+                      DIFFICULTIES[level]
+                        .time,
+                    );
+                  }}
+                  disabled={started}
+                  className={`group relative overflow-hidden rounded-2xl border p-3 text-left transition-all duration-300 sm:rounded-3xl sm:p-4 ${
                     selected
-                      ? "text-cyan-200"
-                      : "text-white/70"
+                      ? "border-cyan-300/25 bg-white/7.5 shadow-[0_12px_40px_rgba(34,211,238,0.06)]"
+                      : "border-white/8 bg-white/2.5 hover:border-white/15 hover:bg-white/4.5"
+                  } ${
+                    started
+                      ? "cursor-not-allowed opacity-text-white/60"
+                      : ""
                   }`}
                 >
-                  {
-                    DIFFICULTIES[
-                      level
-                    ].label
-                  }
-                </p>
+                  {selected && (
+                    <span className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-cyan-300/70 to-transparent" />
+                  )}
 
-                <p className="mt-1 text-xs text-white/30">
-                  {
-                    DIFFICULTIES[
-                      level
-                    ].description
-                  }{" "}
-                  ·{" "}
-                  {
-                    DIFFICULTIES[
-                      level
-                    ].time
-                  }
-                  s
-                </p>
-              </button>
-            );
-          })}
-        </div>
-      </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span
+                      className={`text-xs font-black sm:text-sm ${
+                        selected
+                          ? "text-white"
+                          : "text-white/55"
+                      }`}
+                    >
+                      {
+                        DIFFICULTIES[
+                          level
+                        ].label
+                      }
+                    </span>
 
-      {/* Stats */}
+                    <span
+                      className={`text-[9px] font-bold sm:text-[10px] ${
+                        selected
+                          ? "text-cyan-300/75"
+                          : "text-white/45"
+                      }`}
+                    >
+                      +
+                      {
+                        DIFFICULTIES[
+                          level
+                        ].xp
+                      }{" "}
+                      XP
+                    </span>
+                  </div>
 
-      <div className="mx-auto mt-5 grid max-w-2xl grid-cols-3 gap-2 sm:gap-3">
-        <div className="mp-card rounded-2xl p-3 text-center sm:p-4">
-          <p className="text-[10px] font-black uppercase tracking-widest text-white/30 sm:text-xs">
-            Score
-          </p>
+                  <p className="mt-1.5 hidden text-[10px] leading-4 text-white/50 sm:block">
+                    {
+                      DIFFICULTIES[
+                        level
+                      ].description
+                    }
+                  </p>
 
-          <p className="mt-1 text-xl font-black text-cyan-300 sm:text-2xl">
-            {score}
-          </p>
-        </div>
+                  <p className="mt-1.5 text-[9px] font-medium text-white/45 sm:text-[10px]">
+                    {
+                      DIFFICULTIES[
+                        level
+                      ].time
+                    }
+                    s
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+        </section>
 
-        <div className="mp-card rounded-2xl p-3 text-center sm:p-4">
-          <p className="text-[10px] font-black uppercase tracking-widest text-white/30 sm:text-xs">
-            Correct
-          </p>
+        {/* Stats */}
+        <section className="grid grid-cols-3 overflow-hidden rounded-2xl border border-white/8 bg-white/2.5 sm:rounded-3xl">
+          <div className="border-r border-white/6 px-3 py-3 text-center sm:px-5 sm:py-4">
+            <p className="text-[8px] font-black uppercase tracking-[0.18em] text-white/45 sm:text-[9px]">
+              Score
+            </p>
 
-          <p className="mt-1 text-xl font-black text-green-300 sm:text-2xl">
-            {correct}
-          </p>
-        </div>
+            <p className="mt-1 text-xl font-black tracking-tight sm:text-2xl">
+              {score}
+            </p>
+          </div>
 
-        <div className="mp-card rounded-2xl p-3 text-center sm:p-4">
-          <p className="text-[10px] font-black uppercase tracking-widest text-white/30 sm:text-xs">
-            Time
-          </p>
+          <div className="border-r border-white/6 px-3 py-3 text-center sm:px-5 sm:py-4">
+            <p className="text-[8px] font-black uppercase tracking-[0.18em] text-white/45 sm:text-[9px]">
+              Correct
+            </p>
 
-          <p
-            className={`mt-1 text-xl font-black transition-colors sm:text-2xl ${
-              timeLeft <= 5 &&
-              started
-                ? "text-red-300"
-                : "text-white"
-            }`}
-          >
-            {started
-              ? timeLeft
-              : DIFFICULTIES[
-                  difficulty
-                ].time}
-            s
-          </p>
-        </div>
-      </div>
+            <p className="mt-1 text-xl font-black tracking-tight text-cyan-300 sm:text-2xl">
+              {correct}
+            </p>
+          </div>
 
-      {/* Timer Progress */}
+          <div className="px-3 py-3 text-center sm:px-5 sm:py-4">
+            <p className="text-[8px] font-black uppercase tracking-[0.18em] text-white/45 sm:text-[9px]">
+              Wrong
+            </p>
 
-      {started && !gameOver && (
-        <div className="mx-auto mt-5 max-w-2xl">
-          <div className="mb-2 flex items-center justify-between text-xs">
-            <span className="font-bold text-white/30">
-              Time remaining
+            <p className="mt-1 text-xl font-black tracking-tight text-white/65 sm:text-2xl">
+              {wrong}
+            </p>
+          </div>
+        </section>
+
+        {/* Timer */}
+        <section className="px-1">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-[9px] font-black uppercase tracking-[0.18em] text-white/45">
+              Time
             </span>
 
             <span
-              className={`font-black ${
-                timeLeft <= 5
-                  ? "text-red-300"
-                  : "text-cyan-300/70"
+              className={`text-xs font-black tabular-nums ${
+                timeLeft <= 10 &&
+                started
+                  ? "text-fuchsia-300"
+                  : "text-white/60"
               }`}
             >
               {timeLeft}s
             </span>
           </div>
 
-          <div className="h-1.5 overflow-hidden rounded-full bg-white/6">
+          <div className="h-1 overflow-hidden rounded-full bg-white/6">
             <div
               className={`h-full rounded-full transition-all duration-1000 ${
-                timeLeft <= 5
-                  ? "bg-red-400"
-                  : "bg-linear-to-r from-cyan-400 via-purple-400 to-fuchsia-400"
+                timeLeft <= 10 &&
+                started
+                  ? "bg-fuchsia-400"
+                  : "bg-cyan-300"
               }`}
               style={{
                 width: `${timePercentage}%`,
               }}
             />
           </div>
-        </div>
-      )}
+        </section>
 
-      {/* Game Card */}
+        {/* Main game card */}
+        <section
+          className={`relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/[0.035] shadow-[0_30px_100px_rgba(0,0,0,0.3)] sm:rounded-4xl ${
+            feedback === "correct"
+              ? "mp-math-correct"
+              : feedback === "wrong"
+                ? "mp-math-wrong"
+                : ""
+          }`}
+        >
+          <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-white/15 to-transparent" />
 
-      <section className="mp-card mp-fade-up mx-auto mt-4 max-w-2xl rounded-4xl p-5 shadow-2xl sm:mt-4 sm:p-8">
-        {/* Start */}
+          {/* Start screen */}
+          {!started &&
+            !gameOver && (
+              <div className="px-5 py-10 text-center sm:px-10 sm:py-16">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl border border-cyan-300/15 bg-cyan-300/6 text-3xl shadow-[0_15px_50px_rgba(34,211,238,0.06)] sm:h-20 sm:w-20 sm:text-4xl">
+                  ⚡
+                </div>
 
-        {!started && !gameOver && (
-          <div className="flex min-h-105 flex-col items-center justify-center px-3 py-10 text-center sm:min-h-112.5">
-            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl border border-white/10 bg-white/4 text-5xl">
-              🧮
-            </div>
+                <p className="mt-6 text-[9px] font-black uppercase tracking-[0.22em] text-cyan-300/55">
+                  Ready?
+                </p>
 
-            <p className="mt-4 text-xs font-black uppercase tracking-[0.25em] text-cyan-300/50">
-              Ready?
-            </p>
+                <h2 className="mt-2 text-2xl font-black tracking-tight sm:text-4xl">
+                  Think fast.
+                </h2>
 
-            <h2 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">
-              Think fast.
-            </h2>
+                <p className="mx-auto mt-2 max-w-md text-xs leading-5 text-white/55 sm:text-sm">
+                  Answer as many equations
+                  as possible before time runs
+                  out.
+                </p>
 
-            <p className="mt-3 max-w-md text-sm leading-6 text-white/40">
-              Answer as many
-              equations as possible
-              in{" "}
-              {
-                DIFFICULTIES[
-                  difficulty
-                ].time
-              }{" "}
-              seconds.
-            </p>
-
-            <div className="mt-4 flex items-center gap-2">
-              <div className="rounded-xl border border-white/[0.07] bg-white/[0.035] px-3 py-2 text-xs font-bold text-white/40">
-                {
-                  DIFFICULTIES[
-                    difficulty
-                  ].time
-                }{" "}
-                seconds
-              </div>
-
-              <div className="rounded-xl border border-white/[0.07] bg-white/[0.035] px-3 py-2 text-xs font-bold text-white/40">
-                +10 points
-              </div>
-            </div>
-
-            {isDailyChallenge && (
-              <div className="mt-4 rounded-xl border border-purple-300/10 bg-purple-300/5 px-3 py-2 text-xs font-bold text-purple-200/60">
-                🎯 Today&apos;s Daily
-                Challenge
+                <button
+                  type="button"
+                  onClick={startGame}
+                  className="mp-button mt-7 rounded-full bg-white px-7 py-3 text-xs font-black text-black shadow-[0_12px_40px_rgba(255,255,255,0.08)] transition-all hover:bg-cyan-100 hover:shadow-[0_15px_45px_rgba(34,211,238,0.12)] sm:mt-9 sm:px-8 sm:py-3.5 sm:text-sm"
+                >
+                  Start challenge
+                </button>
               </div>
             )}
 
-            <button
-              type="button"
-              onClick={() =>
-                startGame(
-                  difficulty,
-                )
-              }
-              className="mp-button mt-4 bg-white px-7 py-3.5 text-sm text-black shadow-xl shadow-white/5 hover:bg-yellow-50"
-            >
-              ⚡ Start Game
-            </button>
-          </div>
-        )}
-
-        {/* Active Game */}
-
-        {started && !gameOver && (
-          <div className="text-center">
-            <div className="mb-3 flex items-center justify-between">
-              <div className="text-left">
-                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/25">
-                  Solve this
+          {/* Active game */}
+          {started && !gameOver && (
+            <div className="px-5 py-7 sm:px-10 sm:py-12">
+              <div className="flex min-h-75 flex-col items-center justify-center sm:min-h-87.5">
+                <p className="mb-5 text-[9px] font-black uppercase tracking-[0.22em] text-white/45">
+                  Solve
                 </p>
 
-                <p className="mt-1 text-xs font-bold text-white/40">
-                  +10 points per correct
-                  answer
-                </p>
-              </div>
+                <div className="flex items-center justify-center gap-2 text-4xl font-black tracking-tight sm:gap-4 sm:text-6xl">
+                  <span>
+                    {question.a}
+                  </span>
 
-              <div className="rounded-full border border-white/10 bg-white/4 px-3 py-1.5 text-xs font-bold text-white/40">
-                {
-                  DIFFICULTIES[
-                    difficulty
-                  ].label
-                }
+                  <span className="text-cyan-300/70">
+                    {question.operator}
+                  </span>
+
+                  <span>
+                    {question.b}
+                  </span>
+
+                  <span className="ml-1 text-white/40 sm:ml-2">
+                    =
+                  </span>
+
+                  <span className="min-w-13.75 text-white/40 sm:min-w-20">
+                    ?
+                  </span>
+                </div>
+
+                <div className="mt-8 w-full max-w-sm sm:mt-10">
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    autoFocus
+                    value={answer}
+                    onChange={(event) =>
+                      setAnswer(
+                        event.target.value,
+                      )
+                    }
+                    onKeyDown={handleKeyDown}
+                    placeholder="Your answer"
+                    className={`h-14 w-full rounded-2xl border bg-black/20 px-5 text-center text-xl font-black text-white outline-none transition-all placeholder:text-white/15 sm:h-16 sm:text-2xl ${
+                      feedback ===
+                      "correct"
+                        ? "border-cyan-300/50 shadow-[0_0_35px_rgba(34,211,238,0.08)]"
+                        : feedback ===
+                            "wrong"
+                          ? "border-fuchsia-300/50 shadow-[0_0_35px_rgba(217,text-white/70,239,0.08)]"
+                          : "border-white/10 focus:border-cyan-300/35 focus:bg-white/[0.035]"
+                    }`}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={
+                      submitAnswer
+                    }
+                    className="mp-button mt-3 h-12 w-full rounded-2xl bg-white text-xs font-black text-black transition-all hover:bg-cyan-100 sm:h-13 sm:text-sm"
+                  >
+                    Check answer
+                  </button>
+
+                  <div className="mt-3 h-5 text-center">
+                    {feedback ===
+                      "correct" && (
+                      <span className="text-[10px] font-black uppercase tracking-[0.18em] text-cyan-300">
+                        Correct
+                      </span>
+                    )}
+
+                    {feedback ===
+                      "wrong" && (
+                      <span className="text-[10px] font-black uppercase tracking-[0.18em] text-fuchsia-300">
+                        Try the next one
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
+          )}
 
-            {/* Equation */}
+          {/* Game over */}
+          {gameOver && (
+            <div className="px-5 py-10 text-center sm:px-10 sm:py-14">
+              <p className="text-[9px] font-black uppercase tracking-[0.22em] text-cyan-300/55">
+                Time&apos;s up
+              </p>
 
-            <div
-              className={`relative flex min-h-42.5 items-center justify-center overflow-hidden rounded-[1.75rem] border px-4 transition-all duration-200 sm:min-h-47.5 ${
-                feedback ===
-                "correct"
-                  ? "border-green-300/25 bg-green-300/[0.07]"
-                  : feedback ===
-                      "wrong"
-                    ? "border-red-300/25 bg-red-300/[0.07]"
-                    : "border-white/[0.07] bg-white/2.5"
-              }`}
-            >
-              <div className="pointer-events-none absolute left-1/2 -top-20 h-48 w-48 -translate-x-1/2 rounded-full bg-cyan-300/4 blur-[70px]" />
+              <h2 className="mt-2 text-3xl font-black tracking-tight sm:text-5xl">
+                {score} points.
+              </h2>
 
-              <div
-                className={`relative text-4xl font-black tracking-tight transition-all sm:text-6xl ${
-                  feedback ===
-                  "correct"
-                    ? "animate-[pop_0.2s_ease-out] text-green-200"
-                    : feedback ===
-                        "wrong"
-                      ? "animate-[pop_0.2s_ease-out] text-red-200"
-                      : "text-white"
-                }`}
-              >
-                {question.a}{" "}
-                <span className="mx-1 text-cyan-300/80 sm:mx-2">
-                  {
-                    question.operator
-                  }
-                </span>{" "}
-                {question.b}{" "}
-                <span className="mx-1 text-white/25 sm:mx-2">
-                  =
-                </span>{" "}
-                <span className="text-white/50">
-                  ?
-                </span>
+              <p className="mx-auto mt-2 max-w-md text-xs leading-5 text-white/55 sm:text-sm">
+                You answered {correct}{" "}
+                correctly and missed{" "}
+                {wrong}.
+              </p>
+
+              <div className="mx-auto mt-7 grid max-w-sm grid-cols-2 gap-2 sm:mt-9 sm:gap-3">
+                <div className="rounded-2xl border border-white/8 bg-white/2.5 px-4 py-4">
+                  <p className="text-[8px] font-black uppercase tracking-[0.18em] text-white/45">
+                    Accuracy
+                  </p>
+
+                  <p className="mt-1 text-xl font-black">
+                    {correct + wrong > 0
+                      ? Math.round(
+                          (correct /
+                            (correct +
+                              wrong)) *
+                            100,
+                        )
+                      : 0}
+                    %
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-white/8 bg-white/2.5 px-4 py-4">
+                  <p className="text-[8px] font-black uppercase tracking-[0.18em] text-white/45">
+                    XP earned
+                  </p>
+
+                  <p className="mt-1 text-xl font-black text-cyan-300">
+                    +{xpEarned}
+                  </p>
+                </div>
               </div>
-            </div>
-
-            {/* Feedback */}
-
-            <div className="mt-4 min-h-5">
-              {feedback ===
-                "correct" && (
-                <p className="animate-[pop_0.2s_ease-out] text-sm font-black text-green-300">
-                  ✓ Correct! Keep
-                  going!
-                </p>
-              )}
-
-              {feedback ===
-                "wrong" && (
-                <p className="animate-[pop_0.2s_ease-out] text-sm font-black text-red-300">
-                  ✕ Not quite. Next
-                  one!
-                </p>
-              )}
-            </div>
-
-            {/* Answer */}
-
-            <div className="mt-3 flex gap-2">
-              <input
-                type="number"
-                inputMode="numeric"
-                autoFocus
-                value={answer}
-                onChange={(
-                  event,
-                ) =>
-                  setAnswer(
-                    event.target
-                      .value,
-                  )
-                }
-                onKeyDown={
-                  handleKeyDown
-                }
-                placeholder="Your answer"
-                aria-label="Your answer"
-                className="min-w-0 flex-1 rounded-2xl border border-white/8 bg-black/20 px-4 py-4 text-center text-xl font-black outline-none transition placeholder:text-white/20 focus:border-cyan-300/30 focus:bg-black/30 sm:px-5"
-              />
 
               <button
                 type="button"
-                onClick={
-                  submitAnswer
-                }
-                className="mp-button shrink-0 bg-white px-5 py-4 text-sm text-black hover:bg-cyan-50 sm:px-7"
+                onClick={startGame}
+                className="mp-button mt-7 rounded-full bg-white px-7 py-3 text-xs font-black text-black transition-all hover:bg-cyan-100 sm:mt-9 sm:px-8 sm:py-3.5 sm:text-sm"
               >
-                Enter
+                Play again
               </button>
             </div>
+          )}
+        </section>
 
-            <div className="mt-5 flex items-center justify-center gap-2 text-xs text-white/25">
-              <span>
-                ⌨️ Press Enter
-              </span>
+        {/* Tip */}
+        <div className="mp-fade-up rounded-2xl border border-white/6 bg-white/[0.018] px-4 py-3.5 sm:rounded-3xl sm:px-5 sm:py-4">
+          <div className="flex items-start gap-3">
+            <span className="mt-0.5 text-sm">
+              💡
+            </span>
 
-              <span>•</span>
-
-              <span>
-                Think fast
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* Game Over */}
-
-        {gameOver && (
-          <div className="flex min-h-105 flex-col items-center justify-center px-3 py-10 text-center sm:min-h-112.5">
-            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl border border-yellow-300/10 bg-yellow-300/5 text-5xl">
-              🏆
-            </div>
-
-            <p className="mt-4 text-xs font-black uppercase tracking-[0.25em] text-fuchsia-300/60">
-              Challenge Complete
-            </p>
-
-            <h2 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
-              Time&apos;s Up!
-            </h2>
-
-            <p className="mt-3 text-sm text-white/45">
-              You scored{" "}
-              <span className="font-black text-white">
-                {score}
-              </span>{" "}
-              points.
-            </p>
-
-            {/* Results */}
-
-            <div className="mt-4 grid w-full max-w-sm grid-cols-3 gap-2.5">
-              <div className="rounded-2xl border border-cyan-300/10 bg-cyan-300/[0.035] p-3.5">
-                <p className="text-[10px] font-black uppercase tracking-[0.12em] text-white/25">
-                  Score
-                </p>
-
-                <p className="mt-1 text-xl font-black text-cyan-300">
-                  {score}
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-green-300/10 bg-green-300/[0.035] p-3.5">
-                <p className="text-[10px] font-black uppercase tracking-[0.12em] text-white/25">
-                  Correct
-                </p>
-
-                <p className="mt-1 text-xl font-black text-green-300">
-                  {correct}
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-red-300/10 bg-red-300/[0.035] p-3.5">
-                <p className="text-[10px] font-black uppercase tracking-[0.12em] text-white/25">
-                  Wrong
-                </p>
-
-                <p className="mt-1 text-xl font-black text-red-300">
-                  {wrong}
-                </p>
-              </div>
-            </div>
-
-            {/* XP */}
-
-            <div className="mt-5 w-full max-w-sm rounded-2xl border border-cyan-300/10 bg-cyan-300/4 p-4">
-              <p className="text-2xl font-black text-cyan-300">
-                ⭐ +{xpEarned} XP
+            <div>
+              <p className="text-[9px] font-black uppercase tracking-[0.18em] text-white/50">
+                Quick tip
               </p>
 
-              <p className="mt-1 text-xs text-white/30">
-                Added to your MindPlay
-                progress
+              <p className="mt-1 text-[10px] leading-4 text-white/55 sm:text-xs">
+                Don&apos;t rush the easy ones.
+                Accuracy keeps your score
+                climbing faster than random
+                guesses.
               </p>
             </div>
-
-            {/* Daily Challenge Result */}
-
-            {dailyChallengeCompleted && (
-              <div className="mt-4 w-full max-w-sm rounded-2xl border border-purple-300/15 bg-purple-300/4 p-4">
-                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-purple-300/70">
-                  Daily Challenge
-                </p>
-
-                <p className="mt-1 text-sm font-black text-white/80">
-                  +50 XP · +10 Score
-                </p>
-
-                <p className="mt-1 text-xs text-white/30">
-                  Today&apos;s challenge
-                  reward has been
-                  added.
-                </p>
-              </div>
-            )}
-
-            {/* Actions */}
-
-            <div className="mt-4 flex w-full max-w-sm flex-col gap-2.5 sm:flex-row">
-              <button
-                type="button"
-                onClick={() =>
-                  startGame(
-                    difficulty,
-                  )
-                }
-                className="mp-button flex-1 bg-white px-6 py-3.5 text-sm text-black hover:bg-yellow-50"
-              >
-                Play Again
-              </button>
-
-              <a
-                href="/games"
-                className="mp-button flex-1 border border-white/10 bg-white/4 px-6 py-3.5 text-sm text-white/65 hover:bg-white/8 hover:text-white"
-              >
-                All Games
-              </a>
-            </div>
-          </div>
-        )}
-      </section>
-
-      {/* Tip */}
-
-      <div className="mx-auto mt-5 max-w-2xl rounded-2xl border border-white/6 bg-white/2.5 p-4 sm:p-5">
-        <div className="flex gap-3">
-          <span className="text-lg">
-            💡
-          </span>
-
-          <div>
-            <p className="text-sm font-black">
-              Quick Math tip
-            </p>
-
-            <p className="mt-1 text-xs leading-6 text-white/35 sm:text-sm">
-              Look for shortcuts and
-              patterns instead of
-              calculating everything
-              the long way. Speed
-              comes with practice.
-            </p>
           </div>
         </div>
       </div>
+
+      <style jsx>{`
+        .mp-math-correct {
+          animation: mathCorrect 0.35s ease-out;
+        }
+
+        .mp-math-wrong {
+          animation: mathWrong 0.35s ease-out;
+        }
+
+        @keyframes mathCorrect {
+          0% {
+            transform: scale(1);
+          }
+
+          50% {
+            transform: scale(1.008);
+            border-color: rgba(
+              103,
+              232,
+              249,
+              0.3
+            );
+          }
+
+          100% {
+            transform: scale(1);
+          }
+        }
+
+        @keyframes mathWrong {
+          0%,
+          100% {
+            transform: translateX(0);
+          }
+
+          25% {
+            transform: translateX(-4px);
+          }
+
+          75% {
+            transform: translateX(4px);
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .mp-math-correct,
+          .mp-math-wrong {
+            animation: none;
+          }
+        }
+      `}</style>
     </GameShell>
   );
 }

@@ -43,18 +43,21 @@ const DIFFICULTIES = {
     xp: 20,
     label: "Easy",
     description: "8 cards",
+    icon: "🌱",
   },
   normal: {
     pairs: 6,
     xp: 35,
     label: "Normal",
     description: "12 cards",
+    icon: "⚡",
   },
   hard: {
     pairs: 8,
     xp: 50,
     label: "Hard",
     description: "16 cards",
+    icon: "🔥",
   },
 };
 
@@ -63,7 +66,11 @@ function shuffle<T>(array: T[]): T[] {
 
   for (let i = result.length - 1; i > 0; i--) {
     const randomIndex = Math.floor(Math.random() * (i + 1));
-    [result[i], result[randomIndex]] = [result[randomIndex], result[i]];
+
+    [result[i], result[randomIndex]] = [
+      result[randomIndex],
+      result[i],
+    ];
   }
 
   return result;
@@ -72,7 +79,10 @@ function shuffle<T>(array: T[]): T[] {
 function createCards(difficulty: Difficulty): Card[] {
   const pairCount = DIFFICULTIES[difficulty].pairs;
 
-  const selectedSymbols = shuffle(SYMBOLS).slice(0, pairCount);
+  const selectedSymbols = shuffle(SYMBOLS).slice(
+    0,
+    pairCount,
+  );
 
   const cards = selectedSymbols.flatMap((symbol) => [
     {
@@ -93,7 +103,8 @@ function createCards(difficulty: Difficulty): Card[] {
 export default function MemoryMatchPage() {
   const dailyChallenge = getDailyChallenge();
 
-  const isDailyChallenge = dailyChallenge.game === "memory-match";
+  const isDailyChallenge =
+    dailyChallenge.game === "memory-match";
 
   const initialDifficulty: Difficulty = isDailyChallenge
     ? dailyChallenge.difficulty
@@ -111,10 +122,13 @@ export default function MemoryMatchPage() {
   const [matchedPairs, setMatchedPairs] = useState(0);
   const [gameOver, setGameOver] = useState(false);
   const [checking, setChecking] = useState(false);
-  const [xpEarned, setXpEarned] = useState<number | null>(null);
+  const [xpEarned, setXpEarned] = useState<number | null>(
+    null,
+  );
   const [time, setTime] = useState(0);
   const [started, setStarted] = useState(false);
-  const [dailyBonusEarned, setDailyBonusEarned] = useState(false);
+  const [dailyBonusEarned, setDailyBonusEarned] =
+    useState(false);
 
   const startGame = (selectedDifficulty: Difficulty) => {
     setDifficulty(selectedDifficulty);
@@ -143,7 +157,9 @@ export default function MemoryMatchPage() {
   }, [started, gameOver]);
 
   useEffect(() => {
-    if (flipped.length !== 2 || !started || gameOver) return;
+    if (flipped.length !== 2 || !started || gameOver) {
+      return;
+    }
 
     const [firstIndex, secondIndex] = flipped;
 
@@ -158,7 +174,8 @@ export default function MemoryMatchPage() {
     const currentTime = time;
 
     const timer = window.setTimeout(() => {
-      const isMatch = firstCard.symbol === secondCard.symbol;
+      const isMatch =
+        firstCard.symbol === secondCard.symbol;
 
       if (isMatch) {
         setCards((previous) =>
@@ -169,13 +186,17 @@ export default function MemoryMatchPage() {
           ),
         );
 
-        const newMatchedPairs = currentMatchedPairs + 1;
-        const totalPairs = DIFFICULTIES[currentDifficulty].pairs;
+        const newMatchedPairs =
+          currentMatchedPairs + 1;
+
+        const totalPairs =
+          DIFFICULTIES[currentDifficulty].pairs;
 
         setMatchedPairs(newMatchedPairs);
 
         if (newMatchedPairs === totalPairs) {
-          const baseXP = DIFFICULTIES[currentDifficulty].xp;
+          const baseXP =
+            DIFFICULTIES[currentDifficulty].xp;
 
           const efficiencyBonus =
             currentMoves <= totalPairs
@@ -279,27 +300,123 @@ export default function MemoryMatchPage() {
       description="Flip two cards at a time and remember where every symbol is hiding."
       maxWidth="lg"
     >
+      <style jsx>{`
+        .memory-card {
+          perspective: 1000px;
+        }
+
+        .memory-card-inner {
+          transform-style: preserve-3d;
+          transition:
+            transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+            opacity 0.25s ease;
+        }
+
+        .memory-card-visible .memory-card-inner {
+          transform: rotateY(180deg);
+        }
+
+        .memory-card-face {
+          backface-visibility: hidden;
+          -webkit-backface-visibility: hidden;
+        }
+
+        .memory-card-front {
+          transform: rotateY(180deg);
+        }
+
+        @keyframes matchPop {
+          0% {
+            transform: rotateY(180deg) scale(0.88);
+          }
+
+          70% {
+            transform: rotateY(180deg) scale(1.05);
+          }
+
+          100% {
+            transform: rotateY(180deg) scale(1);
+          }
+        }
+
+        .memory-card-matched .memory-card-inner {
+          animation: matchPop 0.4s
+            cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        @keyframes screenIn {
+          from {
+            opacity: 0;
+            transform: translateY(18px) scale(0.98);
+          }
+
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        .screen-in {
+          animation: screenIn 0.65s
+            cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        @keyframes softPulse {
+          0%,
+          100% {
+            opacity: 0.45;
+            transform: scale(1);
+          }
+
+          50% {
+            opacity: 0.8;
+            transform: scale(1.08);
+          }
+        }
+
+        .soft-pulse {
+          animation: softPulse 2.5s ease-in-out infinite;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .memory-card-inner,
+          .memory-card-matched .memory-card-inner,
+          .screen-in,
+          .soft-pulse {
+            animation: none !important;
+            transition: none !important;
+          }
+        }
+      `}</style>
+
       <GameDailyChallenge gameId="memory-match" />
 
       {/* Difficulty */}
-      <div className="mx-auto mt-4 max-w-2xl sm:mt-4">
-        <div className="mb-3 flex items-center justify-between">
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-white/30">
-            Difficulty
-          </p>
+      <div className="mx-auto mt-5 max-w-2xl sm:mt-7">
+        <div className="mb-3 flex items-end justify-between px-1">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/45">
+              Choose difficulty
+            </p>
 
-          <p className="text-xs text-white/30">
-            Base XP{" "}
-            <span className="font-bold text-cyan-300">
-              +{currentDifficulty.xp}
+            <p className="mt-1 text-xs text-white/40">
+              Higher difficulty, higher reward.
+            </p>
+          </div>
+
+          <p className="text-xs font-bold text-white/45">
+            +{currentDifficulty.xp}
+            <span className="ml-1 text-cyan-300/60">
+              XP
             </span>
           </p>
         </div>
 
-        <div className="grid grid-cols-3 gap-1.5 sm:gap-3">
+        <div className="grid grid-cols-3 gap-2">
           {(Object.keys(DIFFICULTIES) as Difficulty[]).map(
             (level) => {
               const selected = difficulty === level;
+
               const difficultyLocked =
                 started && !gameOver;
 
@@ -309,41 +426,47 @@ export default function MemoryMatchPage() {
                   type="button"
                   onClick={() => setDifficulty(level)}
                   disabled={difficultyLocked}
-                  className={`group rounded-2xl border p-2.5 text-left transition-all duration-200 sm:p-4 ${
+                  className={`group relative overflow-hidden rounded-[1.35rem] border px-3 py-3.5 text-left transition-all duration-300 sm:rounded-3xl sm:px-4 sm:py-4 ${
                     selected
-                      ? "border-cyan-300/30 bg-cyan-300/8 shadow-[0_0_30px_rgba(103,232,249,0.05)]"
-                      : "border-white/10 bg-white/[0.035] hover:-translate-y-0.5 hover:bg-white/6"
+                      ? "border-cyan-300/20 bg-cyan-300/[0.07] shadow-lg shadow-cyan-400/2.5"
+                      : "border-white/6 bg-white/2.5 hover:-translate-y-0.5 hover:border-white/11 hover:bg-white/4.5"
                   } ${
                     difficultyLocked
-                      ? "cursor-not-allowed opacity-50"
+                      ? "cursor-not-allowed opacity-text-white/40"
                       : ""
                   }`}
                 >
+                  {selected && (
+                    <div className="absolute inset-x-0 bottom-0 h-px bg-linear-to-r from-transparent via-cyan-300/80 to-transparent" />
+                  )}
+
                   <div className="flex items-center justify-between">
-                    <span className="text-xl">
-                      {level === "easy"
-                        ? "🌱"
-                        : level === "normal"
-                          ? "⚡"
-                          : "🔥"}
+                    <span
+                      className={`text-lg transition-transform duration-300 sm:text-xl ${
+                        selected
+                          ? "scale-110"
+                          : "group-hover:scale-110"
+                      }`}
+                    >
+                      {DIFFICULTIES[level].icon}
                     </span>
 
                     {selected && (
-                      <span className="h-2 w-2 rounded-full bg-cyan-300 shadow-[0_0_10px_rgba(103,232,249,0.8)]" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-cyan-300 shadow-[0_0_10px_rgba(103,232,249,0.8)]" />
                     )}
                   </div>
 
                   <p
-                    className={`mt-2 text-sm font-black ${
+                    className={`mt-2 text-sm font-extrabold ${
                       selected
                         ? "text-cyan-200"
-                        : "text-white/70"
+                        : "text-white/65"
                     }`}
                   >
                     {DIFFICULTIES[level].label}
                   </p>
 
-                  <p className="mt-1 text-xs text-white/30">
+                  <p className="mt-0.5 text-[10px] font-medium text-white/45 sm:text-[11px]">
                     {DIFFICULTIES[level].description}
                   </p>
                 </button>
@@ -354,36 +477,36 @@ export default function MemoryMatchPage() {
       </div>
 
       {/* Stats */}
-      <div className="mx-auto mt-3 grid max-w-2xl grid-cols-3 gap-1.5 sm:mt-5 sm:gap-3">
-        <div className="mp-card rounded-2xl p-2 text-center sm:p-4">
-          <p className="text-[10px] font-black uppercase tracking-widest text-white/30 sm:text-xs">
+      <div className="mx-auto mt-3 grid max-w-2xl grid-cols-3 gap-2 sm:mt-4">
+        <div className="rounded-[1.35rem] border border-white/6 bg-white/2.5 px-3 py-3.5 text-center sm:rounded-3xl sm:px-4 sm:py-4">
+          <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-white/40">
             Moves
           </p>
 
-          <p className="mt-1 text-xl font-black sm:text-2xl">
+          <p className="mt-1 text-xl font-extrabold tracking-tight sm:text-2xl">
             {moves}
           </p>
         </div>
 
-        <div className="mp-card rounded-2xl p-2 text-center sm:p-4">
-          <p className="text-[10px] font-black uppercase tracking-widest text-white/30 sm:text-xs">
+        <div className="rounded-[1.35rem] border border-cyan-300/9 bg-cyan-300/2.5 px-3 py-3.5 text-center sm:rounded-3xl sm:px-4 sm:py-4">
+          <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-white/40">
             Pairs
           </p>
 
-          <p className="mt-1 text-xl font-black text-cyan-300 sm:text-2xl">
+          <p className="mt-1 text-xl font-extrabold tracking-tight text-cyan-300 sm:text-2xl">
             {matchedPairs}
-            <span className="text-white/25">
+            <span className="text-white/15">
               /{currentDifficulty.pairs}
             </span>
           </p>
         </div>
 
-        <div className="mp-card rounded-2xl p-2 text-center sm:p-4">
-          <p className="text-[10px] font-black uppercase tracking-widest text-white/30 sm:text-xs">
+        <div className="rounded-[1.35rem] border border-white/6 bg-white/2.5 px-3 py-3.5 text-center sm:rounded-3xl sm:px-4 sm:py-4">
+          <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-white/40">
             Time
           </p>
 
-          <p className="mt-1 text-xl font-black sm:text-2xl">
+          <p className="mt-1 text-xl font-extrabold tracking-tight tabular-nums sm:text-2xl">
             {formatTime(time)}
           </p>
         </div>
@@ -391,250 +514,310 @@ export default function MemoryMatchPage() {
 
       {/* Progress */}
       {started && !gameOver && (
-        <div className="mx-auto mt-3 max-w-2xl sm:mt-5">
-          <div className="mb-2 flex items-center justify-between text-xs">
-            <span className="font-bold text-white/30">
-              Match progress
+        <div className="mx-auto mt-4 max-w-2xl">
+          <div className="mb-2 flex items-center justify-between px-1">
+            <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-white/40 sm:text-[10px]">
+              Progress
             </span>
 
-            <span className="font-black text-cyan-300/60">
+            <span className="text-[10px] font-bold tabular-nums text-cyan-300/55">
               {Math.round(progress)}%
             </span>
           </div>
 
-          <div className="h-1.5 overflow-hidden rounded-full bg-white/6">
+          <div className="h-1 overflow-hidden rounded-full bg-white/6">
             <div
-              className="h-full rounded-full bg-linear-to-r from-cyan-300 via-purple-400 to-pink-300 transition-all duration-500"
-              style={{ width: `${progress}%` }}
+              className="h-full rounded-full bg-linear-to-r from-cyan-300 via-purple-400 to-fuchsia-300 transition-all duration-700"
+              style={{
+                width: `${progress}%`,
+              }}
             />
           </div>
         </div>
       )}
 
       {/* Main Game */}
-      <section className="mp-card mp-fade-up mx-auto mt-3 w-full max-w-2xl rounded-3xl p-3 shadow-2xl sm:mt-5 sm:rounded-4xl sm:p-6">
-        {started && !gameOver && (
-          <>
-            <div className="mb-4 flex items-center justify-between sm:mb-3">
-              <div>
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-white/25">
-                  Find the pairs
-                </p>
+      <section className="mx-auto mt-5 w-full max-w-2xl sm:mt-6">
+        <div className="relative overflow-hidden rounded-[1.75rem] border border-white/[0.07] bg-white/2.5 p-3 shadow-2xl shadow-black/20 sm:rounded-4xl sm:p-6">
+          <div className="pointer-events-none absolute left-1/2 -top-text-white/45 h-80 w-80 -translate-x-1/2 rounded-full bg-cyan-300/2.5 blur-[110px]" />
 
-                <p className="mt-1 text-sm font-bold text-white/60">
-                  {checking
-                    ? "Checking..."
-                    : "Choose two cards"}
-                </p>
+          {/* Active Game */}
+          {started && !gameOver && (
+            <div className="relative">
+              <div className="mb-4 flex items-center justify-between sm:mb-6">
+                <div>
+                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/40 sm:text-[10px]">
+                    Memory board
+                  </p>
+
+                  <p className="mt-1 text-sm font-bold text-white/55">
+                    {checking
+                      ? "Checking your match..."
+                      : "Remember the positions."}
+                  </p>
+                </div>
+
+                <div className="rounded-full border border-white/[0.07] bg-white/3 px-3 py-1.5 text-[10px] font-bold text-white/50">
+                  {currentDifficulty.label}
+                </div>
               </div>
 
-              <div className="rounded-xl border border-white/[0.07] bg-white/[0.035] px-3 py-2 text-xs font-black text-white/40">
-                {currentDifficulty.label}
-              </div>
-            </div>
+              {/* Card Grid */}
+              <div
+                className={`mx-auto grid w-full grid-cols-4 gap-2 sm:gap-3 ${
+                  cards.length > 12
+                    ? "max-w-xl"
+                    : "max-w-lg"
+                }`}
+              >
+                {cards.map((card, index) => {
+                  const visible = isVisible(index);
+                  const matched = card.matched;
 
-            {/* Card Grid */}
-            <div className="mx-auto grid w-full max-w-lg grid-cols-4 gap-1.5 sm:gap-3">
-              {cards.map((card, index) => {
-                const visible = isVisible(index);
+                  return (
+                    <button
+                      key={card.id}
+                      type="button"
+                      onClick={() => handleCardClick(index)}
+                      disabled={
+                        !started ||
+                        gameOver ||
+                        checking ||
+                        visible
+                      }
+                      aria-label={
+                        visible
+                          ? `Memory card ${card.symbol}`
+                          : `Hidden memory card ${index + 1}`
+                      }
+                      className={`memory-card group relative aspect-square w-full ${
+                        visible
+                          ? "memory-card-visible"
+                          : ""
+                      } ${
+                        matched
+                          ? "memory-card-matched"
+                          : ""
+                      }`}
+                    >
+                      <div className="memory-card-inner relative h-full w-full">
+                        {/* Back */}
+                        <div
+                          className={`memory-card-face absolute inset-0 flex items-center justify-center overflow-hidden rounded-2xl border transition-all duration-300 sm:rounded-3xl ${
+                            visible
+                              ? "border-cyan-300/10 bg-white/2.5"
+                              : "border-white/[0.07] bg-white/[0.035] group-hover:-translate-y-1 group-hover:border-cyan-300/20 group-hover:bg-white/5.5 group-active:scale-95"
+                          }`}
+                        >
+                          <div className="pointer-events-none absolute inset-0 bg-linear-to-br from-white/[0.035] via-transparent to-cyan-300/1.5" />
 
-                return (
-                  <button
-                    key={card.id}
-                    type="button"
-                    onClick={() => handleCardClick(index)}
-                    disabled={
-                      !started ||
-                      gameOver ||
-                      checking ||
-                      visible
-                    }
-                    aria-label={
-                      visible
-                        ? `Memory card ${card.symbol}`
-                        : `Hidden memory card ${index + 1}`
-                    }
-                    className={`group relative aspect-square overflow-hidden rounded-xl border transition-all duration-200 sm:rounded-3xl ${
-                      visible
-                        ? "border-cyan-300/20 bg-linear-to-br from-cyan-300/11 to-purple-300/5 shadow-lg shadow-cyan-400/3"
-                        : "border-white/[0.07] bg-white/[0.035] hover:-translate-y-1 hover:border-cyan-300/20 hover:bg-white/6.5 hover:shadow-xl hover:shadow-cyan-400/3 active:scale-95"
-                    }`}
-                  >
-                    <div className="pointer-events-none absolute inset-0 bg-linear-to-br from-white/4 to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
+                          <div
+                            className={`relative flex h-8 w-8 items-center justify-center rounded-xl border border-white/6 bg-white/2.5 text-lg font-black text-white/15 transition-all duration-300 sm:h-10 sm:w-10 sm:rounded-2xl sm:text-xl ${
+                              !visible
+                                ? "group-hover:scale-110 group-hover:border-cyan-300/15 group-hover:text-cyan-200/30"
+                                : ""
+                            }`}
+                          >
+                            ?
+                          </div>
+                        </div>
 
-                    {visible ? (
-                      <span className="relative flex h-full items-center justify-center text-2xl animate-[pop_0.2s_ease-out] sm:text-4xl md:text-5xl">
-                        {card.symbol}
-                      </span>
-                    ) : (
-                      <span className="relative flex h-full items-center justify-center text-2xl font-black text-white/16 transition-transform duration-200 group-hover:scale-110 group-hover:text-cyan-200/30 sm:text-3xl">
-                        ?
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+                        {/* Front */}
+                        <div
+                          className={`memory-card-face memory-card-front absolute inset-0 flex items-center justify-center overflow-hidden rounded-2xl border bg-linear-to-br from-cyan-300/9 via-white/2.5 to-purple-300/6 shadow-lg shadow-cyan-400/2.5 sm:rounded-3xl ${
+                            matched
+                              ? "border-cyan-300/25"
+                              : "border-cyan-300/15"
+                          }`}
+                        >
+                          <div className="pointer-events-none absolute inset-0 bg-linear-to-br from-white/5 to-transparent" />
 
-            <div className="mt-3 flex items-center justify-center gap-2 text-[10px] text-white/25 sm:mt-5 sm:text-xs">
-              <span className="h-1.5 w-1.5 rounded-full bg-cyan-300/50" />
+                          <span className="relative text-[clamp(1.65rem,7vw,3.1rem)] leading-none drop-shadow-lg">
+                            {card.symbol}
+                          </span>
 
-              {checking
-                ? "Checking your match..."
-                : "Remember the positions"}
-            </div>
-          </>
-        )}
-
-        {/* Start Screen */}
-        {!started && !gameOver && (
-          <div className="flex min-h-80 flex-col items-center justify-center px-3 py-6 text-center sm:min-h-115 sm:py-10">
-            <div className="flex h-20 w-20 items-center justify-center rounded-[1.75rem] border border-cyan-300/10 bg-cyan-300/5 text-4xl shadow-xl shadow-cyan-400/4">
-              🎴
-            </div>
-
-            <p className="mt-3 text-xs font-black uppercase tracking-[0.2em] text-cyan-300/50 sm:mt-4">
-              Ready?
-            </p>
-
-            <h2 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">
-              Test your memory
-            </h2>
-
-            <p className="mt-3 max-w-md text-sm leading-6 text-white/40">
-              Match all{" "}
-              <span className="font-bold text-white/70">
-                {currentDifficulty.pairs}
-              </span>{" "}
-              pairs using as few moves as possible.
-            </p>
-
-            <div className="mt-4 flex items-center gap-2">
-              <div className="rounded-xl border border-white/[0.07] bg-white/[0.035] px-3 py-2 text-xs font-bold text-white/40">
-                {currentDifficulty.pairs * 2} cards
+                          {matched && (
+                            <div className="soft-pulse absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-cyan-300 shadow-[0_0_12px_rgba(103,232,249,0.9)] sm:right-3 sm:top-3" />
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
 
-              <div className="rounded-xl border border-white/[0.07] bg-white/[0.035] px-3 py-2 text-xs font-bold text-white/40">
-                +{currentDifficulty.xp} base XP
-              </div>
-            </div>
+              <div className="mt-4 flex items-center justify-center gap-2 text-[10px] font-medium text-white/40 sm:mt-6 sm:text-xs">
+                <span className="h-1 w-1 rounded-full bg-cyan-300/50" />
 
-            {isDailyChallenge && (
-              <div className="mt-4 rounded-xl border border-purple-300/10 bg-purple-300/5 px-3 py-2 text-xs font-bold text-purple-200/60">
-                🎯 Today&apos;s Daily Challenge ·{" "}
-                {dailyChallenge.difficulty.toUpperCase()}
-              </div>
-            )}
-
-            <button
-              type="button"
-              onClick={() => startGame(difficulty)}
-              className="mp-button mt-5 bg-white px-7 py-3.5 text-sm text-black shadow-xl shadow-white/5 hover:bg-cyan-50 sm:mt-4"
-            >
-              🎮 Start Game
-            </button>
-          </div>
-        )}
-
-        {/* Result Screen */}
-        {gameOver && (
-          <div className="flex min-h-80 flex-col items-center justify-center px-3 py-6 text-center sm:min-h-115 sm:py-10">
-            <div className="mp-float flex h-20 w-20 items-center justify-center rounded-[1.75rem] border border-yellow-300/10 bg-yellow-300/5 text-4xl">
-              🏆
-            </div>
-
-            <p className="mt-3 text-xs font-black uppercase tracking-[0.2em] text-yellow-300/60 sm:mt-4">
-              Challenge Complete
-            </p>
-
-            <h2 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
-              Memory Master!
-            </h2>
-
-            <p className="mt-3 max-w-md text-sm leading-6 text-white/45">
-              You matched every pair in{" "}
-              <span className="font-black text-white">
-                {moves}
-              </span>{" "}
-              moves.
-            </p>
-
-            <div className="mt-4 grid w-full max-w-sm grid-cols-2 gap-3">
-              <div className="rounded-2xl border border-white/[0.07] bg-white/[0.035] p-4">
-                <p className="text-[10px] font-black uppercase tracking-[0.15em] text-white/25">
-                  Time
-                </p>
-
-                <p className="mt-1 text-xl font-black">
-                  {formatTime(time)}
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-cyan-300/10 bg-cyan-300/4 p-4">
-                <p className="text-[10px] font-black uppercase tracking-[0.15em] text-white/25">
-                  XP Earned
-                </p>
-
-                <p className="mt-1 text-xl font-black text-cyan-300">
-                  +{xpEarned}
-                </p>
+                {checking
+                  ? "Checking your match"
+                  : "Find every pair"}
               </div>
             </div>
+          )}
 
-            {dailyBonusEarned && (
-              <div className="mt-4 w-full max-w-sm rounded-2xl border border-purple-300/15 bg-purple-300/4 p-4">
-                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-purple-300/70">
-                  Daily Challenge
-                </p>
+          {/* Start Screen */}
+          {!started && !gameOver && (
+            <div className="screen-in relative flex min-h-[clamp(12rem,42dvh,22rem)] flex-col items-center justify-center px-4 py-8 text-center sm:min-h-[clamp(14rem,48dvh,30rem)]">
+              <div className="relative flex h-20 w-20 items-center justify-center rounded-[1.75rem] border border-cyan-300/10 bg-cyan-300/4.5 text-4xl shadow-2xl shadow-cyan-400/4 sm:h-24 sm:w-24 sm:text-5xl">
+                🎴
 
-                <p className="mt-1 text-sm font-black text-white/80">
-                  +50 XP · +10 Score
-                </p>
-
-                <p className="mt-1 text-xs text-white/30">
-                  Today&apos;s challenge reward has been added.
-                </p>
+                <div className="absolute inset-0 rounded-[1.75rem] border border-white/4" />
               </div>
-            )}
 
-            <p className="mt-5 text-xs text-white/25">
-              Added to your MindPlay progress
-            </p>
+              <p className="mt-6 text-[10px] font-bold uppercase tracking-[0.22em] text-cyan-300/50">
+                Memory challenge
+              </p>
 
-            <div className="mt-4 flex w-full max-w-sm flex-col gap-2.5 sm:flex-row">
+              <h2 className="mt-3 text-3xl font-extrabold tracking-[-0.04em] sm:text-4xl">
+                How sharp are you?
+              </h2>
+
+              <p className="mt-4 max-w-md text-sm font-medium leading-7 text-white/50">
+                Match all{" "}
+                <span className="font-bold text-white/65">
+                  {currentDifficulty.pairs}
+                </span>{" "}
+                pairs. Use as few moves as possible.
+              </p>
+
+              <div className="mt-6 flex items-center gap-2">
+                <div className="rounded-full border border-white/[0.07] bg-white/2.5 px-3.5 py-2 text-[10px] font-bold text-white/50">
+                  {currentDifficulty.pairs * 2} cards
+                </div>
+
+                <div className="rounded-full border border-white/[0.07] bg-white/2.5 px-3.5 py-2 text-[10px] font-bold text-white/50">
+                  +{currentDifficulty.xp} XP
+                </div>
+              </div>
+
+              {isDailyChallenge && (
+                <div className="mt-5 rounded-full border border-purple-300/10 bg-purple-300/4.5 px-4 py-2 text-[10px] font-bold tracking-wide text-purple-200/60">
+                  🎯 Daily Challenge ·{" "}
+                  {dailyChallenge.difficulty.toUpperCase()}
+                </div>
+              )}
+
               <button
                 type="button"
                 onClick={() => startGame(difficulty)}
-                className="mp-button flex-1 bg-white px-6 py-3.5 text-sm text-black hover:bg-cyan-50"
+                className="mt-7 inline-flex items-center justify-center rounded-full bg-white px-7 py-3.5 text-sm font-extrabold text-black shadow-xl shadow-white/6 transition-all duration-300 hover:-translate-y-0.5 hover:bg-cyan-text-white/50 active:translate-y-0 active:scale-[0.98]"
               >
-                Play Again
-              </button>
+                Start Game
 
-              <a
-                href="/games"
-                className="mp-button flex-1 border border-white/10 bg-white/4 px-6 py-3.5 text-sm text-white/65 hover:bg-white/8 hover:text-white"
-              >
-                All Games
-              </a>
+                <span className="ml-2 text-black/35">
+                  →
+                </span>
+              </button>
             </div>
-          </div>
-        )}
+          )}
+
+          {/* Result Screen */}
+          {gameOver && (
+            <div className="screen-in relative flex min-h-[clamp(12rem,42dvh,22rem)] flex-col items-center justify-center px-4 py-8 text-center sm:min-h-[clamp(14rem,48dvh,30rem)]">
+              <div className="relative flex h-20 w-20 items-center justify-center rounded-[1.75rem] border border-yellow-300/10 bg-yellow-300/4.5 text-4xl shadow-2xl shadow-yellow-400/2.5 sm:h-24 sm:w-24 sm:text-5xl">
+                🏆
+
+                <div className="absolute inset-0 rounded-[1.75rem] border border-white/4" />
+              </div>
+
+              <p className="mt-6 text-[10px] font-bold uppercase tracking-[0.22em] text-yellow-300/55">
+                Challenge complete
+              </p>
+
+              <h2 className="mt-3 text-3xl font-extrabold tracking-[-0.04em] sm:text-4xl">
+                Memory Master.
+              </h2>
+
+              <p className="mt-3 max-w-md text-sm font-medium leading-7 text-white/55">
+                Every pair found in{" "}
+                <span className="font-extrabold text-white">
+                  {moves}
+                </span>{" "}
+                moves.
+              </p>
+
+              <div className="mt-7 grid w-full max-w-sm grid-cols-2 gap-2.5">
+                <div className="rounded-2xl border border-white/[0.07] bg-white/2.5 p-4">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-white/40">
+                    Time
+                  </p>
+
+                  <p className="mt-1.5 text-xl font-extrabold tabular-nums">
+                    {formatTime(time)}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-cyan-300/10 bg-cyan-300/2.5 p-4">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-white/40">
+                    XP earned
+                  </p>
+
+                  <p className="mt-1.5 text-xl font-extrabold text-cyan-300">
+                    +{xpEarned}
+                  </p>
+                </div>
+              </div>
+
+              {dailyBonusEarned && (
+                <div className="mt-3 w-full max-w-sm rounded-2xl border border-purple-300/10 bg-purple-300/2.5 p-4">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-purple-300/60">
+                    Daily Challenge
+                  </p>
+
+                  <p className="mt-1.5 text-sm font-extrabold text-white/75">
+                    +50 XP · +10 Score
+                  </p>
+
+                  <p className="mt-1 text-[11px] font-medium text-white/45">
+                    Today&apos;s bonus has been added.
+                  </p>
+                </div>
+              )}
+
+              <p className="mt-5 text-[10px] font-medium text-white/40">
+                Added to your MindPlay progress
+              </p>
+
+              <div className="mt-5 flex w-full max-w-sm flex-col gap-2.5 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={() => startGame(difficulty)}
+                  className="flex-1 rounded-full bg-white px-6 py-3.5 text-sm font-extrabold text-black transition-all duration-300 hover:-translate-y-0.5 hover:bg-cyan-text-white/50 active:translate-y-0"
+                >
+                  Play Again
+                </button>
+
+                <a
+                  href="/games"
+                  className="flex-1 rounded-full border border-white/8 bg-white/2.5 px-6 py-3.5 text-sm font-bold text-white/55 transition-all duration-300 hover:-translate-y-0.5 hover:border-white/[0.14] hover:bg-white/5.5 hover:text-white"
+                >
+                  All Games
+                </a>
+              </div>
+            </div>
+          )}
+        </div>
       </section>
 
       {/* Memory Tip */}
-      <div className="mx-auto mt-5 hidden max-w-2xl rounded-2xl border border-white/6 bg-white/2.5 p-4 sm:block sm:p-5">
-        <div className="flex gap-3">
-          <span className="text-lg">💡</span>
+      <div className="mx-auto mt-5 hidden max-w-2xl sm:block">
+        <div className="rounded-2xl border border-white/6 bg-white/2 p-5">
+          <div className="flex items-start gap-3">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/4 text-sm">
+              💡
+            </div>
 
-          <div>
-            <p className="text-sm font-black">
-              Memory tip
-            </p>
+            <div>
+              <p className="text-xs font-extrabold text-white/70">
+                Memory tip
+              </p>
 
-            <p className="mt-1 text-xs leading-6 text-white/35 sm:text-sm">
-              Remember positions instead of just symbols.
-              Group nearby cards together in your mind.
-            </p>
+              <p className="mt-1 text-xs font-medium leading-6 text-white/45">
+                Remember positions instead of just symbols.
+                Group nearby cards together in your mind.
+              </p>
+            </div>
           </div>
         </div>
       </div>

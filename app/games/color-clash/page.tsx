@@ -1,5 +1,6 @@
 "use client";
 
+import GameShell from "@/components/GameShell";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { recordGame } from "@/lib/progress";
 import {
@@ -481,8 +482,15 @@ export default function ColorClashPage() {
         : 0;
 
     return (
-      <main className="min-h-[100dvh] overflow-hidden bg-[#080b14] px-4 py-4 sm:px-6 sm:py-5 text-white">
-        <div className="mx-auto flex min-h-[70vh] max-w-3xl items-center justify-center">
+      <GameShell
+      icon="🎨"
+      category="FOCUS"
+      title="Color"
+      highlightedTitle="Clash"
+      description="Pick the color the word is displayed in, not the word itself."
+      maxWidth="lg"
+    >
+        <div className="mx-auto flex min-h-0 max-w-3xl items-center justify-center">
           <div className="w-full rounded-3xl border border-white/10 bg-white/3 p-8 text-center shadow-2xl sm:p-12">
             <div className="text-6xl">
               🎨
@@ -498,7 +506,7 @@ export default function ColorClashPage() {
 
             <div className="mt-5 grid gap-4 sm:grid-cols-3">
               <div className="rounded-2xl border border-white/10 bg-white/3 p-5">
-                <p className="text-xs font-bold uppercase tracking-wider text-white/30">
+                <p className="text-xs font-bold uppercase tracking-wider text-white/50">
                   Score
                 </p>
 
@@ -508,7 +516,7 @@ export default function ColorClashPage() {
               </div>
 
               <div className="rounded-2xl border border-white/10 bg-white/3 p-5">
-                <p className="text-xs font-bold uppercase tracking-wider text-white/30">
+                <p className="text-xs font-bold uppercase tracking-wider text-white/50">
                   Accuracy
                 </p>
 
@@ -518,7 +526,7 @@ export default function ColorClashPage() {
               </div>
 
               <div className="rounded-2xl border border-white/10 bg-white/3 p-5">
-                <p className="text-xs font-bold uppercase tracking-wider text-white/30">
+                <p className="text-xs font-bold uppercase tracking-wider text-white/50">
                   Best Combo
                 </p>
 
@@ -529,7 +537,7 @@ export default function ColorClashPage() {
             </div>
 
             <div className="mt-4 rounded-2xl border border-yellow-300/10 bg-yellow-300/5 p-5">
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-white/30">
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-white/50">
                 XP Earned
               </p>
 
@@ -538,7 +546,7 @@ export default function ColorClashPage() {
               </div>
             </div>
 
-            <p className="mx-auto mt-4 max-w-md text-sm leading-6 text-white/40">
+            <p className="mx-auto mt-4 max-w-md text-sm leading-6 text-white/60">
               You answered {correct} correctly
               and missed {wrong}. Keep playing to
               sharpen your focus and reaction speed.
@@ -550,7 +558,7 @@ export default function ColorClashPage() {
                   🏆 Daily Challenge Bonus
                 </p>
 
-                <p className="mt-1 text-xs text-white/40">
+                <p className="mt-1 text-xs text-white/60">
                   +10 score · +50 XP
                 </p>
               </div>
@@ -573,7 +581,7 @@ export default function ColorClashPage() {
             </div>
           </div>
         </div>
-      </main>
+      </GameShell>
     );
   }
 
@@ -591,16 +599,23 @@ export default function ColorClashPage() {
         : 0;
 
     return (
-      <main className="min-h-[100dvh] overflow-hidden bg-[#080b14] px-4 py-3 text-white sm:px-6 sm:py-4 sm:py-12">
+      <GameShell
+      icon="🎨"
+      category="FOCUS"
+      title="Color"
+      highlightedTitle="Clash"
+      description="Pick the color the word is displayed in, not the word itself."
+      maxWidth="lg"
+    >
         <div className="mx-auto max-w-4xl">
           <div className="mb-4">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-xs font-black uppercase tracking-[0.25em] text-white/30">
+                <p className="text-xs font-black uppercase tracking-[0.25em] text-white/50">
                   Color Clash
                 </p>
 
-                <p className="mt-1 text-sm font-bold text-white/50">
+                <p className="mt-1 text-sm font-bold text-white/70">
                   Round{" "}
                   {Math.min(
                     round + 1,
@@ -611,7 +626,7 @@ export default function ColorClashPage() {
               </div>
 
               <div className="text-right">
-                <p className="text-xs font-black uppercase tracking-wider text-white/30">
+                <p className="text-xs font-black uppercase tracking-wider text-white/50">
                   Score
                 </p>
 
@@ -636,7 +651,7 @@ export default function ColorClashPage() {
 
           <div className="rounded-3xl border border-white/10 bg-white/3 p-6 shadow-2xl sm:p-10">
             <div className="text-center">
-              <p className="text-xs font-black uppercase tracking-[0.25em] text-white/30">
+              <p className="text-xs font-black uppercase tracking-[0.25em] text-white/50">
                 Choose the display color
               </p>
 
@@ -652,7 +667,7 @@ export default function ColorClashPage() {
                   {targetColor?.name}
                 </p>
 
-                <p className="mt-3 text-sm text-white/30">
+                <p className="mt-3 text-sm text-white/50">
                   Ignore the word. Choose the color
                   you see.
                 </p>
@@ -660,7 +675,7 @@ export default function ColorClashPage() {
             </div>
 
             <div className="mx-auto mt-4 max-w-xl">
-              <div className="mb-2 flex items-center justify-between text-xs font-bold text-white/30">
+              <div className="mb-2 flex items-center justify-between text-xs font-bold text-white/50">
                 <span>Time</span>
 
                 <span>
@@ -705,7 +720,7 @@ export default function ColorClashPage() {
                       {color.name}
                     </p>
 
-                    <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/20">
+                    <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/40">
                       Press{" "}
                       {color.name.charAt(
                         0
@@ -718,7 +733,7 @@ export default function ColorClashPage() {
 
             <div className="mt-4 flex items-center justify-center gap-6 text-sm">
               <div>
-                <span className="text-white/30">
+                <span className="text-white/50">
                   Combo
                 </span>{" "}
                 <span className="font-black text-yellow-300">
@@ -727,7 +742,7 @@ export default function ColorClashPage() {
               </div>
 
               <div>
-                <span className="text-white/30">
+                <span className="text-white/50">
                   Best
                 </span>{" "}
                 <span className="font-black text-purple-300">
@@ -751,47 +766,45 @@ export default function ColorClashPage() {
             )}
           </div>
         </div>
-      </main>
+      </GameShell>
     );
   }
 
   return (
-    <main className="min-h-[100dvh] overflow-hidden bg-[#080b14] px-4 py-4 sm:px-6 sm:py-5 text-white">
-      <div className="mx-auto flex min-h-[70vh] max-w-3xl items-center justify-center">
+    <GameShell
+      icon="🎨"
+      category="FOCUS"
+      title="Color"
+      highlightedTitle="Clash"
+      description="Pick the color the word is displayed in, not the word itself."
+      maxWidth="lg"
+    >
+      <div className="mx-auto flex w-full max-w-3xl items-center justify-center">
         <div className="w-full text-center">
-          <div className="text-7xl">
-            🎨
-          </div>
+          <div className="mx-auto max-w-2xl rounded-3xl border border-white/10 bg-white/[0.035] p-5 shadow-2xl sm:p-8">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-cyan-300/15 bg-cyan-300/5 text-3xl">
+              🎨
+            </div>
 
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-            <p className="text-sm font-bold uppercase tracking-[0.25em] text-white/30">
-              MindPlay Game #9
+            <p className="mt-4 text-[10px] font-black uppercase tracking-[0.25em] text-cyan-300/70">
+              Ready?
+            </p>
+
+            <h2 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">
+              Test your focus.
+            </h2>
+
+            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-white/60 sm:text-base">
+              Pick the color the word is displayed in, not the word itself.
             </p>
 
             {isDailyChallenge && (
-              <span className="rounded-full border border-yellow-300/20 bg-yellow-300/10 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-yellow-300">
-                Daily Challenge
-              </span>
-            )}
-          </div>
-
-          <h1 className="mt-4 text-5xl font-black tracking-tight sm:text-7xl">
-            Color Clash
-          </h1>
-
-          <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-white/40 sm:text-lg">
-            Test your focus. Pick the color
-            the word is displayed in, not
-            the word itself.
-          </p>
-
-          {isDailyChallenge && (
             <div className="mx-auto mt-5 max-w-md rounded-2xl border border-yellow-300/15 bg-yellow-300/5 p-4">
               <p className="text-xs font-black uppercase tracking-[0.2em] text-yellow-300/70">
                 🏆 Daily Challenge
               </p>
 
-              <p className="mt-2 text-sm text-white/50">
+              <p className="mt-2 text-sm text-white/70">
                 Today&apos;s challenge is set to{" "}
                 <strong className="capitalize text-yellow-300">
                   {dailyChallenge.difficulty}
@@ -799,7 +812,7 @@ export default function ColorClashPage() {
                 difficulty.
               </p>
 
-              <p className="mt-1 text-xs text-white/30">
+              <p className="mt-1 text-xs text-white/50">
                 Complete it for +10 score and +50 XP.
               </p>
             </div>
@@ -820,7 +833,7 @@ export default function ColorClashPage() {
                   className={`rounded-xl px-3 py-3 text-xs font-black uppercase tracking-wider transition ${
                     difficulty === level
                       ? "bg-white text-black"
-                      : "text-white/40 hover:bg-white/5 hover:text-white"
+                      : "text-white/60 hover:bg-white/5 hover:text-white"
                   }`}
                 >
                   {level}
@@ -834,7 +847,7 @@ export default function ColorClashPage() {
                   {config.rounds}
                 </p>
 
-                <p className="mt-1 text-white/20">
+                <p className="mt-1 text-white/40">
                   Rounds
                 </p>
               </div>
@@ -848,7 +861,7 @@ export default function ColorClashPage() {
                   s
                 </p>
 
-                <p className="mt-1 text-white/20">
+                <p className="mt-1 text-white/40">
                   Time
                 </p>
               </div>
@@ -858,7 +871,7 @@ export default function ColorClashPage() {
                   +{config.baseXP}
                 </p>
 
-                <p className="mt-1 text-white/20">
+                <p className="mt-1 text-white/40">
                   Base XP
                 </p>
               </div>
@@ -873,13 +886,14 @@ export default function ColorClashPage() {
 
             <a
               href="/games"
-              className="mt-4 block text-sm font-bold text-white/30 transition hover:text-white"
+              className="mt-4 block text-sm font-bold text-white/50 transition hover:text-white"
             >
               Back to Arcade
             </a>
           </div>
         </div>
       </div>
-    </main>
+      </div>
+    </GameShell>
   );
 }

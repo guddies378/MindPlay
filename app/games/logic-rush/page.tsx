@@ -1,5 +1,6 @@
 "use client";
 
+import GameShell from "@/components/GameShell";
 import Link from "next/link";
 import {
   useCallback,
@@ -793,61 +794,22 @@ export default function LogicRushPage() {
     }, [timeLeft]);
 
   return (
-    <main className="min-h-[100dvh] overflow-hidden px-4 py-4 text-white sm:px-6">
+    <GameShell
+      icon="🧠"
+      category="LOGIC"
+      title="Logic"
+      highlightedTitle="Rush"
+      description="Solve fast. Build your combo. Keep your mind sharp."
+      maxWidth="lg"
+    >
       <div className="mx-auto max-w-3xl">
-
-        {/* Header */}
-        <div className="mb-4 flex items-center justify-between gap-4">
-          <Link
-            href="/games"
-            className="text-sm font-bold text-white/50 transition hover:text-white"
-          >
-            ← Arcade
-          </Link>
-
-          <div className="text-right">
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-300">
-              MindPlay
-            </p>
-
-            <p className="text-xs text-white/40">
-              Logic Rush
-            </p>
-          </div>
-        </div>
-
-        {/* Title */}
-        <div className="mb-4 text-center">
-          <div className="mb-2 text-4xl">
-            🧠
-          </div>
-
-          <p className="text-xs font-black uppercase tracking-[0.25em] text-cyan-300/60">
-            Logic Game
-          </p>
-
-          <h1 className="text-3xl font-black sm:text-4xl">
-            Logic Rush
-          </h1>
-
-          <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-white/50">
-            Solve fast. Build your combo.
-            Don&apos;t let the clock win.
-          </p>
-
-          {isDailyChallenge && (
-            <div className="mx-auto mt-5 inline-flex rounded-full border border-yellow-300/20 bg-yellow-300/10 px-4 py-2 text-[10px] font-black uppercase tracking-wider text-yellow-300">
-              🏆 Daily Challenge
-            </div>
-          )}
-        </div>
 
         {/* MENU */}
         {gameState === "menu" && (
           <section className="mp-card rounded-3xl p-6 sm:p-8">
 
             <div className="mb-4 text-center">
-              <p className="mb-2 text-xs font-black uppercase tracking-[0.2em] text-white/40">
+              <p className="mb-2 text-xs font-black uppercase tracking-[0.2em] text-white/60">
                 Choose difficulty
               </p>
 
@@ -873,7 +835,7 @@ export default function LogicRushPage() {
                       className={`rounded-2xl border px-3 py-4 text-sm font-black transition ${
                         active
                           ? "border-cyan-300/40 bg-cyan-300/10 text-cyan-200"
-                          : "border-white/10 bg-white/3 text-white/50 hover:bg-white/6 hover:text-white"
+                          : "border-white/10 bg-white/3 text-white/70 hover:bg-white/6 hover:text-white"
                       }`}
                     >
                       {level}
@@ -889,7 +851,7 @@ export default function LogicRushPage() {
                   🏆 Daily Challenge
                 </p>
 
-                <p className="mt-2 text-sm text-white/50">
+                <p className="mt-2 text-sm text-white/70">
                   Today&apos;s Logic Rush
                   challenge is{" "}
                   <strong className="text-yellow-300">
@@ -898,7 +860,7 @@ export default function LogicRushPage() {
                   .
                 </p>
 
-                <p className="mt-1 text-xs text-white/30">
+                <p className="mt-1 text-xs text-white/50">
                   Complete it for +10 score
                   and +50 XP.
                 </p>
@@ -907,7 +869,7 @@ export default function LogicRushPage() {
 
             <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
               <div className="rounded-2xl bg-white/4 p-4 text-center">
-                <p className="text-xs text-white/40">
+                <p className="text-xs text-white/60">
                   Rounds
                 </p>
 
@@ -917,7 +879,7 @@ export default function LogicRushPage() {
               </div>
 
               <div className="rounded-2xl bg-white/4 p-4 text-center">
-                <p className="text-xs text-white/40">
+                <p className="text-xs text-white/60">
                   Time
                 </p>
 
@@ -927,7 +889,7 @@ export default function LogicRushPage() {
               </div>
 
               <div className="col-span-2 rounded-2xl bg-white/4 p-4 text-center sm:col-span-1">
-                <p className="text-xs text-white/40">
+                <p className="text-xs text-white/60">
                   Base XP
                 </p>
 
@@ -942,7 +904,7 @@ export default function LogicRushPage() {
                 How to play
               </p>
 
-              <ul className="mt-3 space-y-2 text-sm leading-6 text-white/50">
+              <ul className="mt-3 space-y-2 text-sm leading-6 text-white/70">
                 <li>
                   • Read the puzzle carefully.
                 </li>
@@ -980,7 +942,7 @@ export default function LogicRushPage() {
               {/* Stats */}
               <div className="mb-3 grid grid-cols-3 gap-2">
                 <div className="mp-card rounded-2xl p-3 text-center">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-white/35">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-white/55">
                     Round
                   </p>
 
@@ -991,7 +953,7 @@ export default function LogicRushPage() {
                 </div>
 
                 <div className="mp-card rounded-2xl p-3 text-center">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-white/35">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-white/55">
                     Score
                   </p>
 
@@ -1001,7 +963,7 @@ export default function LogicRushPage() {
                 </div>
 
                 <div className="mp-card rounded-2xl p-3 text-center">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-white/35">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-white/55">
                     Combo
                   </p>
 
@@ -1018,7 +980,7 @@ export default function LogicRushPage() {
                     className={`font-black tracking-wider ${
                       timeLeft <= 3
                         ? "text-fuchsia-300"
-                        : "text-white/40"
+                        : "text-white/60"
                     }`}
                   >
                     {timerMessage}
@@ -1079,7 +1041,7 @@ export default function LogicRushPage() {
                             }
                             className="group flex items-center gap-4 rounded-2xl border border-white/10 bg-white/3 p-4 text-left transition hover:border-cyan-300/30 hover:bg-cyan-300/6"
                           >
-                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/6 text-sm font-black text-white/50 transition group-hover:bg-cyan-300/10 group-hover:text-cyan-200">
+                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/6 text-sm font-black text-white/70 transition group-hover:bg-cyan-300/10 group-hover:text-cyan-200">
                               {String.fromCharCode(
                                 65 +
                                   index
@@ -1094,7 +1056,7 @@ export default function LogicRushPage() {
                       )}
                     </div>
 
-                    <p className="mt-4 text-center text-xs text-white/25">
+                    <p className="mt-4 text-center text-xs text-white/45">
                       Trust your first
                       instinct.
                     </p>
@@ -1129,7 +1091,7 @@ export default function LogicRushPage() {
                       </h2>
 
                       {lastCorrect && (
-                        <p className="mt-2 text-sm text-white/45">
+                        <p className="mt-2 text-sm text-white/65">
                           Combo:{" "}
                           {combo}× ·
                           Multiplier:{" "}
@@ -1141,7 +1103,7 @@ export default function LogicRushPage() {
                     </div>
 
                     <div className="my-7 rounded-2xl bg-white/4 p-5">
-                      <p className="mb-2 text-xs font-black uppercase tracking-wider text-white/35">
+                      <p className="mb-2 text-xs font-black uppercase tracking-wider text-white/55">
                         Correct answer
                       </p>
 
@@ -1155,7 +1117,7 @@ export default function LogicRushPage() {
                         }
                       </p>
 
-                      <p className="mt-4 text-sm leading-6 text-white/50">
+                      <p className="mt-4 text-sm leading-6 text-white/70">
                         {
                           currentPuzzle.explanation
                         }
@@ -1196,7 +1158,7 @@ export default function LogicRushPage() {
                 Logic Rush Complete
               </h2>
 
-              <p className="mt-2 text-sm text-white/45">
+              <p className="mt-2 text-sm text-white/65">
                 You made it through the
                 entire logic gauntlet.
               </p>
@@ -1209,7 +1171,7 @@ export default function LogicRushPage() {
                   Bonus
                 </p>
 
-                <p className="mt-1 text-xs text-white/40">
+                <p className="mt-1 text-xs text-white/60">
                   +10 score · +50 XP
                 </p>
               </div>
@@ -1217,7 +1179,7 @@ export default function LogicRushPage() {
 
             <div className="my-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
               <div className="rounded-2xl bg-white/4 p-4 text-center">
-                <p className="text-xs text-white/40">
+                <p className="text-xs text-white/60">
                   Score
                 </p>
 
@@ -1227,7 +1189,7 @@ export default function LogicRushPage() {
               </div>
 
               <div className="rounded-2xl bg-white/4 p-4 text-center">
-                <p className="text-xs text-white/40">
+                <p className="text-xs text-white/60">
                   Accuracy
                 </p>
 
@@ -1237,7 +1199,7 @@ export default function LogicRushPage() {
               </div>
 
               <div className="rounded-2xl bg-white/4 p-4 text-center">
-                <p className="text-xs text-white/40">
+                <p className="text-xs text-white/60">
                   Best Combo
                 </p>
 
@@ -1247,7 +1209,7 @@ export default function LogicRushPage() {
               </div>
 
               <div className="rounded-2xl bg-white/4 p-4 text-center">
-                <p className="text-xs text-white/40">
+                <p className="text-xs text-white/60">
                   XP Earned
                 </p>
 
@@ -1293,11 +1255,11 @@ export default function LogicRushPage() {
         )}
 
         <div className="mt-4 text-center">
-          <p className="text-xs text-white/25">
+          <p className="text-xs text-white/45">
             {difficulty} Mode · Speed matters
           </p>
         </div>
       </div>
-    </main>
+    </GameShell>
   );
 }

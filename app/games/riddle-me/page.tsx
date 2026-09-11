@@ -85,7 +85,8 @@ const RIDDLES: Record<Difficulty, Riddle[]> = {
       hint: "You might find it in your pocket.",
     },
     {
-      question: "What has a head and a tail but no body?",
+      question:
+        "What has a head and a tail but no body?",
       answers: ["coin", "a coin"],
       hint: "It can be used to make a choice.",
     },
@@ -136,7 +137,11 @@ const RIDDLES: Record<Difficulty, Riddle[]> = {
     {
       question:
         "The more you take, the more you leave behind. What are they?",
-      answers: ["footsteps", "steps", "footprints"],
+      answers: [
+        "footsteps",
+        "steps",
+        "footprints",
+      ],
       hint: "Think about walking.",
     },
     {
@@ -195,7 +200,11 @@ const RIDDLES: Record<Difficulty, Riddle[]> = {
     {
       question:
         "What has an eye but cannot see, and is often found in a storm?",
-      answers: ["hurricane", "a hurricane", "storm"],
+      answers: [
+        "hurricane",
+        "a hurricane",
+        "storm",
+      ],
       hint: "Look at the center of a powerful storm.",
     },
     {
@@ -270,7 +279,11 @@ const RIDDLES: Record<Difficulty, Riddle[]> = {
     {
       question:
         "What is something that you can never put in a saucepan?",
-      answers: ["its lid", "the lid", "a lid"],
+      answers: [
+        "its lid",
+        "the lid",
+        "a lid",
+      ],
       hint: "Think about the object itself.",
     },
     {
@@ -361,7 +374,10 @@ const RIDDLES: Record<Difficulty, Riddle[]> = {
     {
       question:
         "What can you hold without ever touching it?",
-      answers: ["conversation", "a conversation"],
+      answers: [
+        "conversation",
+        "a conversation",
+      ],
       hint: "You can have one with another person.",
     },
     {
@@ -428,21 +444,26 @@ function normalizeAnswer(value: string) {
 
 function getRandomRiddle(
   difficulty: Difficulty,
-  previousQuestion?: string
+  previousQuestion?: string,
 ) {
   const available = RIDDLES[difficulty];
 
   let candidates = available;
 
-  if (previousQuestion && available.length > 1) {
+  if (
+    previousQuestion &&
+    available.length > 1
+  ) {
     candidates = available.filter(
       (riddle) =>
-        riddle.question !== previousQuestion
+        riddle.question !== previousQuestion,
     );
   }
 
   return candidates[
-    Math.floor(Math.random() * candidates.length)
+    Math.floor(
+      Math.random() * candidates.length,
+    )
   ];
 }
 
@@ -450,9 +471,10 @@ export default function RiddleMePage() {
   const [difficulty, setDifficulty] =
     useState<Difficulty>("normal");
 
-  const [riddle, setRiddle] = useState<Riddle>(() =>
-    getRandomRiddle("normal")
-  );
+  const [riddle, setRiddle] =
+    useState<Riddle>(() =>
+      getRandomRiddle("normal"),
+    );
 
   const [answer, setAnswer] = useState("");
 
@@ -462,19 +484,22 @@ export default function RiddleMePage() {
 
   const [wrong, setWrong] = useState(0);
 
-  const [timeLeft, setTimeLeft] = useState(
-    DIFFICULTIES.normal.time
-  );
+  const [timeLeft, setTimeLeft] =
+    useState(DIFFICULTIES.normal.time);
 
-  const [started, setStarted] = useState(false);
+  const [started, setStarted] =
+    useState(false);
 
-  const [gameOver, setGameOver] = useState(false);
+  const [gameOver, setGameOver] =
+    useState(false);
 
-  const [feedback, setFeedback] = useState<
-    "correct" | "wrong" | null
-  >(null);
+  const [feedback, setFeedback] =
+    useState<
+      "correct" | "wrong" | null
+    >(null);
 
-  const [showHint, setShowHint] = useState(false);
+  const [showHint, setShowHint] =
+    useState(false);
 
   const [xpEarned, setXpEarned] =
     useState<number | null>(null);
@@ -484,18 +509,19 @@ export default function RiddleMePage() {
     setDailyChallengeCompleted,
   ] = useState(false);
 
-  const dailyChallenge = getDailyChallenge();
+  const dailyChallenge =
+    getDailyChallenge();
 
   const isDailyChallenge =
     dailyChallenge.game === "riddle-me";
 
   const startGame = (
-    selectedDifficulty: Difficulty
+    selectedDifficulty: Difficulty,
   ) => {
     setDifficulty(selectedDifficulty);
 
     setRiddle(
-      getRandomRiddle(selectedDifficulty)
+      getRandomRiddle(selectedDifficulty),
     );
 
     setAnswer("");
@@ -504,7 +530,7 @@ export default function RiddleMePage() {
     setWrong(0);
 
     setTimeLeft(
-      DIFFICULTIES[selectedDifficulty].time
+      DIFFICULTIES[selectedDifficulty].time,
     );
 
     setStarted(true);
@@ -521,67 +547,53 @@ export default function RiddleMePage() {
     }
 
     if (timeLeft <= 0) {
-      const timeout = window.setTimeout(() => {
-        setGameOver(true);
+      const timeout =
+        window.setTimeout(() => {
+          setGameOver(true);
 
-        const baseXP =
-          DIFFICULTIES[difficulty].xp;
+          const baseXP =
+            DIFFICULTIES[difficulty].xp;
 
-        const scoreBonus = Math.min(
-          30,
-          Math.floor(score / 10)
-        );
+          const scoreBonus = Math.min(
+            30,
+            Math.floor(score / 10),
+          );
 
-        const totalXP =
-          baseXP + scoreBonus;
+          const totalXP =
+            baseXP + scoreBonus;
 
-        /*
-         * Daily Challenge
-         *
-         * completeDailyChallenge() handles:
-         * +50 XP
-         * once-per-day protection
-         */
-        const dailyCompleted =
-          completeDailyChallenge("riddle-me");
+          const dailyCompleted =
+            completeDailyChallenge(
+              "riddle-me",
+            );
 
-        setDailyChallengeCompleted(
-          dailyCompleted
-        );
+          setDailyChallengeCompleted(
+            dailyCompleted,
+          );
 
-        /*
-         * Daily Challenge gives +10 score.
-         */
-        const finalScore =
-          score +
-          (dailyCompleted
-            ? DAILY_CHALLENGE_BONUS_POINTS
-            : 0);
+          const finalScore =
+            score +
+            (dailyCompleted
+              ? DAILY_CHALLENGE_BONUS_POINTS
+              : 0);
 
-        /*
-         * completeDailyChallenge()
-         * already adds the +50 XP.
-         *
-         * recordGame() therefore receives
-         * only the normal game XP.
-         */
-        const displayedXP =
-          totalXP +
-          (dailyCompleted ? 50 : 0);
+          const displayedXP =
+            totalXP +
+            (dailyCompleted ? 50 : 0);
 
-        setScore(finalScore);
+          setScore(finalScore);
 
-        setXpEarned(displayedXP);
+          setXpEarned(displayedXP);
 
-        recordGame(
-          finalScore,
-          totalXP
-        );
+          recordGame(
+            finalScore,
+            totalXP,
+          );
 
-        unlockGameAchievement(
-          "riddle-solver"
-        );
-      }, 0);
+          unlockGameAchievement(
+            "riddle-solver",
+          );
+        }, 0);
 
       return () => {
         window.clearTimeout(timeout);
@@ -590,7 +602,7 @@ export default function RiddleMePage() {
 
     const timer = window.setTimeout(() => {
       setTimeLeft(
-        (previous) => previous - 1
+        (previous) => previous - 1,
       );
     }, 1000);
 
@@ -617,19 +629,21 @@ export default function RiddleMePage() {
     const normalizedAnswer =
       normalizeAnswer(answer);
 
-    const isCorrect = riddle.answers.some(
-      (acceptedAnswer) =>
-        normalizeAnswer(acceptedAnswer) ===
-        normalizedAnswer
-    );
+    const isCorrect =
+      riddle.answers.some(
+        (acceptedAnswer) =>
+          normalizeAnswer(
+            acceptedAnswer,
+          ) === normalizedAnswer,
+      );
 
     if (isCorrect) {
       setScore(
-        (previous) => previous + 10
+        (previous) => previous + 10,
       );
 
       setCorrect(
-        (previous) => previous + 1
+        (previous) => previous + 1,
       );
 
       setFeedback("correct");
@@ -642,7 +656,7 @@ export default function RiddleMePage() {
         const nextRiddle =
           getRandomRiddle(
             difficulty,
-            currentQuestion
+            currentQuestion,
           );
 
         setRiddle(nextRiddle);
@@ -655,7 +669,7 @@ export default function RiddleMePage() {
     }
 
     setWrong(
-      (previous) => previous + 1
+      (previous) => previous + 1,
     );
 
     setFeedback("wrong");
@@ -667,7 +681,7 @@ export default function RiddleMePage() {
   };
 
   const handleKeyDown = (
-    event: React.KeyboardEvent<HTMLInputElement>
+    event: React.KeyboardEvent<HTMLInputElement>,
   ) => {
     if (event.key === "Enter") {
       submitAnswer();
@@ -682,10 +696,6 @@ export default function RiddleMePage() {
   const timerDanger =
     timeLeft <= 5 && started;
 
-  /*
-   * Prevent changing difficulty while
-   * a game is currently running.
-   */
   const difficultyLocked =
     started && !gameOver;
 
@@ -698,481 +708,628 @@ export default function RiddleMePage() {
       description="Think outside the box. Solve as many riddles as you can before time runs out."
       maxWidth="lg"
     >
-      {/* Daily Challenge */}
+      <div className="mt-5 space-y-4 sm:mt-8 sm:space-y-6">
+        {/* Daily Challenge */}
 
-      <GameDailyChallenge
-        gameId="riddle-me"
-      />
+        <div className="mp-fade-up">
+          <GameDailyChallenge
+            gameId="riddle-me"
+          />
+        </div>
 
-      {/* Difficulty */}
+        {/* Difficulty */}
 
-      <div className="mx-auto mt-4 max-w-2xl">
-        <div className="mb-3 flex items-center justify-between">
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-white/30">
-            Difficulty
-          </p>
+        <section className="mp-fade-up">
+          <div className="mb-2 flex items-end justify-between px-1 sm:mb-3">
+            <div>
+              <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/50 sm:text-[10px]">
+                Difficulty
+              </p>
 
-          <p className="text-xs text-white/30">
-            Base XP{" "}
-            <span className="font-bold text-cyan-300">
-              +{DIFFICULTIES[difficulty].xp}
+              <p className="mt-1 text-xs font-semibold text-white/60 sm:text-sm">
+                Choose your challenge.
+              </p>
+            </div>
+
+            <span className="text-[9px] font-medium text-white/45 sm:text-[10px]">
+              Base +{DIFFICULTIES[difficulty].xp} XP
             </span>
-          </p>
-        </div>
+          </div>
 
-        <div className="grid grid-cols-3 gap-2 sm:gap-3">
-          {(
-            Object.keys(
-              DIFFICULTIES
-            ) as Difficulty[]
-          ).map((level) => {
-            const active =
-              difficulty === level;
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+            {(
+              Object.keys(
+                DIFFICULTIES,
+              ) as Difficulty[]
+            ).map((level) => {
+              const selected =
+                difficulty === level;
 
-            return (
-              <button
-                key={level}
-                type="button"
-                onClick={() =>
-                  setDifficulty(level)
-                }
-                disabled={difficultyLocked}
-                className={[
-                  "group rounded-2xl border p-3 text-left transition-all duration-200 sm:p-4",
-                  active
-                    ? "border-cyan-300/30 bg-cyan-300/8 shadow-[0_0_30px_rgba(103,232,249,0.05)]"
-                    : "border-white/10 bg-white/[0.035] hover:-translate-y-0.5 hover:bg-white/6",
-                  difficultyLocked
-                    ? "cursor-not-allowed opacity-50"
-                    : "",
-                ].join(" ")}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xl">
-                    {DIFFICULTIES[level].icon}
-                  </span>
+              return (
+                <button
+                  key={level}
+                  type="button"
+                  onClick={() => {
+                    if (difficultyLocked) {
+                      return;
+                    }
 
-                  {active && (
-                    <span className="h-2 w-2 rounded-full bg-cyan-300 shadow-[0_0_10px_rgba(103,232,249,0.8)]" />
-                  )}
-                </div>
+                    setDifficulty(level);
 
-                <p
-                  className={[
-                    "mt-2 text-sm font-black",
-                    active
-                      ? "text-cyan-200"
-                      : "text-white/70",
-                  ].join(" ")}
+                    setRiddle(
+                      getRandomRiddle(level),
+                    );
+
+                    setTimeLeft(
+                      DIFFICULTIES[level].time,
+                    );
+
+                    setAnswer("");
+                    setFeedback(null);
+                    setShowHint(false);
+                  }}
+                  disabled={difficultyLocked}
+                  className={`group relative overflow-hidden rounded-2xl border p-3 text-left transition-all duration-300 sm:rounded-3xl sm:p-4 ${
+                    selected
+                      ? "border-cyan-300/25 bg-white/7.5 shadow-[0_12px_40px_rgba(34,211,238,0.06)]"
+                      : "border-white/8 bg-white/2.5 hover:border-white/15 hover:bg-white/4.5"
+                  } ${
+                    difficultyLocked
+                      ? "cursor-not-allowed opacity-60"
+                      : ""
+                  }`}
                 >
-                  {DIFFICULTIES[level].label}
-                </p>
+                  {selected && (
+                    <span className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-cyan-300/70 to-transparent" />
+                  )}
 
-                <p className="mt-1 text-xs text-white/30">
-                  {DIFFICULTIES[level].time}s
-                </p>
-              </button>
-            );
-          })}
-        </div>
-      </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span
+                      className={`text-xl transition-transform duration-300 sm:text-2xl ${
+                        !difficultyLocked
+                          ? "group-hover:scale-110"
+                          : ""
+                      }`}
+                    >
+                      {DIFFICULTIES[level].icon}
+                    </span>
 
-      {/* Stats */}
+                    {selected && (
+                      <span className="h-1.5 w-1.5 rounded-full bg-cyan-300 shadow-[0_0_10px_rgba(103,232,249,0.8)]" />
+                    )}
+                  </div>
 
-      <div className="mx-auto mt-5 grid max-w-2xl grid-cols-3 gap-2 sm:gap-3">
-        <div className="mp-card rounded-2xl p-3 text-center sm:p-4">
-          <p className="text-[10px] font-black uppercase tracking-widest text-white/30 sm:text-xs">
-            Score
-          </p>
+                  <p
+                    className={`mt-2 text-xs font-black sm:text-sm ${
+                      selected
+                        ? "text-white"
+                        : "text-white/55"
+                    }`}
+                  >
+                    {DIFFICULTIES[level].label}
+                  </p>
 
-          <p className="mt-1 text-xl font-black text-cyan-300 sm:text-2xl">
-            {score}
-          </p>
-        </div>
+                  <div className="mt-1.5 flex items-center justify-between gap-2">
+                    <span className="text-[9px] font-medium text-white/45 sm:text-[10px]">
+                      {DIFFICULTIES[level].time}s
+                    </span>
 
-        <div className="mp-card rounded-2xl p-3 text-center sm:p-4">
-          <p className="text-[10px] font-black uppercase tracking-widest text-white/30 sm:text-xs">
-            Solved
-          </p>
+                    <span
+                      className={`text-[9px] font-bold sm:text-[10px] ${
+                        selected
+                          ? "text-cyan-300/70"
+                          : "text-white/40"
+                      }`}
+                    >
+                      +{DIFFICULTIES[level].xp}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </section>
 
-          <p className="mt-1 text-xl font-black text-emerald-300 sm:text-2xl">
-            {correct}
-          </p>
-        </div>
+        {/* Stats */}
 
-        <div className="mp-card rounded-2xl p-3 text-center sm:p-4">
-          <p className="text-[10px] font-black uppercase tracking-widest text-white/30 sm:text-xs">
-            Time
-          </p>
+        <section className="grid grid-cols-3 overflow-hidden rounded-2xl border border-white/8 bg-white/2.5 sm:rounded-3xl">
+          <div className="border-r border-white/6 px-3 py-3 text-center sm:px-5 sm:py-4">
+            <p className="text-[8px] font-black uppercase tracking-[0.18em] text-white/45 sm:text-[9px]">
+              Score
+            </p>
 
-          <p
-            className={[
-              "mt-1 text-xl font-black transition-colors sm:text-2xl",
-              timerDanger
-                ? "animate-pulse text-red-300"
-                : "text-white",
-            ].join(" ")}
-          >
-            {started
-              ? timeLeft
-              : DIFFICULTIES[difficulty].time}
-            s
-          </p>
-        </div>
-      </div>
+            <p className="mt-1 text-xl font-black tracking-tight text-cyan-300 sm:text-2xl">
+              {score}
+            </p>
+          </div>
 
-      {/* Timer */}
+          <div className="border-r border-white/6 px-3 py-3 text-center sm:px-5 sm:py-4">
+            <p className="text-[8px] font-black uppercase tracking-[0.18em] text-white/45 sm:text-[9px]">
+              Solved
+            </p>
 
-      {started && !gameOver && (
-        <div className="mx-auto mt-4 max-w-2xl">
-          <div className="h-1.5 overflow-hidden rounded-full bg-white/[0.07]">
-            <div
-              className={[
-                "h-full rounded-full transition-all duration-1000",
+            <p className="mt-1 text-xl font-black tracking-tight text-white sm:text-2xl">
+              {correct}
+            </p>
+          </div>
+
+          <div className="px-3 py-3 text-center sm:px-5 sm:py-4">
+            <p className="text-[8px] font-black uppercase tracking-[0.18em] text-white/45 sm:text-[9px]">
+              Time
+            </p>
+
+            <p
+              className={`mt-1 text-xl font-black tracking-tight tabular-nums sm:text-2xl ${
                 timerDanger
-                  ? "bg-red-400"
-                  : "bg-linear-to-r from-cyan-400 via-purple-400 to-fuchsia-400",
-              ].join(" ")}
-              style={{
-                width: `${Math.max(
-                  0,
-                  timerPercentage
-                )}%`,
-              }}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Game Card */}
-
-      <div className="mp-card mp-fade-up mx-auto mt-4 max-w-2xl rounded-4xl p-5 shadow-2xl sm:mt-4 sm:p-8">
-        {/* Start */}
-
-        {!started && !gameOver && (
-          <div className="py-8 text-center sm:py-12">
-            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl border border-white/10 bg-white/4 text-5xl">
-              🧠
-            </div>
-
-            <p className="mt-4 text-xs font-black uppercase tracking-[0.25em] text-cyan-300/50">
-              {DIFFICULTIES[difficulty].label} Mode
-            </p>
-
-            <h2 className="mt-2 text-2xl font-black sm:text-3xl">
-              Ready to get tricky?
-            </h2>
-
-            <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-white/40">
-              Solve as many riddles as possible
-              before the clock hits zero.
-            </p>
-
-            <div className="mt-4 flex items-center justify-center gap-2">
-              <div className="rounded-xl border border-white/[0.07] bg-white/[0.035] px-3 py-2 text-xs font-bold text-white/40">
-                {DIFFICULTIES[difficulty].time}s timer
-              </div>
-
-              <div className="rounded-xl border border-white/[0.07] bg-white/[0.035] px-3 py-2 text-xs font-bold text-white/40">
-                +{DIFFICULTIES[difficulty].xp} base XP
-              </div>
-            </div>
-
-            {isDailyChallenge && (
-              <div className="mx-auto mt-4 w-fit rounded-xl border border-purple-300/10 bg-purple-300/5 px-3 py-2 text-xs font-bold text-purple-200/60">
-                🎯 Today&apos;s Daily Challenge
-              </div>
-            )}
-
-            <button
-              type="button"
-              onClick={() =>
-                startGame(difficulty)
-              }
-              className="mp-button mt-4 rounded-2xl bg-white px-7 py-3.5 text-sm font-black text-[#080b14] shadow-lg hover:bg-cyan-100"
+                  ? "animate-pulse text-fuchsia-300"
+                  : "text-white/65"
+              }`}
             >
-              Start Game
-              <span className="ml-2">→</span>
-            </button>
+              {started
+                ? timeLeft
+                : DIFFICULTIES[difficulty].time}
+              s
+            </p>
           </div>
-        )}
+        </section>
 
-        {/* Active Game */}
+        {/* Timer */}
 
         {started && !gameOver && (
-          <div className="text-center">
-            <div className="mb-3 flex items-center justify-between">
-              <div className="text-left">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/25">
-                  Current Challenge
-                </p>
+          <section className="px-1">
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-[9px] font-black uppercase tracking-[0.18em] text-white/45">
+                Time remaining
+              </span>
 
-                <p className="mt-1 text-sm font-bold text-white/60">
-                  Riddle #{correct + 1}
-                </p>
-              </div>
-
-              <div className="rounded-full border border-white/10 bg-white/4 px-3 py-1.5 text-xs font-bold text-white/40">
-                +10 points
-              </div>
+              <span
+                className={`text-[10px] font-black tabular-nums ${
+                  timerDanger
+                    ? "text-fuchsia-300"
+                    : "text-white/65"
+                }`}
+              >
+                {timeLeft}s
+              </span>
             </div>
 
-            {/* Question */}
-
-            <div
-              className={[
-                "relative flex min-h-56 items-center justify-center overflow-hidden rounded-3xl border px-6 py-10 transition-all duration-200 sm:min-h-64 sm:px-10",
-                feedback === "correct"
-                  ? "border-emerald-300/30 bg-emerald-300/8 shadow-[0_0_50px_rgba(52,211,153,0.08)]"
-                  : feedback === "wrong"
-                    ? "border-red-300/30 bg-red-300/8 shadow-[0_0_50px_rgba(248,113,113,0.08)]"
-                    : "border-white/10 bg-black/10",
-              ].join(" ")}
-            >
-              <div className="pointer-events-none absolute left-0 top-0 h-24 w-24 rounded-full bg-cyan-300/4 blur-2xl" />
-
-              <div className="pointer-events-none absolute bottom-0 right-0 h-24 w-24 rounded-full bg-purple-300/4 blur-2xl" />
-
-              {feedback === "correct" && (
-                <div className="absolute right-5 top-5 text-xl">
-                  ✓
-                </div>
-              )}
-
-              {feedback === "wrong" && (
-                <div className="absolute right-5 top-5 text-xl">
-                  ✕
-                </div>
-              )}
-
-              <p className="relative text-lg font-bold leading-8 text-white sm:text-2xl sm:leading-9">
-                {riddle.question}
-              </p>
-            </div>
-
-            {/* Feedback */}
-
-            <div className="h-8 pt-3">
-              {feedback === "correct" && (
-                <p className="text-sm font-black text-emerald-300">
-                  ✨ Correct! Nice one.
-                </p>
-              )}
-
-              {feedback === "wrong" && (
-                <p className="text-sm font-black text-red-300">
-                  Not quite. Try the next one!
-                </p>
-              )}
-            </div>
-
-            {/* Hint */}
-
-            <div className="mt-2">
-              {!showHint ? (
-                <button
-                  type="button"
-                  onClick={() =>
-                    setShowHint(true)
-                  }
-                  className="rounded-full px-4 py-2 text-xs font-bold text-white/35 transition hover:bg-white/4 hover:text-cyan-200"
-                >
-                  💡 Need a hint?
-                </button>
-              ) : (
-                <div className="rounded-2xl border border-cyan-300/10 bg-cyan-300/4 px-4 py-3 text-sm text-cyan-100/60">
-                  <span className="mr-1">
-                    💡
-                  </span>
-
-                  {riddle.hint}
-                </div>
-              )}
-            </div>
-
-            {/* Answer */}
-
-            <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-              <input
-                type="text"
-                autoComplete="off"
-                spellCheck={false}
-                autoFocus
-                value={answer}
-                onChange={(event) =>
-                  setAnswer(
-                    event.target.value
-                  )
-                }
-                onKeyDown={handleKeyDown}
-                placeholder="Type your answer..."
-                disabled={
-                  feedback !== null
-                }
-                className={[
-                  "min-w-0 flex-1 rounded-2xl border bg-white/[0.035] px-5 py-4 text-center text-base font-bold text-white outline-none transition placeholder:text-white/20 focus:border-cyan-300/30 focus:bg-white/5 sm:text-lg",
-                  feedback === "correct"
-                    ? "border-emerald-300/30"
-                    : feedback === "wrong"
-                      ? "border-red-300/30"
-                      : "border-white/10",
-                ].join(" ")}
+            <div className="h-1 overflow-hidden rounded-full bg-white/6">
+              <div
+                className={`h-full rounded-full transition-all duration-1000 ${
+                  timerDanger
+                    ? "bg-fuchsia-400"
+                    : "bg-cyan-300"
+                }`}
+                style={{
+                  width: `${Math.max(
+                    0,
+                    timerPercentage,
+                  )}%`,
+                }}
               />
+            </div>
+          </section>
+        )}
+
+        {/* Main Game Card */}
+
+        <section
+          className={`relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/[0.035] shadow-[0_30px_100px_rgba(0,0,0,0.3)] sm:rounded-4xl ${
+            feedback === "correct"
+              ? "mp-riddle-correct"
+              : feedback === "wrong"
+                ? "mp-riddle-wrong"
+                : ""
+          }`}
+        >
+          <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-white/15 to-transparent" />
+
+          {/* Decorative light */}
+
+          <div className="pointer-events-none absolute left-[-10%] top-[-10%] h-48 w-48 rounded-full bg-cyan-300/2.5 blur-3xl" />
+
+          <div className="pointer-events-none absolute bottom-[-15%] right-[-10%] h-56 w-56 rounded-full bg-fuchsia-400/2.5 blur-3xl" />
+
+          {/* Start */}
+
+          {!started && !gameOver && (
+            <div className="relative px-5 py-10 text-center sm:px-10 sm:py-16">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl border border-cyan-300/15 bg-cyan-300/6 text-3xl shadow-[0_15px_50px_rgba(34,211,238,0.06)] sm:h-20 sm:w-20 sm:text-4xl">
+                🧩
+              </div>
+
+              <p className="mt-6 text-[9px] font-black uppercase tracking-[0.22em] text-cyan-300/55">
+                {DIFFICULTIES[difficulty].label} Mode
+              </p>
+
+              <h2 className="mt-2 text-2xl font-black tracking-tight sm:text-4xl">
+                Think differently.
+              </h2>
+
+              <p className="mx-auto mt-2 max-w-md text-xs leading-5 text-white/55 sm:text-sm">
+                Read carefully, spot the trick,
+                and solve as many riddles as you
+                can before time runs out.
+              </p>
+
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+                <div className="rounded-full border border-white/7 bg-white/2.5 px-3.5 py-2 text-[10px] font-bold text-white/60">
+                  {DIFFICULTIES[difficulty].time}s
+                  timer
+                </div>
+
+                <div className="rounded-full border border-white/7 bg-white/2.5 px-3.5 py-2 text-[10px] font-bold text-white/60">
+                  +{DIFFICULTIES[difficulty].xp}{" "}
+                  base XP
+                </div>
+
+                <div className="rounded-full border border-white/7 bg-white/2.5 px-3.5 py-2 text-[10px] font-bold text-white/60">
+                  +10 per solve
+                </div>
+              </div>
+
+              {isDailyChallenge && (
+                <div className="mx-auto mt-5 w-fit rounded-full border border-purple-300/10 bg-purple-300/5 px-3.5 py-2 text-[10px] font-bold text-purple-200/60">
+                  🎯 Today&apos;s Daily Challenge
+                </div>
+              )}
 
               <button
                 type="button"
-                onClick={submitAnswer}
-                disabled={
-                  feedback !== null ||
-                  answer.trim() === ""
+                onClick={() =>
+                  startGame(difficulty)
                 }
-                className="mp-button rounded-2xl bg-white px-7 py-4 text-sm font-black text-[#080b14] hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-40"
+                className="mp-button mt-7 rounded-full bg-white px-7 py-3 text-xs font-black text-black shadow-[0_12px_40px_rgba(255,255,255,0.08)] transition-all hover:bg-cyan-100 hover:shadow-[0_15px_45px_rgba(34,211,238,0.12)] sm:px-8 sm:py-3.5 sm:text-sm"
               >
-                Check
+                Start challenge
+                <span className="ml-2">
+                  →
+                </span>
               </button>
             </div>
+          )}
 
-            <p className="mt-4 text-[11px] text-white/25">
-              Press{" "}
-              <span className="font-bold text-white/45">
-                Enter
-              </span>{" "}
-              to submit
-            </p>
-          </div>
-        )}
+          {/* Active Game */}
 
-        {/* Game Over */}
+          {started && !gameOver && (
+            <div className="relative px-4 py-6 sm:px-8 sm:py-9">
+              <div className="mb-4 flex items-center justify-between gap-3 sm:mb-5">
+                <div>
+                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/45">
+                    Current riddle
+                  </p>
 
-        {gameOver && (
-          <div className="py-5 text-center sm:py-8">
-            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl border border-yellow-300/10 bg-yellow-300/5 text-5xl">
-              🏆
-            </div>
+                  <p className="mt-1 text-xs font-bold text-white/55 sm:text-sm">
+                    Challenge #{correct + 1}
+                  </p>
+                </div>
 
-            <p className="mt-4 text-xs font-black uppercase tracking-[0.25em] text-fuchsia-300/60">
-              Challenge Complete
-            </p>
-
-            <h2 className="mt-2 text-3xl font-black sm:text-4xl">
-              Time&apos;s up!
-            </h2>
-
-            <p className="mt-2 text-sm text-white/40">
-              You solved{" "}
-              <span className="font-black text-white">
-                {correct}
-              </span>{" "}
-              riddles.
-            </p>
-
-            {/* Result stats */}
-
-            <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-3">
-              <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-                <p className="text-[10px] font-black uppercase tracking-wider text-white/25">
-                  Score
-                </p>
-
-                <p className="mt-1 text-2xl font-black text-cyan-300">
-                  {score}
-                </p>
+                <div className="rounded-full border border-white/8 bg-white/2.5 px-3 py-1.5 text-[9px] font-black text-white/55 sm:text-[10px]">
+                  +10 points
+                </div>
               </div>
 
-              <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-                <p className="text-[10px] font-black uppercase tracking-wider text-white/25">
-                  Solved
-                </p>
+              {/* Riddle */}
 
-                <p className="mt-1 text-2xl font-black text-emerald-300">
+              <div
+                className={`relative flex min-h-[clamp(12rem,40dvh,20rem)] items-center justify-center overflow-hidden rounded-3xl border px-5 py-10 text-center transition-all duration-300 sm:min-h-[clamp(14rem,45dvh,24rem)] sm:rounded-[1.75rem] sm:px-10 ${
+                  feedback === "correct"
+                    ? "border-cyan-300/30 bg-cyan-300/4.5 shadow-[0_0_60px_rgba(34,211,238,0.06)]"
+                    : feedback === "wrong"
+                      ? "border-fuchsia-300/30 bg-fuchsia-300/4 shadow-[0_0_60px_rgba(217,70,239,0.05)]"
+                      : "border-white/8 bg-black/10"
+                }`}
+              >
+                <div className="pointer-events-none absolute left-1/2 top-0 h-32 w-64 -translate-x-1/2 rounded-full bg-cyan-300/2.5 blur-3xl" />
+
+                <div className="relative max-w-2xl">
+                  <span className="mb-5 block text-2xl opacity-25 sm:text-3xl">
+                    “
+                  </span>
+
+                  <p className="text-xl font-black leading-8 tracking-tight text-white sm:text-3xl sm:leading-10">
+                    {riddle.question}
+                  </p>
+
+                  <span className="mt-5 block rotate-180 text-2xl opacity-25 sm:text-3xl">
+                    “
+                  </span>
+                </div>
+
+                {feedback === "correct" && (
+                  <div className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-cyan-300/20 bg-cyan-300/6 text-sm font-black text-cyan-300">
+                    ✓
+                  </div>
+                )}
+
+                {feedback === "wrong" && (
+                  <div className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-fuchsia-300/20 bg-fuchsia-300/6 text-sm font-black text-fuchsia-300">
+                    ×
+                  </div>
+                )}
+              </div>
+
+              {/* Feedback */}
+
+              <div className="flex h-8 items-center justify-center pt-3">
+                {feedback === "correct" && (
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-cyan-300">
+                    Correct · Nice thinking
+                  </p>
+                )}
+
+                {feedback === "wrong" && (
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-fuchsia-300">
+                    Not quite · Keep thinking
+                  </p>
+                )}
+              </div>
+
+              {/* Hint */}
+
+              <div className="mt-2">
+                {!showHint ? (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowHint(true)
+                    }
+                    className="mx-auto flex items-center gap-2 rounded-full px-4 py-2 text-[10px] font-bold text-white/50 transition-all hover:bg-white/3 hover:text-cyan-200"
+                  >
+                    <span>💡</span>
+                    Need a hint?
+                  </button>
+                ) : (
+                  <div className="mx-auto max-w-xl rounded-2xl border border-cyan-300/10 bg-cyan-300/[0.035] px-4 py-3 text-center text-xs leading-5 text-cyan-100/55">
+                    <span className="mr-1">
+                      💡
+                    </span>
+                    {riddle.hint}
+                  </div>
+                )}
+              </div>
+
+              {/* Answer */}
+
+              <div className="mx-auto mt-5 flex w-full max-w-xl flex-col gap-2.5 sm:mt-6 sm:flex-row">
+                <input
+                  type="text"
+                  autoComplete="off"
+                  spellCheck={false}
+                  autoFocus
+                  value={answer}
+                  onChange={(event) =>
+                    setAnswer(
+                      event.target.value,
+                    )
+                  }
+                  onKeyDown={handleKeyDown}
+                  placeholder="Type your answer..."
+                  disabled={feedback !== null}
+                  className={`h-14 min-h-14 min-w-0 flex-1 rounded-2xl border bg-black/15 px-4 text-center text-base font-black text-white outline-none transition-all placeholder:text-white/40 focus:bg-white/2.5 sm:h-15 sm:min-h-15 sm:px-5 sm:text-lg ${
+                    feedback === "correct"
+                      ? "border-cyan-300/35 shadow-[0_0_35px_rgba(34,211,238,0.06)]"
+                      : feedback === "wrong"
+                        ? "border-fuchsia-300/35 shadow-[0_0_35px_rgba(217,70,239,0.06)]"
+                        : "border-white/9 focus:border-cyan-300/30"
+                  }`}
+                />
+
+                <button
+                  type="button"
+                  onClick={submitAnswer}
+                  disabled={
+                    feedback !== null ||
+                    answer.trim() === ""
+                  }
+                  className="mp-button h-14 rounded-2xl bg-white px-7 text-xs font-black text-black transition-all hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-35 sm:h-15"
+                >
+                  Check
+                </button>
+              </div>
+
+              <p className="mt-3 text-center text-[9px] text-white/40 sm:text-[10px]">
+                Press{" "}
+                <span className="font-bold text-white/60">
+                  Enter
+                </span>{" "}
+                to submit
+              </p>
+            </div>
+          )}
+
+          {/* Game Over */}
+
+          {gameOver && (
+            <div className="relative px-5 py-10 text-center sm:px-10 sm:py-14">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl border border-cyan-300/15 bg-cyan-300/6 text-3xl shadow-[0_15px_50px_rgba(34,211,238,0.06)] sm:h-20 sm:w-20 sm:text-4xl">
+                🧠
+              </div>
+
+              <p className="mt-6 text-[9px] font-black uppercase tracking-[0.22em] text-cyan-300/55">
+                Challenge complete
+              </p>
+
+              <h2 className="mt-2 text-3xl font-black tracking-tight sm:text-5xl">
+                Time&apos;s up.
+              </h2>
+
+              <p className="mx-auto mt-2 max-w-md text-xs leading-5 text-white/55 sm:text-sm">
+                You solved{" "}
+                <span className="font-black text-white/75">
                   {correct}
+                </span>{" "}
+                riddles and earned{" "}
+                <span className="font-black text-cyan-300">
+                  {score}
+                </span>{" "}
+                points.
+              </p>
+
+              {/* Results */}
+
+              <div className="mx-auto mt-7 grid max-w-lg grid-cols-3 overflow-hidden rounded-2xl border border-white/8 bg-white/2.5 sm:mt-9 sm:rounded-3xl">
+                <div className="border-r border-white/6 px-3 py-4 sm:px-5 sm:py-5">
+                  <p className="text-[8px] font-black uppercase tracking-[0.18em] text-white/45 sm:text-[9px]">
+                    Score
+                  </p>
+
+                  <p className="mt-1 text-xl font-black text-cyan-300 sm:text-2xl">
+                    {score}
+                  </p>
+                </div>
+
+                <div className="border-r border-white/6 px-3 py-4 sm:px-5 sm:py-5">
+                  <p className="text-[8px] font-black uppercase tracking-[0.18em] text-white/45 sm:text-[9px]">
+                    Solved
+                  </p>
+
+                  <p className="mt-1 text-xl font-black sm:text-2xl">
+                    {correct}
+                  </p>
+                </div>
+
+                <div className="px-3 py-4 sm:px-5 sm:py-5">
+                  <p className="text-[8px] font-black uppercase tracking-[0.18em] text-white/45 sm:text-[9px]">
+                    Wrong
+                  </p>
+
+                  <p className="mt-1 text-xl font-black text-white/65 sm:text-2xl">
+                    {wrong}
+                  </p>
+                </div>
+              </div>
+
+              {/* XP */}
+
+              <div className="mx-auto mt-3 max-w-lg rounded-2xl border border-cyan-300/12 bg-cyan-300/[0.035] px-5 py-4 sm:mt-4 sm:rounded-3xl sm:px-6 sm:py-5">
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-cyan-300/50">
+                  XP earned
+                </p>
+
+                <p className="mt-1 text-3xl font-black tracking-tight text-cyan-300 sm:text-4xl">
+                  +{xpEarned ?? 0}
+                </p>
+
+                <p className="mt-1 text-[10px] text-white/45 sm:text-xs">
+                  Added to your MindPlay progress
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-                <p className="text-[10px] font-black uppercase tracking-wider text-white/25">
-                  Wrong
-                </p>
+              {/* Daily Challenge Result */}
 
-                <p className="mt-1 text-2xl font-black text-red-300">
-                  {wrong}
-                </p>
-              </div>
+              {dailyChallengeCompleted && (
+                <div className="mx-auto mt-3 max-w-lg rounded-2xl border border-purple-300/12 bg-purple-300/[0.035] px-4 py-4 sm:mt-4 sm:rounded-3xl">
+                  <p className="text-[9px] font-black uppercase tracking-[0.18em] text-purple-300/70">
+                    Daily Challenge
+                  </p>
+
+                  <p className="mt-1 text-sm font-black text-white/75">
+                    +50 XP · +10 Score
+                  </p>
+
+                  <p className="mt-1 text-[10px] leading-4 text-white/45 sm:text-xs">
+                    Today&apos;s challenge reward has
+                    been added.
+                  </p>
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={() =>
+                  startGame(difficulty)
+                }
+                className="mp-button mt-7 rounded-full bg-white px-7 py-3 text-xs font-black text-black shadow-[0_12px_40px_rgba(255,255,255,0.08)] transition-all hover:bg-cyan-100 sm:mt-9 sm:px-8 sm:py-3.5 sm:text-sm"
+              >
+                Play again
+                <span className="ml-2">
+                  →
+                </span>
+              </button>
             </div>
+          )}
+        </section>
 
-            {/* XP */}
+        {/* Tip */}
 
-            <div className="mt-4 overflow-hidden rounded-2xl border border-cyan-300/15 bg-cyan-300/4 p-5">
-              <p className="text-xs font-black uppercase tracking-widest text-cyan-300/50">
-                XP Earned
+        <section className="mp-fade-up rounded-2xl border border-white/6 bg-white/[0.018] px-4 py-3.5 sm:rounded-3xl sm:px-5 sm:py-4">
+          <div className="flex items-start gap-3">
+            <span className="mt-0.5 text-sm">
+              💡
+            </span>
+
+            <div>
+              <p className="text-[9px] font-black uppercase tracking-[0.18em] text-white/50">
+                Riddle tip
               </p>
 
-              <p className="mt-1 text-3xl font-black text-cyan-300">
-                +{xpEarned ?? 0} XP
-              </p>
-
-              <p className="mt-1 text-xs text-white/30">
-                Added to your MindPlay progress
+              <p className="mt-1 text-[10px] leading-4 text-white/55 sm:text-xs sm:leading-5">
+                Don&apos;t take every word literally.
+                Riddles often use unexpected
+                meanings, wordplay, or everyday
+                objects in unusual ways.
               </p>
             </div>
-
-            {/* Daily Challenge Result */}
-
-            {dailyChallengeCompleted && (
-              <div className="mt-4 rounded-2xl border border-purple-300/15 bg-purple-300/4 p-4">
-                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-purple-300/70">
-                  Daily Challenge
-                </p>
-
-                <p className="mt-1 text-sm font-black text-white/80">
-                  +50 XP · +10 Score
-                </p>
-
-                <p className="mt-1 text-xs text-white/30">
-                  Today&apos;s challenge reward has been added.
-                </p>
-              </div>
-            )}
-
-            <button
-              type="button"
-              onClick={() =>
-                startGame(difficulty)
-              }
-              className="mp-button mt-4 rounded-2xl bg-white px-7 py-3.5 text-sm font-black text-[#080b14] hover:bg-cyan-100"
-            >
-              Play Again
-
-              <span className="ml-2">
-                →
-              </span>
-            </button>
           </div>
-        )}
+        </section>
       </div>
 
-      {/* Tip */}
+      <style jsx>{`
+        .mp-riddle-correct {
+          animation: riddleCorrect 0.45s
+            ease-out;
+        }
 
-      <div className="mp-card mx-auto mt-4 max-w-2xl rounded-2xl p-5">
-        <div className="flex gap-3">
-          <span className="text-xl">
-            💡
-          </span>
+        .mp-riddle-wrong {
+          animation: riddleWrong 0.45s
+            ease-out;
+        }
 
-          <div>
-            <p className="text-sm font-black text-white/80">
-              Riddle tip
-            </p>
+        @keyframes riddleCorrect {
+          0% {
+            transform: scale(1);
+          }
 
-            <p className="mt-1 text-sm leading-6 text-white/35">
-              Don&apos;t take every word literally.
-              Riddles often use unexpected
-              meanings, wordplay, or everyday
-              objects in unusual ways.
-            </p>
-          </div>
-        </div>
-      </div>
+          45% {
+            transform: scale(1.006);
+          }
+
+          100% {
+            transform: scale(1);
+          }
+        }
+
+        @keyframes riddleWrong {
+          0%,
+          100% {
+            transform: translateX(0);
+          }
+
+          20% {
+            transform: translateX(-4px);
+          }
+
+          40% {
+            transform: translateX(4px);
+          }
+
+          60% {
+            transform: translateX(-3px);
+          }
+
+          80% {
+            transform: translateX(3px);
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .mp-riddle-correct,
+          .mp-riddle-wrong {
+            animation: none;
+          }
+        }
+      `}</style>
     </GameShell>
   );
 }

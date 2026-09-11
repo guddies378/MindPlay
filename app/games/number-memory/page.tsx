@@ -1,5 +1,6 @@
 "use client";
 
+import GameShell from "@/components/GameShell";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { recordGame } from "@/lib/progress";
@@ -529,67 +530,26 @@ export default function NumberMemoryPage() {
     );
 
   return (
-    <main className="min-h-[100dvh] overflow-hidden px-4 py-3 text-white sm:px-6 sm:py-4 lg:px-8">
+    <GameShell
+      icon="🧠"
+      category="MEMORY"
+      title="Number"
+      highlightedTitle="Memory"
+      description="Remember the numbers before they disappear."
+      maxWidth="lg"
+    >
       <div className="mx-auto max-w-5xl">
-
-        {/* Header */}
-
-        <header className="mb-4 flex items-center justify-between gap-3">
-          <Link
-            href="/games"
-            className="group flex items-center gap-2 text-sm font-bold text-white/40 transition hover:text-white"
-          >
-            <span className="transition-transform group-hover:-translate-x-1">
-              ←
-            </span>
-
-            Back to Arcade
-          </Link>
-
-          <div className="flex items-center gap-2">
-            <div className="rounded-full border border-white/10 bg-white/4 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-white/35">
-              Memory Game
-            </div>
-
-            {isDailyChallenge && (
-              <div className="rounded-full border border-yellow-300/20 bg-yellow-300/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-yellow-300">
-                Daily Challenge
-              </div>
-            )}
-          </div>
-        </header>
-
-        {/* Title */}
-
-        <section className="mp-fade-up mb-4 text-center">
-          <div className="mb-2 text-4xl">
-            🔢
-          </div>
-
-          <p className="text-xs font-black uppercase tracking-[0.25em] text-cyan-300/60">
-            Number Memory
-          </p>
-
-          <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
-            Remember everything.
-          </h1>
-
-          <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-white/40">
-            Memorize the number before it disappears.
-            Every few rounds, it gets longer.
-          </p>
-        </section>
 
         {/* Difficulty */}
 
         {gameState === "idle" && (
           <section className="mp-fade-up mb-4">
             <div className="mb-3 flex items-center justify-between">
-              <p className="text-xs font-black uppercase tracking-wider text-white/30">
+              <p className="text-xs font-black uppercase tracking-wider text-white/50">
                 Select difficulty
               </p>
 
-              <p className="text-xs font-bold text-white/20">
+              <p className="text-xs font-bold text-white/40">
                 Longer numbers = more points
               </p>
             </div>
@@ -644,12 +604,12 @@ export default function NumberMemoryPage() {
                         {item.label}
                       </h2>
 
-                      <p className="mt-1 text-xs text-white/35">
+                      <p className="mt-1 text-xs text-white/55">
                         {item.description}
                       </p>
 
                       <div className="mt-4 flex items-center justify-between text-[10px] font-black uppercase tracking-wider">
-                        <span className="text-white/25">
+                        <span className="text-white/45">
                           {item.rounds}{" "}
                           rounds
                         </span>
@@ -670,7 +630,7 @@ export default function NumberMemoryPage() {
                   🏆 Daily Challenge
                 </p>
 
-                <p className="mt-2 text-sm text-white/50">
+                <p className="mt-2 text-sm text-white/70">
                   Today&apos;s challenge is set
                   to{" "}
                   <strong className="capitalize text-yellow-300">
@@ -681,7 +641,7 @@ export default function NumberMemoryPage() {
                   difficulty.
                 </p>
 
-                <p className="mt-1 text-xs text-white/30">
+                <p className="mt-1 text-xs text-white/50">
                   Complete it for +10 score
                   and +50 XP.
                 </p>
@@ -705,7 +665,7 @@ export default function NumberMemoryPage() {
               gameState !== "finished" && (
                 <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
                   <div className="rounded-2xl border border-white/[0.07] bg-white/2.5 p-3 text-center">
-                    <p className="text-[9px] font-black uppercase tracking-wider text-white/25">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-white/45">
                       Round
                     </p>
 
@@ -716,7 +676,7 @@ export default function NumberMemoryPage() {
                   </div>
 
                   <div className="rounded-2xl border border-white/[0.07] bg-white/2.5 p-3 text-center">
-                    <p className="text-[9px] font-black uppercase tracking-wider text-white/25">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-white/45">
                       Score
                     </p>
 
@@ -726,7 +686,7 @@ export default function NumberMemoryPage() {
                   </div>
 
                   <div className="rounded-2xl border border-white/[0.07] bg-white/2.5 p-3 text-center">
-                    <p className="text-[9px] font-black uppercase tracking-wider text-white/25">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-white/45">
                       Streak
                     </p>
 
@@ -736,7 +696,7 @@ export default function NumberMemoryPage() {
                   </div>
 
                   <div className="rounded-2xl border border-white/[0.07] bg-white/2.5 p-3 text-center">
-                    <p className="text-[9px] font-black uppercase tracking-wider text-white/25">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-white/45">
                       Digits
                     </p>
 
@@ -752,7 +712,7 @@ export default function NumberMemoryPage() {
             {gameState !== "idle" &&
               gameState !== "finished" && (
                 <div className="mb-4">
-                  <div className="mb-2 flex justify-between text-[9px] font-black uppercase tracking-wider text-white/20">
+                  <div className="mb-2 flex justify-between text-[9px] font-black uppercase tracking-wider text-white/40">
                     <span>
                       Memory Progress
                     </span>
@@ -788,18 +748,18 @@ export default function NumberMemoryPage() {
                   Can you remember it?
                 </h2>
 
-                <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-white/35">
+                <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-white/55">
                   A number will appear for a
                   few seconds. Memorize it, then
                   type it back.
                 </p>
 
                 <div className="mt-4 flex flex-wrap justify-center gap-3">
-                  <div className="rounded-full border border-white/10 bg-white/3 px-4 py-2 text-xs font-bold text-white/40">
+                  <div className="rounded-full border border-white/10 bg-white/3 px-4 py-2 text-xs font-bold text-white/60">
                     🎯 +10 per digit
                   </div>
 
-                  <div className="rounded-full border border-white/10 bg-white/3 px-4 py-2 text-xs font-bold text-white/40">
+                  <div className="rounded-full border border-white/10 bg-white/3 px-4 py-2 text-xs font-bold text-white/60">
                     🔥 Build streaks
                   </div>
                 </div>
@@ -823,7 +783,7 @@ export default function NumberMemoryPage() {
             {/* Showing Number */}
 
             {gameState === "showing" && (
-              <div className="flex min-h-95 flex-col items-center justify-center text-center sm:min-h-107.5">
+              <div className="flex min-h-[clamp(13rem,42dvh,24rem)] flex-col items-center justify-center text-center sm:min-h-[clamp(15rem,48dvh,30rem)]">
                 <p className="text-xs font-black uppercase tracking-[0.25em] text-cyan-300/60">
                   Memorize this
                 </p>
@@ -840,7 +800,7 @@ export default function NumberMemoryPage() {
                       {countdown}
                     </div>
 
-                    <p className="mt-1 text-xs font-bold text-white/25">
+                    <p className="mt-1 text-xs font-bold text-white/45">
                       seconds
                     </p>
                   </div>
@@ -851,7 +811,7 @@ export default function NumberMemoryPage() {
             {/* Input */}
 
             {gameState === "input" && (
-              <div className="flex min-h-95 flex-col items-center justify-center text-center sm:min-h-107.5">
+              <div className="flex min-h-[clamp(13rem,42dvh,24rem)] flex-col items-center justify-center text-center sm:min-h-[clamp(15rem,48dvh,30rem)]">
                 <div className="text-6xl">
                   🧠
                 </div>
@@ -860,7 +820,7 @@ export default function NumberMemoryPage() {
                   What was the number?
                 </h2>
 
-                <p className="mt-2 text-sm text-white/35">
+                <p className="mt-2 text-sm text-white/55">
                   {currentLength} digits
                 </p>
 
@@ -932,13 +892,13 @@ export default function NumberMemoryPage() {
                       PERFECT!
                     </p>
 
-                    <p className="mt-2 text-sm font-bold text-white/35">
+                    <p className="mt-2 text-sm font-bold text-white/55">
                       Your memory is getting
                       stronger.
                     </p>
 
                     <div className="mx-auto mt-4 max-w-md rounded-3xl border border-emerald-300/10 bg-emerald-300/4 p-6">
-                      <p className="text-xs font-black uppercase tracking-wider text-white/25">
+                      <p className="text-xs font-black uppercase tracking-wider text-white/45">
                         Correct number
                       </p>
 
@@ -947,7 +907,7 @@ export default function NumberMemoryPage() {
                       </p>
 
                       <div className="mt-5 border-t border-white/6 pt-5">
-                        <p className="text-xs font-bold text-white/30">
+                        <p className="text-xs font-bold text-white/50">
                           Round score
                         </p>
 
@@ -971,13 +931,13 @@ export default function NumberMemoryPage() {
                       NOT QUITE!
                     </p>
 
-                    <p className="mt-2 text-sm font-bold text-white/35">
+                    <p className="mt-2 text-sm font-bold text-white/55">
                       Your brain got ambushed.
                     </p>
 
                     <div className="mx-auto mt-4 max-w-md rounded-3xl border border-white/[0.07] bg-white/2.5 p-6">
                       <div>
-                        <p className="text-xs font-black uppercase tracking-wider text-white/25">
+                        <p className="text-xs font-black uppercase tracking-wider text-white/45">
                           Correct number
                         </p>
 
@@ -987,7 +947,7 @@ export default function NumberMemoryPage() {
                       </div>
 
                       <div className="mt-5 border-t border-white/6 pt-5">
-                        <p className="text-xs font-black uppercase tracking-wider text-white/25">
+                        <p className="text-xs font-black uppercase tracking-wider text-white/45">
                           Your answer
                         </p>
 
@@ -1045,7 +1005,7 @@ export default function NumberMemoryPage() {
                       Bonus
                     </p>
 
-                    <p className="mt-1 text-xs text-white/40">
+                    <p className="mt-1 text-xs text-white/60">
                       +10 score · +50 XP
                     </p>
                   </div>
@@ -1053,7 +1013,7 @@ export default function NumberMemoryPage() {
 
                 <div className="mx-auto mt-4 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
                   <div className="rounded-3xl border border-white/[0.07] bg-white/2.5 p-5">
-                    <p className="text-[9px] font-black uppercase tracking-wider text-white/25">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-white/45">
                       Score
                     </p>
 
@@ -1063,7 +1023,7 @@ export default function NumberMemoryPage() {
                   </div>
 
                   <div className="rounded-3xl border border-white/[0.07] bg-white/2.5 p-5">
-                    <p className="text-[9px] font-black uppercase tracking-wider text-white/25">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-white/45">
                       Correct
                     </p>
 
@@ -1074,7 +1034,7 @@ export default function NumberMemoryPage() {
                   </div>
 
                   <div className="rounded-3xl border border-white/[0.07] bg-white/2.5 p-5">
-                    <p className="text-[9px] font-black uppercase tracking-wider text-white/25">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-white/45">
                       Best Streak
                     </p>
 
@@ -1084,7 +1044,7 @@ export default function NumberMemoryPage() {
                   </div>
 
                   <div className="rounded-3xl border border-emerald-300/10 bg-emerald-300/4 p-5">
-                    <p className="text-[9px] font-black uppercase tracking-wider text-white/25">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-white/45">
                       XP Earned
                     </p>
 
@@ -1097,7 +1057,7 @@ export default function NumberMemoryPage() {
                 <div className="mx-auto mt-4 max-w-2xl rounded-3xl border border-white/[0.07] bg-white/2.5 p-5 text-left">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs font-black uppercase tracking-wider text-white/25">
+                      <p className="text-xs font-black uppercase tracking-wider text-white/45">
                         Memory Record
                       </p>
 
@@ -1142,60 +1102,7 @@ export default function NumberMemoryPage() {
             )}
           </div>
         </section>
-
-        {/* Tips */}
-
-        <section className="mt-4 grid gap-3 sm:grid-cols-3">
-          <div className="rounded-3xl border border-white/[0.07] bg-white/2.5 p-5">
-            <div className="text-xl">
-              🧩
-            </div>
-
-            <h3 className="mt-3 text-sm font-black">
-              Chunk it
-            </h3>
-
-            <p className="mt-1 text-xs leading-5 text-white/30">
-              Group digits together instead of
-              remembering them one by one.
-            </p>
-          </div>
-
-          <div className="rounded-3xl border border-white/[0.07] bg-white/2.5 p-5">
-            <div className="text-xl">
-              👀
-            </div>
-
-            <h3 className="mt-3 text-sm font-black">
-              Stay focused
-            </h3>
-
-            <p className="mt-1 text-xs leading-5 text-white/30">
-              Avoid distractions while the
-              number is visible.
-            </p>
-          </div>
-
-          <div className="rounded-3xl border border-white/[0.07] bg-white/2.5 p-5">
-            <div className="text-xl">
-              🔥
-            </div>
-
-            <h3 className="mt-3 text-sm font-black">
-              Build a streak
-            </h3>
-
-            <p className="mt-1 text-xs leading-5 text-white/30">
-              Consecutive correct answers show
-              how far your memory can go.
-            </p>
-          </div>
-        </section>
-
-        <footer className="mindplay-footer hidden mt-5 pb-4 text-center text-xs text-white/20">
-          MindPlay · Train your brain. Have fun.
-        </footer>
       </div>
-    </main>
+    </GameShell>
   );
 }

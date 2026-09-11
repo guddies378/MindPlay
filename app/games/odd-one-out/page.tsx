@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import GameShell from "@/components/GameShell";
 import { useEffect, useState } from "react";
 
 import {
@@ -12,8 +12,6 @@ import {
 import { recordGame } from "@/lib/progress";
 import { unlockGameAchievement } from "@/lib/achievements";
 
-import PlayerFooterText from "@/components/PlayerFooterText";
-import PlayerBrand from "@/components/PlayerBrand";
 
 type Difficulty = "easy" | "normal" | "hard";
 
@@ -333,77 +331,23 @@ export default function OddOneOutPage() {
     timeLeft <= 5 && started;
 
   return (
-    <main className="min-h-[100dvh] overflow-hidden bg-transparent text-white">
-      {/* Background */}
-
-      <div className="mp-ambient-background pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute left-[-12%] top-[-12%] h-96 w-96 rounded-full bg-cyan-400/10 blur-3xl" />
-
-        <div className="absolute right-[-12%] top-[25%] h-80 w-80 rounded-full bg-purple-500/[0.07] blur-3xl" />
-
-        <div className="absolute bottom-[-15%] left-[35%] h-96 w-96 rounded-full bg-fuchsia-500/[0.07] blur-3xl" />
-      </div>
-
-      {/* Navbar */}
-
-      <nav className="relative z-10 mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-8">
-        <Link
-          href="/"
-          className="group flex items-center gap-2 text-lg font-black tracking-tight"
-        >
-          <PlayerBrand />
-        </Link>
-
-        <Link
-          href="/games"
-          className="mp-button border border-white/10 bg-white/4 px-4 py-2 text-sm text-white/70 hover:bg-white/8 hover:text-white"
-        >
-          ← Games
-        </Link>
-      </nav>
-
-      {/* Main */}
-
-      <section className="relative z-10 mx-auto max-w-4xl px-5 pb-20 pt-8 sm:px-8">
-        {/* Header */}
-
-        <div className="mp-fade-up text-center">
-          <div className="mp-float mb-4 inline-flex h-16 w-16 items-center justify-center rounded-3xl border border-white/10 bg-white/5 text-4xl shadow-2xl">
-            👀
-          </div>
-
-          <p className="text-xs font-black uppercase tracking-[0.3em] text-cyan-300/60">
-            Visual Challenge
-          </p>
-
-          <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
-            Odd{" "}
-            <span className="mp-gradient-text">
-              One Out
-            </span>
-          </h1>
-
-          <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-white/45 sm:text-base">
-            Spot the item that doesn&apos;t belong.
-            Trust your eyes and react fast.
-          </p>
-
-          {isDailyChallenge && (
-            <div className="mx-auto mt-4 inline-flex items-center gap-2 rounded-full border border-fuchsia-300/15 bg-fuchsia-300/5 px-4 py-2 text-xs font-bold text-fuchsia-200/70">
-              🌟 Today&apos;s Daily Challenge
-            </div>
-          )}
-        </div>
-
+    <GameShell
+      icon="👀"
+      category="FOCUS"
+      title="Odd"
+      highlightedTitle="One Out"
+      description="Spot the item that does not belong. Trust your eyes and react fast."
+      maxWidth="lg"
+    >
         {/* Difficulty */}
 
         <div className="mx-auto mt-4 max-w-2xl">
           <div className="mb-3 flex items-center justify-between">
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-white/30">
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-white/50">
               Difficulty
             </p>
 
-            <p className="text-xs text-white/30">
+            <p className="text-xs text-white/50">
               Base XP{" "}
               <span className="font-bold text-cyan-300">
                 +{DIFFICULTIES[difficulty].xp}
@@ -462,7 +406,7 @@ export default function OddOneOutPage() {
                     }
                   </p>
 
-                  <p className="mt-1 text-xs text-white/30">
+                  <p className="mt-1 text-xs text-white/50">
                     {
                       DIFFICULTIES[
                         level
@@ -485,7 +429,7 @@ export default function OddOneOutPage() {
 
         <div className="mx-auto mt-5 grid max-w-2xl grid-cols-3 gap-2 sm:gap-3">
           <div className="mp-card rounded-2xl p-3 text-center sm:p-4">
-            <p className="text-[10px] font-black uppercase tracking-widest text-white/30 sm:text-xs">
+            <p className="text-[10px] font-black uppercase tracking-widest text-white/50 sm:text-xs">
               Score
             </p>
 
@@ -495,7 +439,7 @@ export default function OddOneOutPage() {
           </div>
 
           <div className="mp-card rounded-2xl p-3 text-center sm:p-4">
-            <p className="text-[10px] font-black uppercase tracking-widest text-white/30 sm:text-xs">
+            <p className="text-[10px] font-black uppercase tracking-widest text-white/50 sm:text-xs">
               Found
             </p>
 
@@ -505,7 +449,7 @@ export default function OddOneOutPage() {
           </div>
 
           <div className="mp-card rounded-2xl p-3 text-center sm:p-4">
-            <p className="text-[10px] font-black uppercase tracking-widest text-white/30 sm:text-xs">
+            <p className="text-[10px] font-black uppercase tracking-widest text-white/50 sm:text-xs">
               Time
             </p>
 
@@ -572,18 +516,18 @@ export default function OddOneOutPage() {
                 Can you spot it?
               </h2>
 
-              <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-white/40">
+              <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-white/60">
                 Find the one item that is
                 different before the timer runs
                 out.
               </p>
 
               <div className="mt-4 flex items-center justify-center gap-2">
-                <div className="rounded-xl border border-white/[0.07] bg-white/[0.035] px-3 py-2 text-xs font-bold text-white/40">
+                <div className="rounded-xl border border-white/[0.07] bg-white/[0.035] px-3 py-2 text-xs font-bold text-white/60">
                   {DIFFICULTIES[difficulty].time}s timer
                 </div>
 
-                <div className="rounded-xl border border-white/[0.07] bg-white/[0.035] px-3 py-2 text-xs font-bold text-white/40">
+                <div className="rounded-xl border border-white/[0.07] bg-white/[0.035] px-3 py-2 text-xs font-bold text-white/60">
                   +{DIFFICULTIES[difficulty].xp} base XP
                 </div>
               </div>
@@ -615,7 +559,7 @@ export default function OddOneOutPage() {
             <div className="text-center">
               <div className="mb-4 flex items-center justify-between">
                 <div className="text-left">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/25">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/45">
                     Visual Scan
                   </p>
 
@@ -624,7 +568,7 @@ export default function OddOneOutPage() {
                   </p>
                 </div>
 
-                <div className="rounded-full border border-white/10 bg-white/4 px-3 py-1.5 text-xs font-bold text-white/40">
+                <div className="rounded-full border border-white/10 bg-white/4 px-3 py-1.5 text-xs font-bold text-white/60">
                   +10 / −5
                 </div>
               </div>
@@ -733,7 +677,7 @@ export default function OddOneOutPage() {
                 )}
               </div>
 
-              <p className="mt-3 text-[11px] text-white/25">
+              <p className="mt-3 text-[11px] text-white/45">
                 Find the one that doesn&apos;t
                 belong.
               </p>
@@ -756,7 +700,7 @@ export default function OddOneOutPage() {
                 Time&apos;s up!
               </h2>
 
-              <p className="mt-2 text-sm text-white/40">
+              <p className="mt-2 text-sm text-white/60">
                 Your visual reflexes scored{" "}
                 <span className="font-black text-white">
                   {score}
@@ -768,7 +712,7 @@ export default function OddOneOutPage() {
 
               <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-3">
                 <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-white/25">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-white/45">
                     Score
                   </p>
 
@@ -778,7 +722,7 @@ export default function OddOneOutPage() {
                 </div>
 
                 <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-white/25">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-white/45">
                     Found
                   </p>
 
@@ -788,7 +732,7 @@ export default function OddOneOutPage() {
                 </div>
 
                 <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-white/25">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-white/45">
                     Missed
                   </p>
 
@@ -809,7 +753,7 @@ export default function OddOneOutPage() {
                   +{xpEarned ?? 0} XP
                 </p>
 
-                <p className="mt-1 text-xs text-white/30">
+                <p className="mt-1 text-xs text-white/50">
                   Added to your MindPlay
                   progress
                 </p>
@@ -850,7 +794,7 @@ export default function OddOneOutPage() {
                 Spotting tip
               </p>
 
-              <p className="mt-1 text-sm leading-6 text-white/35">
+              <p className="mt-1 text-sm leading-6 text-white/55">
                 Don&apos;t stare at each item for too
                 long. Scan the whole group first,
                 then look for the small detail
@@ -859,17 +803,7 @@ export default function OddOneOutPage() {
             </div>
           </div>
         </div>
-      </section>
 
-      {/* Footer */}
-
-      <footer className="mindplay-footer hidden relative z-10 border-t border-white/5 py-8 text-center">
-        <PlayerFooterText>
-          🧠 MindPlay{" "}
-          <span className="mx-2">•</span>{" "}
-          Play. Think. Have fun.
-        </PlayerFooterText>
-      </footer>
-    </main>
+    </GameShell>
   );
 }

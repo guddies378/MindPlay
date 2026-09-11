@@ -5,13 +5,12 @@ import {
   useEffect,
   useState,
 } from "react";
+import { usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { savePlayerName } from "@/lib/player";
 import {
   syncLocalProgressToSupabase,
 } from "@/lib/progress";
-
-type AuthMode = "login" | "signup";
+import LandingPage from "@/components/LandingPage";
 
 const NEW_ACCOUNT_KEY =
   "mindplay-new-account";
@@ -19,11 +18,50 @@ const NEW_ACCOUNT_KEY =
 const REMEMBER_ME_KEY =
   "mindplay-remember-me";
 
+type AuthMode = "login" | "signup";
+
+function getInitialRememberMe() {
+  if (
+    typeof window ===
+    "undefined"
+  ) {
+    return true;
+  }
+
+  const saved =
+    localStorage.getItem(
+      REMEMBER_ME_KEY
+    );
+
+  if (saved === null) {
+    return true;
+  }
+
+  return saved === "true";
+}
+
+function getInitialNewAccount() {
+  if (
+    typeof window ===
+    "undefined"
+  ) {
+    return false;
+  }
+
+  return (
+    localStorage.getItem(
+      NEW_ACCOUNT_KEY
+    ) === "true"
+  );
+}
+
 export default function PlayerNameGate({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
+  const pathname = usePathname();
+
   /*
    * =========================================================
    * SESSION / PROFILE STATE
@@ -42,21 +80,26 @@ export default function PlayerNameGate({
   const [profileExists, setProfileExists] =
     useState(false);
 
-  /*
-   * Only true when the user recently created
-   * a new MindPlay account.
-   */
   const [isNewAccount, setIsNewAccount] =
-    useState(false);
+    useState(getInitialNewAccount);
 
   /*
    * =========================================================
-   * AUTH FORM
+   * LANDING / AUTH STATE
    * =========================================================
    */
+
+  const [showAuthOnLanding, setShowAuthOnLanding] =
+    useState(false);
 
   const [authMode, setAuthMode] =
     useState<AuthMode>("login");
+
+  /*
+   * =========================================================
+   * AUTH FORM STATE
+   * =========================================================
+   */
 
   const [email, setEmail] =
     useState("");
@@ -67,31 +110,8 @@ export default function PlayerNameGate({
   const [confirmPassword, setConfirmPassword] =
     useState("");
 
-  /*
-   * Lazy initialization avoids the
-   * react-hooks/set-state-in-effect lint error.
-   */
   const [rememberMe, setRememberMe] =
-    useState(() => {
-      if (
-        typeof window === "undefined"
-      ) {
-        return true;
-      }
-
-      const savedRememberMe =
-        localStorage.getItem(
-          REMEMBER_ME_KEY,
-        );
-
-      if (
-        savedRememberMe === null
-      ) {
-        return true;
-      }
-
-      return savedRememberMe === "true";
-    });
+    useState(getInitialRememberMe);
 
   const [authError, setAuthError] =
     useState("");
@@ -101,23 +121,23 @@ export default function PlayerNameGate({
 
   /*
    * =========================================================
-   * SIGNUP MODALS
+   * EMAIL / SIGNUP NOTICES
    * =========================================================
    */
-
-  const [showSignupNotice, setShowSignupNotice] =
-    useState(false);
 
   const [showEmailToast, setShowEmailToast] =
     useState(false);
 
+  const [showSignupNotice, setShowSignupNotice] =
+    useState(false);
+
   /*
    * =========================================================
-   * MINDPLAY NAME
+   * MINDPLAY NAME STATE
    * =========================================================
    */
 
-  const [nameInput, setNameInput] =
+  const [mindPlayName, setMindPlayName] =
     useState("");
 
   const [nameError, setNameError] =
@@ -128,158 +148,101 @@ export default function PlayerNameGate({
 
   /*
    * =========================================================
-   * SESSION + PROFILE INITIALIZATION
+   * CHECK CURRENT SESSION
    * =========================================================
    */
 
   useEffect(() => {
     let mounted = true;
 
-    async function loadProfile(
-      userId: string,
-    ) {
-      const {
-        data: profile,
-        error,
-      } = await supabase
-        .from("profiles")
-        .select("mindplay_name")
-        .eq("id", userId)
-        .maybeSingle();
-
-      if (!mounted) {
-        return;
-      }
-
-      if (error) {
-        console.error(
-          "Failed to load MindPlay profile:",
-          error.message,
-        );
-
-        setProfileExists(false);
-        setProfileChecked(true);
-
-        return;
-      }
-
-      /*
-       * =====================================================
-       * EXISTING PROFILE
-       * =====================================================
-       */
-
-      if (profile) {
-        setProfileExists(true);
-        setProfileChecked(true);
-
-        savePlayerName(
-          profile.mindplay_name,
-        );
-
-        await syncLocalProgressToSupabase();
+    const checkSession =
+      async () => {
+        const {
+          data: {
+            session,
+          },
+        } =
+          await supabase.auth.getSession();
 
         if (!mounted) {
           return;
         }
 
-        /*
-         * This account already has its permanent
-         * MindPlay name.
-         */
-        setIsNewAccount(false);
+        setHasSession(
+          !!session
+        );
 
-        if (
-          typeof window !== "undefined"
-        ) {
-          localStorage.removeItem(
-            NEW_ACCOUNT_KEY,
+        /*
+         * No session.
+         */
+        if (!session) {
+          setProfileChecked(
+            false
+          );
+
+          setProfileExists(
+            false
+          );
+
+          setSessionReady(
+            true
+          );
+
+          return;
+        }
+
+        /*
+         * Check whether this account
+         * already has a MindPlay profile.
+         */
+        const {
+          data: profile,
+          error,
+        } =
+          await supabase
+            .from("profiles")
+            .select(
+              "mindplay_name"
+            )
+            .eq(
+              "id",
+              session.user.id
+            )
+            .maybeSingle();
+
+        if (!mounted) {
+          return;
+        }
+
+        if (error) {
+          console.error(
+            "Profile check failed:",
+            error
+          );
+
+          setProfileChecked(
+            true
+          );
+
+          setProfileExists(
+            false
+          );
+        } else {
+          setProfileExists(
+            !!profile?.mindplay_name
+          );
+
+          setProfileChecked(
+            true
           );
         }
 
-        return;
-      }
+        setSessionReady(
+          true
+        );
+      };
 
-      /*
-       * =====================================================
-       * NO PROFILE
-       * =====================================================
-       *
-       * Only show the name setup for an account that
-       * was actually created through the signup flow.
-       */
-
-      const newAccount =
-        typeof window !== "undefined" &&
-        localStorage.getItem(
-          NEW_ACCOUNT_KEY,
-        ) === "true";
-
-      setIsNewAccount(
-        newAccount,
-      );
-
-      setProfileExists(false);
-      setProfileChecked(true);
-    }
-
-    async function loadSession() {
-      const {
-        data,
-      } =
-        await supabase.auth.getSession();
-
-      if (!mounted) {
-        return;
-      }
-
-      const session =
-        data.session;
-
-      /*
-       * =====================================================
-       * NO SESSION
-       * =====================================================
-       */
-
-      if (!session) {
-        setHasSession(false);
-        setProfileExists(false);
-        setProfileChecked(true);
-        setIsNewAccount(false);
-        setSessionReady(true);
-
-        return;
-      }
-
-      /*
-       * =====================================================
-       * SESSION EXISTS
-       * =====================================================
-       *
-       * This includes a session restored because
-       * Remember Me was checked.
-       *
-       * Therefore:
-       *
-       * NO LOGIN SCREEN.
-       */
-
-      setHasSession(true);
-      setProfileChecked(false);
-
-      await loadProfile(
-        session.user.id,
-      );
-
-      if (!mounted) {
-        return;
-      }
-
-      setSessionReady(true);
-    }
-
-    void loadSession();
+    checkSession();
 
     /*
      * =======================================================
@@ -293,47 +256,113 @@ export default function PlayerNameGate({
       },
     } =
       supabase.auth.onAuthStateChange(
-        (_event, session) => {
+        async (
+          _event,
+          session
+        ) => {
           if (!mounted) {
             return;
           }
 
+          setHasSession(
+            !!session
+          );
+
           /*
-           * User logged out.
+           * No session.
            */
           if (!session) {
-            setHasSession(false);
-            setProfileExists(false);
-            setProfileChecked(true);
-            setIsNewAccount(false);
+            setProfileChecked(
+              false
+            );
+
+            setProfileExists(
+              false
+            );
+
+            setIsNewAccount(
+              false
+            );
+
+            /*
+             * If the user logged out,
+             * return to the landing page
+             * instead of reopening auth.
+             */
+            setShowAuthOnLanding(
+              false
+            );
+
+            setSessionReady(
+              true
+            );
 
             return;
           }
 
           /*
-           * User logged in or an authentication
-           * session was restored.
+           * Check profile after login.
            */
-          setHasSession(true);
-          setProfileChecked(false);
+          const {
+            data: profile,
+            error,
+          } =
+            await supabase
+              .from("profiles")
+              .select(
+                "mindplay_name"
+              )
+              .eq(
+                "id",
+                session.user.id
+              )
+              .maybeSingle();
+
+          if (!mounted) {
+            return;
+          }
+
+          if (error) {
+            console.error(
+              "Profile check failed:",
+              error
+            );
+
+            setProfileExists(
+              false
+            );
+          } else {
+            setProfileExists(
+              !!profile?.mindplay_name
+            );
+          }
+
+          setProfileChecked(
+            true
+          );
 
           /*
-           * Run the profile query outside the
-           * auth callback.
+           * Check whether this is a
+           * new account.
+           *
+           * This is intentionally done here
+           * instead of another effect.
            */
-          window.setTimeout(
-            () => {
-              if (!mounted) {
-                return;
-              }
+          if (
+            typeof window !==
+            "undefined"
+          ) {
+            setIsNewAccount(
+              localStorage.getItem(
+                NEW_ACCOUNT_KEY
+              ) === "true"
+            );
+          }
 
-              void loadProfile(
-                session.user.id,
-              );
-            },
-            0,
+          setSessionReady(
+            true
           );
-        },
+        }
       );
 
     return () => {
@@ -344,469 +373,410 @@ export default function PlayerNameGate({
 
   /*
    * =========================================================
-   * PASSWORD VALIDATION
+   * OPEN LOGIN
    * =========================================================
    */
 
-  const hasValidPassword =
-    password.length >= 8;
-
-  const hasLowercase =
-    /[a-z]/.test(password);
-
-  const hasUppercase =
-    /[A-Z]/.test(password);
-
-  const hasNumber =
-    /[0-9]/.test(password);
-
-  const hasSymbol =
-    /[!@#$%^&*()[\]{}\-_=+,.?/:;"'`~\\|<>]/.test(
-      password,
-    );
-
-  const passwordsMatch =
-    password.length > 0 &&
-    password === confirmPassword;
-
-  const isPasswordValid =
-    hasValidPassword &&
-    hasLowercase &&
-    hasUppercase &&
-    hasNumber &&
-    hasSymbol &&
-    passwordsMatch;
+  function openLogin() {
+    setAuthMode("login");
+    setAuthError("");
+    setShowEmailToast(false);
+    setShowSignupNotice(false);
+    setPassword("");
+    setConfirmPassword("");
+    setShowAuthOnLanding(true);
+  }
 
   /*
    * =========================================================
-   * AUTH SUBMIT
+   * OPEN SIGNUP
    * =========================================================
    */
 
-  const handleAuthSubmit = (
-    event: FormEvent<HTMLFormElement>,
-  ) => {
+  function openSignup() {
+    setAuthMode("signup");
+    setAuthError("");
+    setShowEmailToast(false);
+    setShowSignupNotice(false);
+    setPassword("");
+    setConfirmPassword("");
+    setShowAuthOnLanding(true);
+  }
+
+  /*
+   * =========================================================
+   * BACK TO LANDING
+   * =========================================================
+   */
+
+  function backToLanding() {
+    setShowAuthOnLanding(false);
+    setAuthError("");
+    setShowEmailToast(false);
+    setShowSignupNotice(false);
+    setPassword("");
+    setConfirmPassword("");
+  }
+
+  /*
+   * =========================================================
+   * HANDLE AUTH SUBMIT
+   * =========================================================
+   */
+
+  async function handleAuthSubmit(
+    event: FormEvent<HTMLFormElement>
+  ) {
     event.preventDefault();
 
     setAuthError("");
+    setShowSignupNotice(false);
+    setIsSubmitting(true);
 
-    if (
-      authMode === "signup"
-    ) {
-      if (!isPasswordValid) {
+    try {
+      /*
+       * =====================================================
+       * LOGIN
+       * =====================================================
+       */
+
+      if (
+        authMode ===
+        "login"
+      ) {
+        const {
+          error,
+        } =
+          await supabase.auth.signInWithPassword(
+            {
+              email:
+                email.trim(),
+              password,
+            }
+          );
+
+        if (error) {
+          throw error;
+        }
+
+        /*
+         * Save Remember Me preference.
+         */
+        if (
+          typeof window !==
+          "undefined"
+        ) {
+          localStorage.setItem(
+            REMEMBER_ME_KEY,
+            String(
+              rememberMe
+            )
+          );
+        }
+
+        /*
+         * Login succeeded.
+         */
+        setShowAuthOnLanding(
+          false
+        );
+
+        setPassword("");
+        setConfirmPassword("");
+
+        return;
+      }
+
+      /*
+       * =====================================================
+       * SIGNUP
+       * =====================================================
+       */
+
+      if (
+        password.length <
+        6
+      ) {
         setAuthError(
-          "Please meet all password requirements.",
+          "Password must be at least 6 characters."
         );
 
         return;
       }
 
-      setShowSignupNotice(true);
-
-      return;
-    }
-
-    void login();
-  };
-
-  /*
-   * =========================================================
-   * LOGIN
-   * =========================================================
-   */
-
-  async function login() {
-    setIsSubmitting(true);
-    setAuthError("");
-
-    const cleanEmail =
-      email.trim();
-
-    /*
-     * Save Remember Me before authentication.
-     *
-     * lib/supabase.ts uses this value to determine
-     * whether Supabase stores its session in:
-     *
-     * localStorage
-     *
-     * or
-     *
-     * sessionStorage
-     */
-    if (
-      typeof window !== "undefined"
-    ) {
-      localStorage.setItem(
-        REMEMBER_ME_KEY,
-        rememberMe
-          ? "true"
-          : "false",
-      );
-    }
-
-    const {
-      data,
-      error,
-    } =
-      await supabase.auth.signInWithPassword(
-        {
-          email: cleanEmail,
-          password,
-        },
-      );
-
-    /*
-     * Login failed.
-     */
-    if (error) {
-      setIsSubmitting(false);
-      setAuthError(
-        error.message,
-      );
-
-      return;
-    }
-
-    if (!data.user) {
-      setIsSubmitting(false);
-      setAuthError(
-        "Login failed. Please try again.",
-      );
-
-      return;
-    }
-
-    /*
-     * =======================================================
-     * LOGIN SUCCESS
-     * =======================================================
-     */
-
-    setHasSession(true);
-    setProfileChecked(false);
-
-    setPassword("");
-    setConfirmPassword("");
-
-    /*
-     * Check the user's profile.
-     */
-    const {
-      data: profile,
-      error: profileError,
-    } =
-      await supabase
-        .from("profiles")
-        .select("mindplay_name")
-        .eq("id", data.user.id)
-        .maybeSingle();
-
-    if (profileError) {
-      console.error(
-        "Failed to load MindPlay profile:",
-        profileError.message,
-      );
-
-      /*
-       * Do not assume this is a new account
-       * if the database request failed.
-       */
-      setProfileExists(false);
-      setProfileChecked(true);
-      setIsNewAccount(false);
-      setIsSubmitting(false);
-
-      return;
-    }
-
-    /*
-     * =======================================================
-     * EXISTING USER
-     * =======================================================
-     */
-
-    if (profile) {
-      setProfileExists(true);
-      setProfileChecked(true);
-
-      savePlayerName(
-        profile.mindplay_name,
-      );
-
-      await syncLocalProgressToSupabase();
-
-      /*
-       * Existing user does not need name setup.
-       */
-      setIsNewAccount(false);
-
       if (
-        typeof window !== "undefined"
+        password !==
+        confirmPassword
       ) {
-        localStorage.removeItem(
+        setAuthError(
+          "Passwords do not match."
+        );
+
+        return;
+      }
+
+      const {
+        data,
+        error,
+      } =
+        await supabase.auth.signUp(
+          {
+            email:
+              email.trim(),
+            password,
+          }
+        );
+
+      if (error) {
+        throw error;
+      }
+
+      /*
+       * Mark this as a new account.
+       */
+      if (
+        typeof window !==
+        "undefined"
+      ) {
+        localStorage.setItem(
           NEW_ACCOUNT_KEY,
+          "true"
+        );
+
+        localStorage.setItem(
+          REMEMBER_ME_KEY,
+          String(
+            rememberMe
+          )
         );
       }
 
-      setIsSubmitting(false);
+      /*
+       * Supabase may automatically
+       * return a session depending on
+       * email confirmation settings.
+       *
+       * Sign out so the user must
+       * verify their email first.
+       */
+      if (data.session) {
+        await supabase.auth.signOut();
+      }
 
-      return;
-    }
+      /*
+       * Return to landing page.
+       */
+      setShowAuthOnLanding(
+        false
+      );
 
-    /*
-     * =======================================================
-     * NEW USER WITHOUT PROFILE
-     * =======================================================
-     */
+      setShowEmailToast(
+        true
+      );
 
-    const newAccount =
-      typeof window !== "undefined" &&
-      localStorage.getItem(
-        NEW_ACCOUNT_KEY,
-      ) === "true";
+      setShowSignupNotice(
+        false
+      );
 
-    setProfileExists(false);
-    setProfileChecked(true);
-    setIsNewAccount(
-      newAccount,
-    );
-
-    setIsSubmitting(false);
-  }
-
-  /*
-   * =========================================================
-   * SIGNUP
-   * =========================================================
-   */
-
-  async function signup() {
-    setIsSubmitting(true);
-    setAuthError("");
-
-    const cleanEmail =
-      email.trim();
-
-    const {
-      data,
-      error,
-    } =
-      await supabase.auth.signUp({
-        email: cleanEmail,
-        password,
-      });
-
-    if (error) {
-      setIsSubmitting(false);
+      setPassword("");
+      setConfirmPassword("");
+    } catch (error) {
+      console.error(
+        "Authentication failed:",
+        error
+      );
 
       if (
-        error.message
-          .toLowerCase()
-          .includes(
-            "already registered",
-          )
+        error instanceof Error
       ) {
         setAuthError(
-          "This email is already registered. Please log in instead.",
+          error.message
         );
       } else {
         setAuthError(
-          error.message,
+          "Something went wrong. Please try again."
         );
       }
-
-      setShowSignupNotice(false);
-
-      return;
-    }
-
-    /*
-     * Mark this account as newly created.
-     *
-     * This marker is used later after login to
-     * show CREATE YOUR MINDPLAY NAME.
-     */
-    if (
-      typeof window !== "undefined"
-    ) {
-      localStorage.setItem(
-        NEW_ACCOUNT_KEY,
-        "true",
+    } finally {
+      setIsSubmitting(
+        false
       );
     }
-
-    /*
-     * Some Supabase configurations automatically
-     * create a session after signup.
-     *
-     * We don't want to skip the email confirmation
-     * + login flow, so sign the user out.
-     */
-    if (data.session) {
-      await supabase.auth.signOut();
-    }
-
-    setHasSession(false);
-    setProfileChecked(true);
-    setProfileExists(false);
-    setIsNewAccount(true);
-
-    setIsSubmitting(false);
-
-    setShowSignupNotice(false);
-
-    setAuthMode("login");
-
-    setPassword("");
-    setConfirmPassword("");
-
-    /*
-     * Show:
-     *
-     * CHECK YOUR EMAIL
-     */
-    setShowEmailToast(true);
   }
 
   /*
    * =========================================================
-   * CREATE MINDPLAY NAME
+   * SAVE MINDPLAY NAME
    * =========================================================
    */
 
-  async function handleNameSubmit(
-    event: FormEvent<HTMLFormElement>,
+  async function handleSaveName(
+    event: FormEvent<HTMLFormElement>
   ) {
     event.preventDefault();
 
-    const name =
-      nameInput.trim();
+    const trimmedName =
+      mindPlayName.trim();
 
-    /*
-     * Validate name length.
-     */
-    if (name.length < 2) {
-      setNameError(
-        "Please enter at least 2 characters.",
-      );
-
-      return;
-    }
-
-    if (name.length > 20) {
-      setNameError(
-        "Please keep your name under 20 characters.",
-      );
-
-      return;
-    }
-
-    setIsSavingName(true);
     setNameError("");
 
-    /*
-     * Confirm authenticated user.
-     */
-    const {
-      data: {
-        user,
-      },
-    } =
-      await supabase.auth.getUser();
-
-    if (!user) {
+    if (!trimmedName) {
       setNameError(
-        "Your session has expired. Please log in again.",
+        "Please enter a MindPlay name."
       );
-
-      setIsSavingName(false);
-
-      setHasSession(false);
-      setProfileChecked(true);
-      setProfileExists(false);
-      setIsNewAccount(false);
 
       return;
     }
 
-    /*
-     * =======================================================
-     * CREATE PERMANENT PROFILE
-     * =======================================================
-     */
+    if (
+      trimmedName.length <
+      3
+    ) {
+      setNameError(
+        "MindPlay name must be at least 3 characters."
+      );
 
-    const {
-      error,
-    } =
-      await supabase
-        .from("profiles")
-        .insert({
-          id: user.id,
-          mindplay_name: name,
-        });
+      return;
+    }
 
-    if (error) {
+    if (
+      trimmedName.length >
+      20
+    ) {
+      setNameError(
+        "MindPlay name must be 20 characters or less."
+      );
+
+      return;
+    }
+
+    setIsSavingName(
+      true
+    );
+
+    try {
+      const {
+        data: {
+          user,
+        },
+        error: userError,
+      } =
+        await supabase.auth.getUser();
+
       if (
-        error.code === "23505"
+        userError ||
+        !user
       ) {
-        setNameError(
-          "Your MindPlay profile already exists.",
-        );
-      } else {
-        setNameError(
-          error.message,
+        throw new Error(
+          "Your session has expired. Please log in again."
         );
       }
 
-      setIsSavingName(false);
+      /*
+       * Save the name to Supabase.
+       */
+      const {
+        error,
+      } =
+        await supabase
+          .from("profiles")
+          .upsert(
+            {
+              id: user.id,
+              mindplay_name:
+                trimmedName,
+            },
+            {
+              onConflict:
+                "id",
+            }
+          );
 
-      return;
-    }
+      if (error) {
+        throw error;
+      }
 
-    /*
-     * Save name locally.
-     */
-    savePlayerName(name);
+      /*
+       * Save the name locally.
+       *
+       * savePlayerName() is intentionally
+       * not used because your progress.ts
+       * does not export that function.
+       */
+      if (
+        typeof window !==
+        "undefined"
+      ) {
+        localStorage.setItem(
+          "mindplay-active-user-id",
+          user.id
+        );
 
-    /*
-     * Sync any existing local progress.
-     */
-    await syncLocalProgressToSupabase();
+        localStorage.setItem(
+          "mindplay-player-name",
+          trimmedName
+        );
+      }
 
-    /*
-     * =======================================================
-     * PROFILE COMPLETE
-     * =======================================================
-     */
+      /*
+       * Sync local progress
+       * to this Supabase account.
+       */
+      await syncLocalProgressToSupabase();
 
-    setProfileExists(true);
-    setProfileChecked(true);
-    setIsNewAccount(false);
+      /*
+       * Account setup is complete.
+       */
+      if (
+        typeof window !==
+        "undefined"
+      ) {
+        localStorage.removeItem(
+          NEW_ACCOUNT_KEY
+        );
+      }
 
-    /*
-     * Delete temporary signup marker.
-     */
-    if (
-      typeof window !== "undefined"
-    ) {
-      localStorage.removeItem(
-        NEW_ACCOUNT_KEY,
+      setProfileExists(
+        true
+      );
+
+      setIsNewAccount(
+        false
+      );
+    } catch (error) {
+      console.error(
+        "Failed to save MindPlay name:",
+        error
+      );
+
+      if (
+        error instanceof Error
+      ) {
+        setNameError(
+          error.message
+        );
+      } else {
+        setNameError(
+          "Something went wrong. Please try again."
+        );
+      }
+    } finally {
+      setIsSavingName(
+        false
       );
     }
-
-    setNameInput("");
-    setIsSavingName(false);
   }
 
   /*
    * =========================================================
-   * WAIT FOR INITIAL SESSION CHECK
+   * CLOSE EMAIL TOAST
    * =========================================================
    */
 
-  if (!sessionReady) {
-    return <>{children}</>;
+  function closeEmailToast() {
+    setShowEmailToast(
+      false
+    );
   }
 
   /*
@@ -815,71 +785,80 @@ export default function PlayerNameGate({
    * =========================================================
    */
 
-  /*
-   * No active session:
-   * show LOGIN / SIGNUP.
-   */
-  const shouldShowAuth =
-    !hasSession;
+  if (!sessionReady) {
+    return <>{children}</>;
+  }
 
-  /*
-   * New account + no profile:
-   * show CREATE YOUR MINDPLAY NAME.
-   *
-   * Returning users will NOT see this.
-   */
+  const isLandingPage =
+    pathname === "/";
+
+  const shouldShowLanding =
+    !hasSession &&
+    isLandingPage &&
+    !showAuthOnLanding;
+
+  const shouldShowAuth =
+    !hasSession &&
+    (!isLandingPage ||
+      showAuthOnLanding);
+
   const shouldShowNameSetup =
     hasSession &&
     profileChecked &&
     !profileExists &&
     isNewAccount;
 
+  /*
+   * =========================================================
+   * RENDER
+   * =========================================================
+   */
+
   return (
     <>
-      {children}
+      {shouldShowLanding ? (
+        <LandingPage
+          onLogin={openLogin}
+          onSignup={openSignup}
+        />
+      ) : (
+        children
+      )}
 
       {/* =====================================================
-          CHECK YOUR EMAIL
+          EMAIL VERIFICATION TOAST
           ===================================================== */}
 
       {showEmailToast && (
-        <div className="fixed inset-0 z-100 flex items-center justify-center bg-[#050711]/80 px-5 backdrop-blur-md">
-          <div
-            aria-labelledby="email-confirmation-title"
-            aria-modal="true"
-            className="w-full max-w-md rounded-4xl border border-cyan-300/15 bg-[#0d1222]/95 p-6 shadow-2xl shadow-cyan-950/40 sm:p-8"
-            role="dialog"
-          >
-            <div className="text-center">
-              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-cyan-300/20 bg-cyan-300/10 text-3xl shadow-lg shadow-cyan-950/20">
-                ✉️
+        <div className="fixed inset-x-0 top-5 z-100 flex justify-center px-5">
+          <div className="w-full max-w-md rounded-2xl border border-cyan-300/15 bg-[#0d1222]/95 p-5 shadow-2xl shadow-cyan-950/30 backdrop-blur-xl">
+            <div className="flex items-start gap-3">
+              <div className="text-2xl">
+                📩
               </div>
 
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-300/60">
-                Account created
-              </p>
+              <div className="min-w-0 flex-1">
+                <h2 className="text-sm font-black uppercase tracking-wider text-white">
+                  Check your email
+                </h2>
 
-              <h2
-                id="email-confirmation-title"
-                className="mt-2 text-2xl font-black tracking-tight text-white sm:text-3xl"
-              >
-                CHECK YOUR EMAIL
-              </h2>
-
-              <p className="mx-auto mt-4 max-w-sm text-sm leading-6 text-white/50">
-                We sent a confirmation link
-                to your email. Please confirm
-                your account before logging in.
-              </p>
+                <p className="mt-2 text-sm leading-6 text-white/50">
+                  We sent a verification
+                  link to your email.
+                  Verify your account,
+                  then log in to continue.
+                </p>
+              </div>
 
               <button
-                className="mp-button mt-6 w-full bg-white px-5 py-3.5 text-sm text-black shadow-lg shadow-white/5 hover:bg-cyan-50"
-                onClick={() =>
-                  setShowEmailToast(false)
-                }
                 type="button"
+                onClick={
+                  closeEmailToast
+                }
+                className="text-white/30 transition hover:text-white"
+                aria-label="Close"
               >
-                GOT IT
+                ✕
               </button>
             </div>
           </div>
@@ -887,507 +866,395 @@ export default function PlayerNameGate({
       )}
 
       {/* =====================================================
-          LOGIN / SIGNUP
+          AUTH MODAL
           ===================================================== */}
 
       {shouldShowAuth && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#050711]/80 px-5 py-6 backdrop-blur-md">
+        <div className="fixed inset-0 z-90 flex items-center justify-center bg-black/70 px-5 backdrop-blur-sm">
           <div
             aria-labelledby="auth-title"
             aria-modal="true"
             className="w-full max-w-md rounded-4xl border border-cyan-300/15 bg-[#0d1222]/95 p-6 shadow-2xl shadow-cyan-950/30 sm:p-8"
             role="dialog"
           >
+            {/* Back to landing */}
+
+            {isLandingPage &&
+              showAuthOnLanding && (
+                <button
+                  className="mb-5 text-sm font-bold text-white/40 transition hover:text-cyan-300"
+                  onClick={
+                    backToLanding
+                  }
+                  type="button"
+                >
+                  ← BACK TO LANDING
+                </button>
+              )}
+
+            {/* Header */}
+
             <div className="mb-6 text-center">
-              <div className="mb-4 text-5xl">
+              <div className="text-3xl">
                 🧠
               </div>
 
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-300/60">
-                Welcome to MindPlay
-              </p>
-
               <h1
-                className="mt-2 text-3xl font-black tracking-tight text-white"
                 id="auth-title"
+                className="mt-3 text-2xl font-black tracking-tight text-white"
               >
                 {authMode ===
                 "login"
-                  ? "WELCOME BACK"
-                  : "CREATE ACCOUNT"}
+                  ? "Welcome back"
+                  : "Create your account"}
               </h1>
 
-              <p className="mt-3 text-sm leading-6 text-white/45">
+              <p className="mt-2 text-sm text-white/40">
                 {authMode ===
                 "login"
-                  ? "Log in to continue your MindPlay journey."
-                  : "Create your one-time MindPlay account."}
+                  ? "Log in to continue playing."
+                  : "Start training your mind with MindPlay."}
               </p>
             </div>
 
+            {/* Auth form */}
+
             <form
-              className="space-y-4"
               onSubmit={
                 handleAuthSubmit
               }
+              className="space-y-4"
             >
-              {/* EMAIL */}
+              {/* Email */}
 
               <div>
                 <label
-                  className="mb-2 block text-xs font-black uppercase tracking-wider text-white/45"
                   htmlFor="auth-email"
+                  className="text-xs font-bold text-white/60"
                 >
                   Email
                 </label>
 
                 <input
-                  autoComplete="email"
-                  autoFocus
-                  className="w-full rounded-2xl border border-white/10 bg-white/6 px-4 py-3.5 text-white outline-none transition placeholder:text-white/20 focus:border-cyan-300/50 focus:ring-2 focus:ring-cyan-300/10"
                   id="auth-email"
-                  onChange={(
-                    event,
-                  ) => {
-                    setEmail(
-                      event.target.value,
-                    );
-
-                    setAuthError("");
-                  }}
-                  placeholder="you@example.com"
-                  required
                   type="email"
                   value={email}
+                  onChange={(
+                    event
+                  ) =>
+                    setEmail(
+                      event.target
+                        .value
+                    )
+                  }
+                  autoComplete="email"
+                  placeholder="you@example.com"
+                  required
+                  disabled={
+                    isSubmitting
+                  }
+                  className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none placeholder:text-white/20 focus:border-cyan-300/30 focus:bg-white/7 disabled:cursor-not-allowed disabled:opacity-50"
                 />
               </div>
 
-              {/* PASSWORD */}
+              {/* Password */}
 
               <div>
                 <label
-                  className="mb-2 block text-xs font-black uppercase tracking-wider text-white/45"
                   htmlFor="auth-password"
+                  className="text-xs font-bold text-white/60"
                 >
                   Password
                 </label>
 
                 <input
+                  id="auth-password"
+                  type="password"
+                  value={password}
+                  onChange={(
+                    event
+                  ) =>
+                    setPassword(
+                      event.target
+                        .value
+                    )
+                  }
                   autoComplete={
                     authMode ===
                     "login"
                       ? "current-password"
                       : "new-password"
                   }
-                  className="w-full rounded-2xl border border-white/10 bg-white/6 px-4 py-3.5 text-white outline-none transition placeholder:text-white/20 focus:border-cyan-300/50 focus:ring-2 focus:ring-cyan-300/10"
-                  id="auth-password"
-                  onChange={(
-                    event,
-                  ) => {
-                    setPassword(
-                      event.target.value,
-                    );
-
-                    setAuthError("");
-                  }}
-                  placeholder="Enter your password"
+                  placeholder="Your password"
                   required
-                  type="password"
-                  value={password}
+                  disabled={
+                    isSubmitting
+                  }
+                  className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none placeholder:text-white/20 focus:border-cyan-300/30 focus:bg-white/7 disabled:cursor-not-allowed disabled:opacity-50"
                 />
               </div>
 
-              {/* REMEMBER ME */}
-
-              {authMode ===
-                "login" && (
-                <label className="flex cursor-pointer items-center gap-3">
-                  <input
-                    checked={
-                      rememberMe
-                    }
-                    className="h-4 w-4 rounded border-white/20 bg-white/5 accent-cyan-300"
-                    onChange={(
-                      event,
-                    ) =>
-                      setRememberMe(
-                        event.target
-                          .checked,
-                      )
-                    }
-                    type="checkbox"
-                  />
-
-                  <span className="text-sm text-white/50">
-                    Remember me
-                  </span>
-                </label>
-              )}
-
-              {/* CONFIRM PASSWORD */}
+              {/* Confirm password */}
 
               {authMode ===
                 "signup" && (
-                <>
-                  <div>
-                    <label
-                      className="mb-2 block text-xs font-black uppercase tracking-wider text-white/45"
-                      htmlFor="confirm-password"
-                    >
-                      Confirm Password
-                    </label>
+                <div>
+                  <label
+                    htmlFor="auth-confirm-password"
+                    className="text-xs font-bold text-white/60"
+                  >
+                    Confirm password
+                  </label>
 
-                    <input
-                      autoComplete="new-password"
-                      className="w-full rounded-2xl border border-white/10 bg-white/6 px-4 py-3.5 text-white outline-none transition placeholder:text-white/20 focus:border-cyan-300/50 focus:ring-2 focus:ring-cyan-300/10"
-                      id="confirm-password"
-                      onChange={(
-                        event,
-                      ) => {
-                        setConfirmPassword(
-                          event.target
-                            .value,
-                        );
-
-                        setAuthError("");
-                      }}
-                      placeholder="Enter your password again"
-                      required
-                      type="password"
-                      value={
-                        confirmPassword
-                      }
-                    />
-                  </div>
-
-                  {/* PASSWORD REQUIREMENTS */}
-
-                  <div className="rounded-2xl border border-white/8 bg-white/4 p-4">
-                    <p className="mb-3 text-xs font-black uppercase tracking-wider text-white/45">
-                      Password requirements
-                    </p>
-
-                    <div className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
-                      <PasswordRule
-                        valid={
-                          hasValidPassword
-                        }
-                        text="At least 8 characters"
-                      />
-
-                      <PasswordRule
-                        valid={
-                          hasLowercase
-                        }
-                        text="Lowercase letter"
-                      />
-
-                      <PasswordRule
-                        valid={
-                          hasUppercase
-                        }
-                        text="Uppercase letter"
-                      />
-
-                      <PasswordRule
-                        valid={
-                          hasNumber
-                        }
-                        text="Number"
-                      />
-
-                      <PasswordRule
-                        valid={
-                          hasSymbol
-                        }
-                        text="Symbol"
-                      />
-
-                      <PasswordRule
-                        valid={
-                          passwordsMatch
-                        }
-                        text="Passwords match"
-                      />
-                    </div>
-                  </div>
-                </>
+                  <input
+                    id="auth-confirm-password"
+                    type="password"
+                    value={
+                      confirmPassword
+                    }
+                    onChange={(
+                      event
+                    ) =>
+                      setConfirmPassword(
+                        event.target
+                          .value
+                      )
+                    }
+                    autoComplete="new-password"
+                    placeholder="Repeat your password"
+                    required
+                    disabled={
+                      isSubmitting
+                    }
+                    className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none placeholder:text-white/20 focus:border-cyan-300/30 focus:bg-white/7 disabled:cursor-not-allowed disabled:opacity-50"
+                  />
+                </div>
               )}
 
-              {/* AUTH ERROR */}
+              {/* Remember Me */}
+
+              <label className="flex cursor-pointer items-center gap-3 py-1">
+                <input
+                  type="checkbox"
+                  checked={
+                    rememberMe
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    setRememberMe(
+                      event.target
+                        .checked
+                    )
+                  }
+                  disabled={
+                    isSubmitting
+                  }
+                  className="h-4 w-4 accent-cyan-300"
+                />
+
+                <span className="text-sm text-white/45">
+                  Remember me
+                </span>
+              </label>
+
+              {/* Error */}
 
               {authError && (
-                <p
-                  className="text-sm leading-5 text-rose-300"
-                  role="alert"
-                >
-                  {authError}
-                </p>
+                <div className="rounded-xl border border-red-300/10 bg-red-300/5 px-4 py-3 text-sm leading-5 text-red-200/80">
+                  {
+                    authError
+                  }
+                </div>
               )}
 
-              {/* SUBMIT BUTTON */}
+              {/* Submit */}
 
               <button
-                className="mp-button w-full bg-white px-5 py-3.5 text-sm text-black shadow-lg shadow-white/5 hover:bg-cyan-50 disabled:cursor-not-allowed disabled:opacity-40"
-                disabled={
-                  isSubmitting ||
-                  (authMode ===
-                    "signup" &&
-                    !isPasswordValid)
-                }
                 type="submit"
+                disabled={
+                  isSubmitting
+                }
+                className="mp-button w-full bg-white px-5 py-3.5 text-sm text-black hover:bg-cyan-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isSubmitting
                   ? "PLEASE WAIT..."
                   : authMode ===
                       "login"
                     ? "LOG IN"
-                    : "SIGN UP"}
+                    : "CREATE ACCOUNT"}
               </button>
             </form>
 
-            {/* SWITCH LOGIN / SIGNUP */}
+            {/* Switch auth mode */}
 
             <div className="mt-6 text-center">
-              <button
-                className="text-sm text-white/45 transition hover:text-cyan-300"
-                onClick={() => {
-                  setAuthMode(
-                    authMode ===
-                      "login"
-                      ? "signup"
-                      : "login",
-                  );
-
-                  setAuthError("");
-                }}
-                type="button"
-              >
-                {authMode ===
-                "login"
-                  ? "New to MindPlay? SIGN UP"
-                  : "Already have an account? LOG IN"}
-              </button>
+              {authMode ===
+              "login" ? (
+                <p className="text-sm text-white/30">
+                  Don&apos;t have an
+                  account?{" "}
+                  <button
+                    type="button"
+                    onClick={
+                      openSignup
+                    }
+                    className="font-bold text-cyan-300/80 transition hover:text-cyan-300"
+                  >
+                    Sign up
+                  </button>
+                </p>
+              ) : (
+                <p className="text-sm text-white/30">
+                  Already have an
+                  account?{" "}
+                  <button
+                    type="button"
+                    onClick={
+                      openLogin
+                    }
+                    className="font-bold text-cyan-300/80 transition hover:text-cyan-300"
+                  >
+                    Log in
+                  </button>
+                </p>
+              )}
             </div>
           </div>
         </div>
       )}
 
       {/* =====================================================
-          CREATE YOUR MINDPLAY NAME
+          MINDPLAY NAME SETUP
           ===================================================== */}
 
       {shouldShowNameSetup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#050711]/80 px-5 backdrop-blur-md">
+        <div className="fixed inset-0 z-95 flex items-center justify-center bg-black/70 px-5 backdrop-blur-sm">
           <div
-            aria-labelledby="player-name-title"
+            aria-labelledby="mindplay-name-title"
             aria-modal="true"
             className="w-full max-w-md rounded-4xl border border-cyan-300/15 bg-[#0d1222]/95 p-6 shadow-2xl shadow-cyan-950/30 sm:p-8"
             role="dialog"
           >
-            <div className="mb-6 text-center">
-              <div className="mb-4 text-5xl">
+            <div className="text-center">
+              <div className="text-4xl">
                 🧠
               </div>
 
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-300/60">
-                Account ready
-              </p>
-
               <h1
-                className="mt-2 text-3xl font-black tracking-tight text-white"
-                id="player-name-title"
+                id="mindplay-name-title"
+                className="mt-4 text-2xl font-black tracking-tight text-white"
               >
-                CREATE YOUR MINDPLAY NAME
+                Create your
+                MindPlay name
               </h1>
 
-              <p className="mt-3 text-sm leading-6 text-white/45">
-                Choose a name you&apos;ll
-                be happy to keep.
-              </p>
-            </div>
-
-            {/* PERMANENT NAME WARNING */}
-
-            <div className="mb-5 rounded-2xl border border-amber-300/15 bg-amber-300/5 p-4 text-left">
-              <p className="text-xs font-black uppercase tracking-wider text-amber-300">
-                ⚠️ Important
-              </p>
-
-              <p className="mt-2 text-sm leading-6 text-white/60">
-                Choose your name carefully.
-                Once you click{" "}
-                <span className="font-bold text-white">
-                  SYNC
-                </span>
-                , your MindPlay name
-                will be
-                <span className="font-bold text-white">
-                  {" "}
-                  permanently saved and
-                  cannot be changed later.
-                </span>
+              <p className="mt-3 text-sm leading-6 text-white/40">
+                Choose the name you
+                want to use inside
+                MindPlay.
               </p>
             </div>
 
             <form
-              className="space-y-4"
               onSubmit={
-                handleNameSubmit
+                handleSaveName
               }
+              className="mt-7"
             >
-              <div>
-                <label
-                  className="mb-2 block text-xs font-black uppercase tracking-wider text-white/45"
-                  htmlFor="player-name"
-                >
-                  MindPlay name
-                </label>
+              <label
+                htmlFor="mindplay-name"
+                className="text-xs font-bold text-white/60"
+              >
+                MindPlay name
+              </label>
 
-                <input
-                  autoFocus
-                  className="w-full rounded-2xl border border-white/10 bg-white/6 px-4 py-3.5 text-white outline-none transition placeholder:text-white/20 focus:border-cyan-300/50 focus:ring-2 focus:ring-cyan-300/10"
-                  id="player-name"
-                  maxLength={20}
-                  onChange={(
-                    event,
-                  ) => {
-                    setNameInput(
-                      event.target.value,
-                    );
-
-                    setNameError("");
-                  }}
-                  placeholder="Who's thinking today?..."
-                  required
-                  value={nameInput}
-                />
-              </div>
-
-              {nameError && (
-                <p
-                  className="text-sm text-rose-300"
-                  role="alert"
-                >
-                  {nameError}
-                </p>
-              )}
-
-              <button
-                className="mp-button w-full bg-white px-5 py-3.5 text-sm text-black shadow-lg shadow-white/5 hover:bg-cyan-50 disabled:cursor-not-allowed disabled:opacity-50"
+              <input
+                id="mindplay-name"
+                type="text"
+                value={
+                  mindPlayName
+                }
+                onChange={(
+                  event
+                ) =>
+                  setMindPlayName(
+                    event.target
+                      .value
+                  )
+                }
+                autoComplete="off"
+                autoFocus
+                maxLength={20}
+                placeholder="Your player name"
                 disabled={
                   isSavingName
                 }
+                className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none placeholder:text-white/20 focus:border-cyan-300/30 focus:bg-white/7 disabled:cursor-not-allowed disabled:opacity-50"
+              />
+
+              <p className="mt-2 text-xs text-white/25">
+                3–20 characters
+              </p>
+
+              {nameError && (
+                <div className="mt-4 rounded-xl border border-red-300/10 bg-red-300/5 px-4 py-3 text-sm text-red-200/80">
+                  {
+                    nameError
+                  }
+                </div>
+              )}
+
+              <button
                 type="submit"
+                disabled={
+                  isSavingName
+                }
+                className="mp-button mt-6 w-full bg-white px-5 py-3.5 text-sm text-black hover:bg-cyan-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isSavingName
                   ? "SYNCING..."
                   : "SYNC"}
               </button>
             </form>
+
+            <p className="mt-5 text-center text-xs leading-5 text-white/25">
+              Your MindPlay name
+              is permanent after
+              syncing.
+            </p>
           </div>
         </div>
       )}
 
       {/* =====================================================
-          SIGNUP WARNING
+          SIGNUP NOTICE
           ===================================================== */}
 
       {showSignupNotice && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-[#050711]/90 px-5 backdrop-blur-md">
-          <div
-            aria-labelledby="signup-notice-title"
-            aria-modal="true"
-            className="w-full max-w-md rounded-4xl border border-cyan-300/15 bg-[#0d1222] p-6 shadow-2xl shadow-cyan-950/30 sm:p-8"
-            role="dialog"
-          >
-            <div className="mb-6 text-center">
-              <div className="mb-4 text-5xl">
-                ⚠️
-              </div>
+        <div className="fixed inset-x-0 bottom-5 z-100 flex justify-center px-5">
+          <div className="w-full max-w-md rounded-2xl border border-cyan-300/15 bg-[#0d1222]/95 p-5 shadow-2xl shadow-cyan-950/30 backdrop-blur-xl">
+            <p className="text-sm leading-6 text-white/60">
+              Please check your
+              email and verify
+              your account before
+              logging in.
+            </p>
 
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-300/60">
-                One-time sign up
-              </p>
-
-              <h2
-                className="mt-2 text-2xl font-black tracking-tight text-white"
-                id="signup-notice-title"
-              >
-                PLEASE REMEMBER
-              </h2>
-
-              <p className="mt-4 text-sm leading-6 text-white/55">
-                This is a one-time sign up.
-                Please don&apos;t forget your
-                email and password.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-white transition hover:bg-white/10"
-                disabled={
-                  isSubmitting
-                }
-                onClick={() =>
-                  setShowSignupNotice(
-                    false,
-                  )
-                }
-                type="button"
-              >
-                GO BACK
-              </button>
-
-              <button
-                className="mp-button bg-white px-4 py-3 text-sm text-black hover:bg-cyan-50 disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={
-                  isSubmitting
-                }
-                onClick={() => {
-                  void signup();
-                }}
-                type="button"
-              >
-                {isSubmitting
-                  ? "CREATING..."
-                  : "CREATE ACCOUNT"}
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() =>
+                setShowSignupNotice(
+                  false
+                )
+              }
+              className="mt-3 text-xs font-black uppercase tracking-wider text-cyan-300/80 hover:text-cyan-300"
+            >
+              Close
+            </button>
           </div>
         </div>
       )}
     </>
-  );
-}
-
-/*
- * ===========================================================
- * PASSWORD RULE
- * ===========================================================
- */
-
-function PasswordRule({
-  valid,
-  text,
-}: {
-  valid: boolean;
-  text: string;
-}) {
-  return (
-    <div
-      className={
-        valid
-          ? "flex items-center gap-2 text-emerald-300"
-          : "flex items-center gap-2 text-white/35"
-      }
-    >
-      <span aria-hidden="true">
-        {valid ? "✓" : "✗"}
-      </span>
-
-      <span>{text}</span>
-    </div>
   );
 }
