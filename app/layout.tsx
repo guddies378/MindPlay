@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MindPlay — Think Fast. Play Smart.",
+  title: "MindPlay — Play. Think. Grow.",
   description:
     "A fun collection of quick brain games designed to challenge your memory, speed, focus, words, and logic.",
 };

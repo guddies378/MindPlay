@@ -21,11 +21,14 @@
 
 html {
   scroll-behavior: smooth;
+  width: 100%;
 }
 
 body {
   margin: 0;
   min-height: 100vh;
+  width: 100%;
+
   background:
     radial-gradient(
       circle at 10% 0%,
@@ -43,10 +46,25 @@ body {
       transparent 58%
     ),
     var(--background);
+
   background-attachment: fixed;
   color: var(--foreground);
+
   font-family: Arial, Helvetica, sans-serif;
   -webkit-font-smoothing: antialiased;
+
+  /*
+   * Prevent accidental horizontal overflow
+   * without changing the layout of game components.
+   */
+  overflow-x: hidden;
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
 }
 
 .mp-ambient-background {
@@ -147,7 +165,7 @@ a:focus-visible {
 }
 
 /* -------------------------------- */
-/* MindPlay utilities                */
+/* MindPlay utilities               */
 /* -------------------------------- */
 
 .mp-card {
@@ -169,6 +187,7 @@ a:focus-visible {
   transform: translateY(-3px);
   background: var(--card-hover);
   border-color: rgba(103, 232, 249, 0.18);
+
   box-shadow:
     0 15px 40px rgba(0, 0, 0, 0.2),
     0 0 30px rgba(103, 232, 249, 0.04);
@@ -181,6 +200,7 @@ a:focus-visible {
     #c084fc,
     #f0abfc
   );
+
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -190,8 +210,10 @@ a:focus-visible {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+
   border-radius: 16px;
   font-weight: 800;
+
   transition:
     transform 150ms ease,
     opacity 150ms ease,
@@ -212,4 +234,28 @@ a:focus-visible {
 
 .mp-float {
   animation: float 3s ease-in-out infinite;
+}
+
+/* -------------------------------- */
+/* Mobile performance               */
+/* -------------------------------- */
+
+@media (max-width: 768px) {
+  body {
+    background-attachment: scroll;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
