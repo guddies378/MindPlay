@@ -10,6 +10,7 @@ import {
 import {
   getProgress,
   subscribeToProgress,
+  syncLocalProgressToSupabase,
   type MindPlayProgress,
 } from "@/lib/progress";
 import { getLevelProgress } from "@/lib/levels";
@@ -303,13 +304,26 @@ export default function GamesPage() {
   ========================== */
 
   useEffect(() => {
-    const update = () => {
-      setProgress(getProgress());
+    let mounted = true;
+
+    const loadProgress = async () => {
+      await syncLocalProgressToSupabase();
+
+      if (mounted) {
+        setProgress(getProgress());
+      }
     };
 
-    update();
+    void loadProgress();
 
-    return subscribeToProgress(update);
+    const unsubscribe = subscribeToProgress(() => {
+      setProgress(getProgress());
+    });
+
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
   }, []);
 
   const xp = progress?.xp ?? 0;
@@ -456,7 +470,7 @@ export default function GamesPage() {
             className="mx-auto mt-8 max-w-xl text-base font-medium leading-8 text-white/35 sm:text-lg"
           >
             Think differently. Play differently.
-          <br />
+            <br />
             Find a challenge worth taking.
           </p>
         </section>
@@ -738,8 +752,7 @@ export default function GamesPage() {
           data-reveal
           className="mt-32"
         >
-          <div className="relative overflow-hidden rounded-3xl border border-white/[0.07] bg-white/2.5 px-6 py-14 text-center sm:px-10 sm:py-16"
-          >
+          <div className="relative overflow-hidden rounded-3xl border border-white/[0.07] bg-white/2.5 px-6 py-14 text-center sm:px-10 sm:py-16">
             <div className="pointer-events-none absolute left-1/2 -top-25 h-64 w-64 -translate-x-1/2 rounded-full bg-cyan-300/[0.035] blur-[100px]" />
 
             <div className="relative">

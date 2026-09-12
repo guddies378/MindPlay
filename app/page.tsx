@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   getProgress,
   subscribeToProgress,
+  syncLocalProgressToSupabase,
   type MindPlayProgress,
 } from "@/lib/progress";
 import { getLevelProgress } from "@/lib/levels";
@@ -277,13 +278,26 @@ export default function HomePage() {
   ========================== */
 
   useEffect(() => {
-    const update = () => {
-      setProgress(getProgress());
+    let mounted = true;
+
+    const loadProgress = async () => {
+      await syncLocalProgressToSupabase();
+
+      if (mounted) {
+        setProgress(getProgress());
+      }
     };
 
-    update();
+    void loadProgress();
 
-    return subscribeToProgress(update);
+    const unsubscribe = subscribeToProgress(() => {
+      setProgress(getProgress());
+    });
+
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
   }, []);
 
   const xp = progress?.xp ?? 0;
@@ -409,16 +423,16 @@ export default function HomePage() {
             </div>
 
             <div data-reveal>
-  <h1 className="text-center font-extrabold leading-[0.86] tracking-[-0.3em]">
-    <span className="block text-[clamp(4rem,10vw,8rem)]">
-      Play.
-    </span>
+              <h1 className="text-center font-extrabold leading-[0.86] tracking-[-0.3em]">
+                <span className="block text-[clamp(4rem,10vw,8rem)]">
+                  Play.
+                </span>
 
-    <span className="mt-4 block whitespace-nowrap text-[clamp(3rem,10vw,8rem)] tracking-[-0.045em] bg-linear-to-r from-cyan-300 via-white to-fuchsia-400 bg-clip-text text-transparent">
-      Think. Grow.
-    </span>
-  </h1>
-</div>
+                <span className="mt-4 block whitespace-nowrap text-[clamp(3rem,10vw,8rem)] tracking-[-0.045em] bg-linear-to-r from-cyan-300 via-white to-fuchsia-400 bg-clip-text text-transparent">
+                  Think. Grow.
+                </span>
+              </h1>
+            </div>
 
             <p
               data-reveal
