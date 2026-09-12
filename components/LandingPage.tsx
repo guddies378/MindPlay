@@ -250,6 +250,30 @@ export default function LandingPage({
       </section>
 
       {/* =========================
+          PRESENT
+      ========================== */}
+
+      <section className="border-t border-white/6">
+        <div className="mx-auto max-w-6xl px-6 py-28 sm:px-8 sm:py-36">
+          <div
+            data-reveal="slow"
+            className="mx-auto max-w-3xl text-center"
+          >
+            <p className="text-sm font-bold uppercase tracking-[0.18em] text-cyan-300/40">
+              Stay present
+            </p>
+
+            <p className="mx-auto mt-6 max-w-2xl text-2xl font-semibold leading-relaxed tracking-tight text-white/45 sm:text-3xl lg:text-4xl">
+              Instead of thinking about the past or the future,{" "}
+              <span className="bg-linear-to-r from-cyan-300 to-fuchsia-400 bg-clip-text text-transparent">
+                be present.
+              </span>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* =========================
           INTRO
       ========================== */}
 
