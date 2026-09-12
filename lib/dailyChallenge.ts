@@ -145,12 +145,16 @@ function isBrowser() {
 
 function getToday(): string {
   const now = new Date();
+
   const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(
-    2,
-    "0"
-  );
-  const day = String(now.getDate()).padStart(2, "0");
+
+  const month = String(
+    now.getMonth() + 1
+  ).padStart(2, "0");
+
+  const day = String(
+    now.getDate()
+  ).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
 }
@@ -158,15 +162,30 @@ function getToday(): string {
 function hashString(value: string): number {
   let hash = 0;
 
-  for (let index = 0; index < value.length; index += 1) {
+  for (
+    let index = 0;
+    index < value.length;
+    index += 1
+  ) {
     hash =
-      (hash * 31 + value.charCodeAt(index)) |
+      (hash * 31 +
+        value.charCodeAt(index)) |
       0;
   }
 
   return Math.abs(hash);
 }
 
+/*
+ * Selects one difficulty for the entire day.
+ *
+ * The date is used as the seed, so the result
+ * stays the same throughout the day.
+ *
+ * The extra seed string is intentionally chosen
+ * so the difficulty does not get stuck on the
+ * same value for many consecutive dates.
+ */
 function getDailyDifficulty(
   date: string
 ): DailyChallengeDifficulty {
@@ -177,8 +196,9 @@ function getDailyDifficulty(
   ];
 
   const difficultyIndex =
-    hashString(`${date}-difficulty`) %
-    difficulties.length;
+    hashString(
+      `${date}-daily-difficulty-v2`
+    ) % difficulties.length;
 
   return difficulties[difficultyIndex];
 }
@@ -186,12 +206,22 @@ function getDailyDifficulty(
 export function getDailyChallenge(): DailyChallenge {
   const date = getToday();
 
+  /*
+   * Select today's game.
+   */
   const gameIndex =
-    hashString(date) % CHALLENGES.length;
+    hashString(date) %
+    CHALLENGES.length;
 
-  const challenge = CHALLENGES[gameIndex];
+  const challenge =
+    CHALLENGES[gameIndex];
 
-  const difficulty = getDailyDifficulty(date);
+  /*
+   * Select today's difficulty independently
+   * from today's game.
+   */
+  const difficulty =
+    getDailyDifficulty(date);
 
   return {
     ...challenge,
@@ -204,7 +234,9 @@ export function getDailyChallenge(): DailyChallenge {
 export function isDailyChallenge(
   game: DailyChallengeGame
 ): boolean {
-  return getDailyChallenge().game === game;
+  return (
+    getDailyChallenge().game === game
+  );
 }
 
 export function isDailyChallengeCompleted(): boolean {
@@ -212,11 +244,13 @@ export function isDailyChallengeCompleted(): boolean {
     return false;
   }
 
-  const challenge = getDailyChallenge();
+  const challenge =
+    getDailyChallenge();
 
   return (
-    localStorage.getItem(STORAGE_KEY) ===
-    challenge.id
+    localStorage.getItem(
+      STORAGE_KEY
+    ) === challenge.id
   );
 }
 
@@ -227,7 +261,8 @@ export function completeDailyChallenge(
     return false;
   }
 
-  const challenge = getDailyChallenge();
+  const challenge =
+    getDailyChallenge();
 
   if (challenge.game !== game) {
     return false;
@@ -237,10 +272,15 @@ export function completeDailyChallenge(
     return false;
   }
 
-  localStorage.setItem(STORAGE_KEY, challenge.id);
+  localStorage.setItem(
+    STORAGE_KEY,
+    challenge.id
+  );
 
   window.dispatchEvent(
-    new Event("mindplay-daily-challenge-updated")
+    new Event(
+      "mindplay-daily-challenge-updated"
+    )
   );
 
   addXP(challenge.rewardXP);
@@ -260,7 +300,10 @@ export function subscribeToDailyChallenge(
     callback
   );
 
-  window.addEventListener("storage", callback);
+  window.addEventListener(
+    "storage",
+    callback
+  );
 
   return () => {
     window.removeEventListener(

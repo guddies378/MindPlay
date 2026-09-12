@@ -73,18 +73,11 @@ export default function PatternRecallPage() {
    */
   const dailyChallenge = getDailyChallenge();
 
-  const isDailyChallenge =
-    dailyChallenge.game === "pattern-recall";
-
-  const initialDifficulty: Difficulty =
-    isDailyChallenge
-      ? dailyChallenge.difficulty
-      : "normal";
+  const [dailyMode, setDailyMode] =
+    useState(false);
 
   const [difficulty, setDifficulty] =
-    useState<Difficulty>(
-      initialDifficulty
-    );
+    useState<Difficulty>("normal");
 
   const [gameState, setGameState] =
     useState<GameState>("menu");
@@ -110,6 +103,7 @@ export default function PatternRecallPage() {
   const [timeLeft, setTimeLeft] = useState(0);
 
   const [xpEarned, setXpEarned] = useState(0);
+
   const [dailyCompleted, setDailyCompleted] =
     useState(false);
 
@@ -129,6 +123,46 @@ export default function PatternRecallPage() {
     );
 
   const config = DIFFICULTIES[difficulty];
+
+  /*
+   * Enable Daily Challenge only when the URL
+   * contains the correct daily parameters.
+   */
+  useEffect(() => {
+    const params = new URLSearchParams(
+      window.location.search
+    );
+
+    const urlDaily =
+      params.get("daily") === "true";
+
+    const urlDifficulty =
+      params.get("difficulty");
+
+    const validDifficulty =
+      urlDifficulty === "easy" ||
+      urlDifficulty === "normal" ||
+      urlDifficulty === "hard";
+
+    if (
+      urlDaily &&
+      validDifficulty &&
+      dailyChallenge.game === "pattern-recall" &&
+      urlDifficulty === dailyChallenge.difficulty
+    ) {
+      const dailyTimer = setTimeout(() => {
+        setDailyMode(true);
+        setDifficulty(
+          dailyChallenge.difficulty
+        );
+      }, 0);
+
+      return () => clearTimeout(dailyTimer);
+    }
+  }, [
+    dailyChallenge.game,
+    dailyChallenge.difficulty,
+  ]);
 
   function clearTimers() {
     if (showTimeoutRef.current) {
@@ -153,45 +187,17 @@ export default function PatternRecallPage() {
     };
   }, []);
 
-  function getTilesForRound(
-    roundNumber = round
-  ) {
-    const increase = Math.floor(
-      (roundNumber - 1) / 2
-    );
-
-    return Math.min(
-      config.maxTiles,
-      config.startTiles + increase
-    );
-  }
-
-  function generatePattern(
-    roundNumber = round
-  ) {
-    const totalTiles =
-      config.gridSize * config.gridSize;
-
-    const tileCount =
-      getTilesForRound(roundNumber);
-
-    const newPattern: number[] = [];
-
-    while (newPattern.length < tileCount) {
-      const randomTile = Math.floor(
-        Math.random() * totalTiles
-      );
-
-      if (!newPattern.includes(randomTile)) {
-        newPattern.push(randomTile);
-      }
-    }
-
-    return newPattern;
-  }
 
   function startGame() {
     clearTimers();
+
+    const activeDifficulty =
+      dailyMode &&
+      dailyChallenge.game === "pattern-recall"
+        ? dailyChallenge.difficulty
+        : difficulty;
+
+    setDifficulty(activeDifficulty);
 
     setRound(1);
     setScore(0);
@@ -209,16 +215,20 @@ export default function PatternRecallPage() {
 
     setGameState("showing");
 
-    showPattern(1);
+    showPattern(1, activeDifficulty);
   }
 
   function showPattern(
-    roundNumber: number
+    roundNumber: number,
+    activeDifficulty: Difficulty = difficulty
   ) {
     clearTimers();
 
     const newPattern =
-      generatePattern(roundNumber);
+      generatePatternForDifficulty(
+        roundNumber,
+        activeDifficulty
+      );
 
     setPattern(newPattern);
     setSelectedTiles([]);
@@ -227,7 +237,42 @@ export default function PatternRecallPage() {
     showTimeoutRef.current =
       setTimeout(() => {
         startAnswerPhase();
-      }, config.displayTime);
+      }, DIFFICULTIES[activeDifficulty].displayTime);
+  }
+
+  function generatePatternForDifficulty(
+    roundNumber: number,
+    activeDifficulty: Difficulty
+  ) {
+    const activeConfig =
+      DIFFICULTIES[activeDifficulty];
+
+    const totalTiles =
+      activeConfig.gridSize *
+      activeConfig.gridSize;
+
+    const increase = Math.floor(
+      (roundNumber - 1) / 2
+    );
+
+    const tileCount = Math.min(
+      activeConfig.maxTiles,
+      activeConfig.startTiles + increase
+    );
+
+    const newPattern: number[] = [];
+
+    while (newPattern.length < tileCount) {
+      const randomTile = Math.floor(
+        Math.random() * totalTiles
+      );
+
+      if (!newPattern.includes(randomTile)) {
+        newPattern.push(randomTile);
+      }
+    }
+
+    return newPattern;
   }
 
   function startAnswerPhase() {
@@ -420,20 +465,19 @@ export default function PatternRecallPage() {
       comboBonus;
 
     /*
-     * Daily Challenge completion.
-     *
-     * completeDailyChallenge() itself awards
-     * the +50 Daily Challenge XP.
+     * Daily Challenge completion is only
+     * possible while actually in Daily Mode.
      */
     const completedDaily =
-      isDailyChallenge
+      dailyMode &&
+      dailyChallenge.game === "pattern-recall"
         ? completeDailyChallenge(
             "pattern-recall"
           )
         : false;
 
     /*
-     * Daily Challenge gives +10 score.
+     * Daily Challenge gives bonus score.
      */
     const finalScore =
       score +
@@ -442,14 +486,17 @@ export default function PatternRecallPage() {
         : 0);
 
     /*
-     * Only display the Daily Challenge +50 XP here.
+     * completeDailyChallenge() already adds
+     * the Daily Challenge XP to progress.
      *
-     * completeDailyChallenge() already adds the
-     * actual +50 XP to progress.
+     * This value is only what the result screen
+     * displays.
      */
     const finalDisplayedXP =
       baseTotalXP +
-      (completedDaily ? 50 : 0);
+      (completedDaily
+        ? dailyChallenge.rewardXP
+        : 0);
 
     setScore(finalScore);
     setXpEarned(finalDisplayedXP);
@@ -506,6 +553,11 @@ export default function PatternRecallPage() {
       )
     );
 
+  const difficultyLocked =
+    dailyMode ||
+    (gameState !== "menu" &&
+      gameState !== "finished");
+
   if (gameState === "finished") {
     const totalRounds =
       correctRounds + wrongRounds;
@@ -555,13 +607,13 @@ export default function PatternRecallPage() {
 
     return (
       <GameShell
-      icon="🟦"
-      category="MEMORY"
-      title="Pattern"
-      highlightedTitle="Recall"
-      description="Memorize the highlighted tiles, then recreate the exact pattern."
-      maxWidth="lg"
-    >
+        icon="🟦"
+        category="MEMORY"
+        title="Pattern"
+        highlightedTitle="Recall"
+        description="Memorize the highlighted tiles, then recreate the exact pattern."
+        maxWidth="lg"
+      >
         <div className="mx-auto flex min-h-0 max-w-3xl items-center justify-center">
           <section className="mp-card mp-fade-up w-full rounded-3xl p-6 text-center sm:p-10">
             <div className="mb-3 text-6xl">
@@ -573,7 +625,9 @@ export default function PatternRecallPage() {
             </p>
 
             <h1 className="mt-3 text-4xl font-black sm:text-5xl">
-              Game Complete
+              {dailyMode
+                ? "Daily Challenge Complete"
+                : "Game Complete"}
             </h1>
 
             <p className="mt-4 text-lg text-white/60">
@@ -633,8 +687,10 @@ export default function PatternRecallPage() {
                 </p>
 
                 <p className="mt-1 text-xs leading-5 text-white/60">
-                  +50 XP and +10 bonus score
-                  have been added.
+                  +{dailyChallenge.rewardXP} XP
+                  and +
+                  {DAILY_CHALLENGE_BONUS_POINTS}{" "}
+                  bonus score have been added.
                 </p>
               </div>
             )}
@@ -676,7 +732,9 @@ export default function PatternRecallPage() {
                 onClick={startGame}
                 className="mp-button flex-1 bg-white px-6 py-4 text-black"
               >
-                🔄 Play Again
+                {dailyMode
+                  ? "🎯 Play Daily Again"
+                  : "🔄 Play Again"}
               </button>
 
               <Link
@@ -695,13 +753,13 @@ export default function PatternRecallPage() {
   if (gameState === "feedback") {
     return (
       <GameShell
-      icon="🟦"
-      category="MEMORY"
-      title="Pattern"
-      highlightedTitle="Recall"
-      description="Memorize the highlighted tiles, then recreate the exact pattern."
-      maxWidth="lg"
-    >
+        icon="🟦"
+        category="MEMORY"
+        title="Pattern"
+        highlightedTitle="Recall"
+        description="Memorize the highlighted tiles, then recreate the exact pattern."
+        maxWidth="lg"
+      >
         <div className="mx-auto flex min-h-0 max-w-3xl items-center justify-center">
           <section className="mp-card mp-fade-up w-full rounded-3xl p-6 text-center sm:p-10">
             <div className="text-5xl">
@@ -734,7 +792,7 @@ export default function PatternRecallPage() {
               </p>
 
               <div
-                className="mx-auto mt-5 grid max-w-text-white/60 gap-2"
+                className="mx-auto mt-5 grid max-w-md gap-2"
                 style={{
                   gridTemplateColumns: `repeat(${config.gridSize}, minmax(0, 1fr))`,
                 }}
@@ -775,7 +833,7 @@ export default function PatternRecallPage() {
                 className={
                   combo > 0
                     ? "font-black text-yellow-300"
-                    : "60"
+                    : "text-white/60"
                 }
               >
                 🔥 {combo} combo
@@ -784,7 +842,7 @@ export default function PatternRecallPage() {
 
             <button
               onClick={continueGame}
-              className="mp-button mt-4 w-full bg-white px-6 py-4 text-black sm:w-auto sm:min-w-text-white/60"
+              className="mp-button mt-4 w-full bg-white px-6 py-4 text-black sm:w-auto sm:min-w-55"
             >
               {round >= config.rounds
                 ? "🏁 See Results"
@@ -802,13 +860,13 @@ export default function PatternRecallPage() {
   ) {
     return (
       <GameShell
-      icon="🟦"
-      category="MEMORY"
-      title="Pattern"
-      highlightedTitle="Recall"
-      description="Memorize the highlighted tiles, then recreate the exact pattern."
-      maxWidth="lg"
-    >
+        icon="🟦"
+        category="MEMORY"
+        title="Pattern"
+        highlightedTitle="Recall"
+        description="Memorize the highlighted tiles, then recreate the exact pattern."
+        maxWidth="lg"
+      >
         <div className="mx-auto max-w-3xl">
           <div className="mb-3 flex items-center justify-between">
             <Link
@@ -830,7 +888,7 @@ export default function PatternRecallPage() {
             </div>
           </div>
 
-          {isDailyChallenge && (
+          {dailyMode && (
             <div className="mb-3 rounded-2xl border border-purple-300/15 bg-purple-300/5 px-4 py-3 text-center">
               <p className="text-xs font-black uppercase tracking-[0.18em] text-purple-300/70">
                 🎯 Daily Challenge
@@ -838,7 +896,7 @@ export default function PatternRecallPage() {
 
               <p className="mt-1 text-sm font-black text-white/80">
                 {dailyChallenge.title} ·{" "}
-                {dailyChallenge.difficulty.toUpperCase()}
+                {dailyChallenge.difficulty.toUpperCase()} 🔒
               </p>
             </div>
           )}
@@ -994,7 +1052,7 @@ export default function PatternRecallPage() {
                     selectedTiles.length !==
                     pattern.length
                   }
-                  className="mp-button mt-5 w-full bg-white px-6 py-4 text-black disabled:cursor-not-allowed disabled:opacity-30 sm:w-auto sm:min-w-text-white/55"
+                  className="mp-button mt-5 w-full bg-white px-6 py-4 text-black disabled:cursor-not-allowed disabled:opacity-30 sm:w-auto sm:min-w-55"
                 >
                   ✓ Lock Pattern
                 </button>
@@ -1017,7 +1075,7 @@ export default function PatternRecallPage() {
     >
       <div className="mx-auto flex min-h-0 max-w-3xl items-center justify-center">
         <section className="mp-card mp-fade-up w-full rounded-3xl p-4 sm:p-6">
-          {isDailyChallenge && (
+          {dailyMode && (
             <div className="mt-4 rounded-2xl border border-purple-300/15 bg-purple-300/5 p-4 text-center">
               <p className="text-xs font-black uppercase tracking-[0.18em] text-purple-300/70">
                 🎯 Today&apos;s Daily Challenge
@@ -1025,12 +1083,11 @@ export default function PatternRecallPage() {
 
               <p className="mt-1 text-sm font-black text-white">
                 Pattern Recall ·{" "}
-                {dailyChallenge.difficulty.toUpperCase()}
+                {dailyChallenge.difficulty.toUpperCase()} 🔒
               </p>
 
               <p className="mt-1 text-xs text-white/55">
-                Difficulty automatically
-                selected
+                Difficulty automatically selected
               </p>
             </div>
           )}
@@ -1050,15 +1107,22 @@ export default function PatternRecallPage() {
               return (
                 <button
                   key={level}
-                  onClick={() =>
-                    setDifficulty(
-                      level
-                    )
-                  }
+                  onClick={() => {
+                    if (difficultyLocked) {
+                      return;
+                    }
+
+                    setDifficulty(level);
+                  }}
+                  disabled={difficultyLocked}
                   className={`rounded-2xl border p-5 text-left transition ${
                     selected
                       ? "border-cyan-300/40 bg-cyan-300/8"
                       : "border-white/10 bg-white/2.5 hover:bg-white/6"
+                  } ${
+                    difficultyLocked
+                      ? "cursor-not-allowed opacity-40"
+                      : ""
                   }`}
                 >
                   <div className="flex items-center justify-between">
@@ -1080,8 +1144,7 @@ export default function PatternRecallPage() {
                   <div className="mt-4 text-xs font-bold uppercase tracking-wider text-white/45">
                     {item.gridSize}×
                     {item.gridSize} ·{" "}
-                    {item.rounds}{" "}
-                    rounds
+                    {item.rounds} rounds
                   </div>
                 </button>
               );
@@ -1122,13 +1185,22 @@ export default function PatternRecallPage() {
             </div>
           </div>
 
+          {dailyMode && (
+            <div className="mt-4 rounded-2xl border border-fuchsia-300/10 bg-fuchsia-300/5 px-4 py-3 text-center text-xs font-bold text-fuchsia-200/70">
+              🌟 Daily reward: +
+              {DAILY_CHALLENGE_BONUS_POINTS}{" "}
+              points · +{dailyChallenge.rewardXP} XP
+            </div>
+          )}
+
           <button
             onClick={startGame}
             className="mp-button mt-4 w-full bg-white px-6 py-5 text-lg text-black"
           >
-            🟦 Start Pattern Recall
+            {dailyMode
+              ? "🎯 Start Daily Challenge"
+              : "🟦 Start Pattern Recall"}
           </button>
-
         </section>
       </div>
     </GameShell>

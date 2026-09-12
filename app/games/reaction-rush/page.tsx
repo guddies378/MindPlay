@@ -12,6 +12,7 @@ import {
 import { unlockGameAchievement } from "@/lib/achievements";
 
 type Difficulty = "easy" | "normal" | "hard";
+
 type GameState =
   | "idle"
   | "waiting"
@@ -30,6 +31,7 @@ const DIFFICULTIES = {
     xp: 20,
     icon: "🌱",
   },
+
   normal: {
     label: "Normal",
     description: "The real challenge",
@@ -40,6 +42,7 @@ const DIFFICULTIES = {
     xp: 35,
     icon: "⚡",
   },
+
   hard: {
     label: "Hard",
     description: "Blink and you'll lose",
@@ -52,14 +55,21 @@ const DIFFICULTIES = {
   },
 } as const;
 
-function randomDelay(min: number, max: number) {
+function randomDelay(
+  min: number,
+  max: number
+) {
   return (
-    Math.floor(Math.random() * (max - min + 1)) +
-    min
+    Math.floor(
+      Math.random() *
+        (max - min + 1)
+    ) + min
   );
 }
 
-function getReactionScore(reaction: number) {
+function getReactionScore(
+  reaction: number
+) {
   if (reaction <= 150) return 100;
   if (reaction <= 200) return 90;
   if (reaction <= 250) return 80;
@@ -73,20 +83,30 @@ function getReactionScore(reaction: number) {
   return 10;
 }
 
-function formatReaction(ms: number | null) {
+function formatReaction(
+  ms: number | null
+) {
   if (ms === null) return "--";
 
   return `${ms} ms`;
 }
 
 export default function ReactionRushPage() {
+  const dailyChallenge =
+    getDailyChallenge();
+
   const [difficulty, setDifficulty] =
     useState<Difficulty>("normal");
+
+  const [dailyMode, setDailyMode] =
+    useState(false);
 
   const [gameState, setGameState] =
     useState<GameState>("idle");
 
-  const [round, setRound] = useState(0);
+  const [round, setRound] =
+    useState(0);
+
   const [reactionTime, setReactionTime] =
     useState<number | null>(null);
 
@@ -96,37 +116,102 @@ export default function ReactionRushPage() {
   const [averageReaction, setAverageReaction] =
     useState<number | null>(null);
 
-  const [score, setScore] = useState(0);
-  const [xpEarned, setXpEarned] = useState(0);
-  const [falseStart, setFalseStart] = useState(false);
+  const [score, setScore] =
+    useState(0);
 
-  const [history, setHistory] = useState<number[]>([]);
+  const [xpEarned, setXpEarned] =
+    useState(0);
+
+  const [falseStart, setFalseStart] =
+    useState(false);
+
+  const [history, setHistory] =
+    useState<number[]>([]);
 
   const [dailyBonusEarned, setDailyBonusEarned] =
     useState(false);
 
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null
-  );
+  const timeoutRef =
+    useRef<ReturnType<
+      typeof setTimeout
+    > | null>(null);
 
-  const startTimeRef = useRef<number | null>(null);
+  const startTimeRef =
+    useRef<number | null>(null);
 
-  const config = DIFFICULTIES[difficulty];
+  const config =
+    DIFFICULTIES[difficulty];
 
-  const dailyChallenge = getDailyChallenge();
+  /*
+   * Detect Daily Challenge mode.
+   *
+   * The Daily Challenge page sends:
+   *
+   * ?daily=true&difficulty=easy
+   * ?daily=true&difficulty=normal
+   * ?daily=true&difficulty=hard
+   *
+   * We only accept the difficulty if it
+   * matches today's actual Daily Challenge.
+   */
+  useEffect(() => {
+    const params =
+      new URLSearchParams(
+        window.location.search
+      );
 
-  const isDailyChallenge =
-    dailyChallenge.game === "reaction-rush";
+    const urlDaily =
+      params.get("daily") === "true";
+
+    const urlDifficulty =
+      params.get("difficulty");
+
+    const validDifficulty =
+      urlDifficulty === "easy" ||
+      urlDifficulty === "normal" ||
+      urlDifficulty === "hard";
+
+    const matchesDailyChallenge =
+      urlDaily &&
+      validDifficulty &&
+      urlDifficulty ===
+        dailyChallenge.difficulty &&
+      dailyChallenge.game ===
+        "reaction-rush";
+
+    if (matchesDailyChallenge) {
+      const dailyDifficulty =
+        dailyChallenge.difficulty;
+
+      const dailyTimer = setTimeout(() => {
+        setDailyMode(true);
+      setDifficulty(
+        dailyDifficulty
+      );
+      }, 0);
+
+      return () => clearTimeout(dailyTimer);
+    }
+  }, [dailyChallenge.game, dailyChallenge.difficulty]);
 
   function clearTimer() {
     if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
+      clearTimeout(
+        timeoutRef.current
+      );
+
       timeoutRef.current = null;
     }
   }
 
-  function startRound(nextRound: number) {
+  function startRound(
+    nextRound: number,
+    activeDifficulty: Difficulty = difficulty,
+  ) {
     clearTimer();
+
+    const activeConfig =
+      DIFFICULTIES[activeDifficulty];
 
     setRound(nextRound);
     setReactionTime(null);
@@ -134,14 +219,17 @@ export default function ReactionRushPage() {
     setGameState("waiting");
 
     const delay = randomDelay(
-      config.minDelay,
-      config.maxDelay
+      activeConfig.minDelay,
+      activeConfig.maxDelay
     );
 
-    timeoutRef.current = setTimeout(() => {
-      startTimeRef.current = performance.now();
-      setGameState("ready");
-    }, delay);
+    timeoutRef.current =
+      setTimeout(() => {
+        startTimeRef.current =
+          performance.now();
+
+        setGameState("ready");
+      }, delay);
   }
 
   function startGame() {
@@ -159,7 +247,14 @@ export default function ReactionRushPage() {
 
     startTimeRef.current = null;
 
-    startRound(1);
+    const activeDifficulty =
+      dailyMode &&
+      dailyChallenge.game === "reaction-rush"
+        ? dailyChallenge.difficulty
+        : difficulty;
+
+    setDifficulty(activeDifficulty);
+    startRound(1, activeDifficulty);
   }
 
   function finishGame(
@@ -168,7 +263,9 @@ export default function ReactionRushPage() {
   ) {
     clearTimer();
 
-    if (gameState === "finished") {
+    if (
+      gameState === "finished"
+    ) {
       return;
     }
 
@@ -176,19 +273,26 @@ export default function ReactionRushPage() {
       finalHistory.length > 0
         ? Math.round(
             finalHistory.reduce(
-              (sum, value) => sum + value,
+              (
+                sum,
+                value
+              ) =>
+                sum + value,
               0
-            ) / finalHistory.length
+            ) /
+              finalHistory.length
           )
         : 0;
 
     const best =
       finalHistory.length > 0
-        ? Math.min(...finalHistory)
+        ? Math.min(
+            ...finalHistory
+          )
         : 0;
 
     const dailyCompleted =
-      isDailyChallenge &&
+      dailyMode &&
       completeDailyChallenge(
         "reaction-rush"
       );
@@ -199,12 +303,14 @@ export default function ReactionRushPage() {
         ? DAILY_CHALLENGE_BONUS_POINTS
         : 0);
 
-    const scoreBonus = Math.min(
-      50,
-      Math.floor(
-        finalScoreWithDailyBonus / 20
-      )
-    );
+    const scoreBonus =
+      Math.min(
+        50,
+        Math.floor(
+          finalScoreWithDailyBonus /
+            20
+        )
+      );
 
     const speedBonus =
       best > 0 &&
@@ -219,16 +325,33 @@ export default function ReactionRushPage() {
 
     const displayedXP =
       baseTotalXP +
-      (dailyCompleted ? 50 : 0);
+      (dailyCompleted
+        ? dailyChallenge.rewardXP
+        : 0);
 
-    setBestReaction(best || null);
-    setAverageReaction(average || null);
-    setScore(finalScoreWithDailyBonus);
-    setXpEarned(displayedXP);
+    setBestReaction(
+      best || null
+    );
+
+    setAverageReaction(
+      average || null
+    );
+
+    setScore(
+      finalScoreWithDailyBonus
+    );
+
+    setXpEarned(
+      displayedXP
+    );
+
     setDailyBonusEarned(
       dailyCompleted
     );
-    setGameState("finished");
+
+    setGameState(
+      "finished"
+    );
 
     recordGame(
       finalScoreWithDailyBonus,
@@ -241,7 +364,9 @@ export default function ReactionRushPage() {
   }
 
   function handleBoardClick() {
-    if (gameState === "waiting") {
+    if (
+      gameState === "waiting"
+    ) {
       clearTimer();
 
       setFalseStart(true);
@@ -251,7 +376,9 @@ export default function ReactionRushPage() {
       return;
     }
 
-    if (gameState !== "ready") {
+    if (
+      gameState !== "ready"
+    ) {
       return;
     }
 
@@ -262,12 +389,16 @@ export default function ReactionRushPage() {
       return;
     }
 
-    const reaction = Math.round(
-      performance.now() - startTime
-    );
+    const reaction =
+      Math.round(
+        performance.now() -
+          startTime
+      );
 
     const roundScore =
-      getReactionScore(reaction);
+      getReactionScore(
+        reaction
+      );
 
     const nextScore =
       score + roundScore;
@@ -277,42 +408,68 @@ export default function ReactionRushPage() {
       reaction,
     ];
 
-    setReactionTime(reaction);
-    setScore(nextScore);
-    setHistory(nextHistory);
+    setReactionTime(
+      reaction
+    );
+
+    setScore(
+      nextScore
+    );
+
+    setHistory(
+      nextHistory
+    );
 
     if (
       bestReaction === null ||
-      reaction < bestReaction
+      reaction <
+        bestReaction
     ) {
-      setBestReaction(reaction);
+      setBestReaction(
+        reaction
+      );
     }
 
-    if (round >= config.rounds) {
+    if (
+      round >=
+      config.rounds
+    ) {
       finishGame(
         nextScore,
         nextHistory
       );
+
       return;
     }
 
-    setGameState("result");
+    setGameState(
+      "result"
+    );
   }
 
   function continueGame() {
-    if (gameState === "finished") {
+    if (
+      gameState ===
+      "finished"
+    ) {
       return;
     }
 
-    if (round >= config.rounds) {
+    if (
+      round >=
+      config.rounds
+    ) {
       finishGame(
         score,
         history
       );
+
       return;
     }
 
-    startRound(round + 1);
+    startRound(
+      round + 1
+    );
   }
 
   useEffect(() => {
@@ -325,7 +482,9 @@ export default function ReactionRushPage() {
     config.rounds > 0
       ? Math.min(
           100,
-          (round / config.rounds) * 100
+          (round /
+            config.rounds) *
+            100
         )
       : 0;
 
@@ -341,7 +500,8 @@ export default function ReactionRushPage() {
       <div className="mx-auto max-w-5xl">
         {/* Difficulty */}
 
-        {gameState === "idle" && (
+        {gameState ===
+          "idle" && (
           <section className="mp-fade-up mb-4">
             <div className="mb-3 flex items-center justify-between">
               <p className="text-xs font-black uppercase tracking-wider text-white/50">
@@ -349,7 +509,9 @@ export default function ReactionRushPage() {
               </p>
 
               <p className="text-xs font-bold text-white/40">
-                Faster = more points
+                {dailyMode
+                  ? "Daily Challenge 🔒"
+                  : "Faster = more points"}
               </p>
             </div>
 
@@ -358,59 +520,101 @@ export default function ReactionRushPage() {
                 Object.keys(
                   DIFFICULTIES
                 ) as Difficulty[]
-              ).map((level) => {
-                const item =
-                  DIFFICULTIES[level];
+              ).map(
+                (
+                  level
+                ) => {
+                  const item =
+                    DIFFICULTIES[
+                      level
+                    ];
 
-                const selected =
-                  difficulty === level;
+                  const selected =
+                    difficulty ===
+                    level;
 
-                return (
-                  <button
-                    key={level}
-                    type="button"
-                    onClick={() =>
-                      setDifficulty(level)
-                    }
-                    className={[
-                      "rounded-3xl border p-5 text-left transition-all duration-200",
-                      selected
-                        ? "border-cyan-300/25 bg-cyan-300/[0.07] shadow-lg shadow-cyan-400/5"
-                        : "border-white/[0.07] bg-white/2.5 hover:-translate-y-1 hover:border-white/15 hover:bg-white/5",
-                    ].join(" ")}
-                  >
-                    <div className="flex items-start justify-between">
-                      <span className="text-2xl">
-                        {item.icon}
-                      </span>
+                  return (
+                    <button
+                      key={
+                        level
+                      }
+                      type="button"
+                      onClick={() => {
+                        if (
+                          dailyMode
+                        ) {
+                          return;
+                        }
 
-                      {selected && (
-                        <span className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-2 py-1 text-[9px] font-black uppercase tracking-wider text-cyan-300">
-                          Selected
-                        </span>
+                        setDifficulty(
+                          level
+                        );
+                      }}
+                      disabled={
+                        dailyMode
+                      }
+                      className={[
+                        "rounded-3xl border p-5 text-left transition-all duration-200",
+
+                        selected
+                          ? "border-cyan-300/25 bg-cyan-300/[0.07] shadow-lg shadow-cyan-400/5"
+                          : "border-white/[0.07] bg-white/2.5 hover:-translate-y-1 hover:border-white/15 hover:bg-white/5",
+
+                        dailyMode
+                          ? "cursor-not-allowed opacity-60"
+                          : "",
+                      ].join(
+                        " "
                       )}
-                    </div>
+                    >
+                      <div className="flex items-start justify-between">
+                        <span className="text-2xl">
+                          {
+                            item.icon
+                          }
+                        </span>
 
-                    <h2 className="mt-4 text-base font-black">
-                      {item.label}
-                    </h2>
+                        {selected && (
+                          <span className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-2 py-1 text-[9px] font-black uppercase tracking-wider text-cyan-300">
+                            {dailyMode
+                              ? "Daily"
+                              : "Selected"}
+                          </span>
+                        )}
+                      </div>
 
-                    <p className="mt-1 text-xs text-white/55">
-                      {item.description}
-                    </p>
+                      <h2 className="mt-4 text-base font-black">
+                        {
+                          item.label
+                        }
+                      </h2>
 
-                    <div className="mt-4 flex items-center justify-between text-[10px] font-black uppercase tracking-wider">
-                      <span className="text-white/45">
-                        {item.rounds} rounds
-                      </span>
+                      <p className="mt-1 text-xs text-white/55">
+                        {
+                          item.description
+                        }
+                      </p>
 
-                      <span className="text-cyan-300">
-                        +{item.xp} base XP
-                      </span>
-                    </div>
-                  </button>
-                );
-              })}
+                      <div className="mt-4 flex items-center justify-between text-[10px] font-black uppercase tracking-wider">
+                        <span className="text-white/45">
+                          {
+                            item.rounds
+                          }{" "}
+                          rounds
+                        </span>
+
+                        <span className="text-cyan-300">
+                          +
+                          {
+                            item.xp
+                          }{" "}
+                          base XP
+                        </span>
+                      </div>
+                    </button>
+                  );
+                }
+              )}
             </div>
           </section>
         )}
@@ -420,10 +624,14 @@ export default function ReactionRushPage() {
         <section
           className={[
             "relative overflow-hidden rounded-4xl border transition-all duration-300",
-            gameState === "ready"
+
+            gameState ===
+            "ready"
               ? "border-emerald-300/30 bg-emerald-300/5 shadow-2xl shadow-emerald-400/10"
               : "border-white/10 bg-white/[0.035]",
-          ].join(" ")}
+          ].join(
+            " "
+          )}
         >
           {/* Background glow */}
 
@@ -434,8 +642,10 @@ export default function ReactionRushPage() {
           <div className="relative p-4 sm:p-6">
             {/* Game stats */}
 
-            {gameState !== "idle" &&
-              gameState !== "finished" && (
+            {gameState !==
+              "idle" &&
+              gameState !==
+                "finished" && (
                 <div className="mb-4 grid grid-cols-3 gap-2 sm:gap-3">
                   <div className="rounded-2xl border border-white/[0.07] bg-white/2.5 p-3 text-center">
                     <p className="text-[9px] font-black uppercase tracking-wider text-white/45">
@@ -443,7 +653,10 @@ export default function ReactionRushPage() {
                     </p>
 
                     <p className="mt-1 text-lg font-black">
-                      {round}/{config.rounds}
+                      {round}/
+                      {
+                        config.rounds
+                      }
                     </p>
                   </div>
 
@@ -453,7 +666,9 @@ export default function ReactionRushPage() {
                     </p>
 
                     <p className="mt-1 text-lg font-black text-cyan-300">
-                      {score}
+                      {
+                        score
+                      }
                     </p>
                   </div>
 
@@ -473,11 +688,15 @@ export default function ReactionRushPage() {
 
             {/* Progress */}
 
-            {gameState !== "idle" &&
-              gameState !== "finished" && (
+            {gameState !==
+              "idle" &&
+              gameState !==
+                "finished" && (
                 <div className="mb-4">
                   <div className="mb-2 flex justify-between text-[9px] font-black uppercase tracking-wider text-white/40">
-                    <span>Progress</span>
+                    <span>
+                      Progress
+                    </span>
 
                     <span>
                       {Math.round(
@@ -500,45 +719,57 @@ export default function ReactionRushPage() {
 
             {/* Idle */}
 
-            {gameState === "idle" && (
+            {gameState ===
+              "idle" && (
               <div className="py-10 text-center sm:py-14">
                 <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-4xl border border-white/10 bg-white/5 text-5xl shadow-xl">
                   ⚡
                 </div>
 
                 <h2 className="mt-4 text-2xl font-black">
-                  Ready?
+                  {dailyMode
+                    ? `${config.label} Daily Challenge`
+                    : "Ready?"}
                 </h2>
 
                 <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-white/55">
-                  The screen will tell you when to
-                  click. Don&apos;t click before it turns
-                  green.
+                  {dailyMode
+                    ? `Today's Reaction Rush challenge is set to ${config.label} difficulty.`
+                    : "The screen will tell you when to click. Don't click before it turns green."}
                 </p>
 
                 <div className="mt-4 flex flex-wrap justify-center gap-3">
                   <div className="rounded-full border border-white/10 bg-white/3 px-4 py-2 text-xs font-bold text-white/60">
-                    🎯 +10–100 points
+                    🎯 +10–100
+                    points
                   </div>
 
                   <div className="rounded-full border border-white/10 bg-white/3 px-4 py-2 text-xs font-bold text-white/60">
-                    🚫 False start = 0
+                    🚫 False
+                    start = 0
                   </div>
                 </div>
 
-                {isDailyChallenge && (
+                {dailyMode && (
                   <div className="mx-auto mt-4 max-w-xs rounded-xl border border-fuchsia-300/10 bg-fuchsia-300/5 px-3 py-2 text-xs font-bold text-fuchsia-200/60">
-                    🌟 Daily reward: +10 points
-                    +50 XP
+                    🌟 Daily
+                    reward: +{DAILY_CHALLENGE_BONUS_POINTS}
+                    points +{dailyChallenge.rewardXP}
+                    XP
                   </div>
                 )}
 
                 <button
                   type="button"
-                  onClick={startGame}
+                  onClick={
+                    startGame
+                  }
                   className="mp-button mt-4 bg-white px-8 py-4 text-sm text-black shadow-xl shadow-white/10 hover:bg-white/90"
                 >
-                  Start Reaction Rush
+                  {dailyMode
+                    ? "Start Daily Challenge"
+                    : "Start Reaction Rush"}
+
                   <span className="ml-2">
                     →
                   </span>
@@ -548,17 +779,25 @@ export default function ReactionRushPage() {
 
             {/* Waiting / Ready */}
 
-            {(gameState === "waiting" ||
-              gameState === "ready") && (
+            {(gameState ===
+              "waiting" ||
+              gameState ===
+                "ready") && (
               <button
                 type="button"
-                onClick={handleBoardClick}
+                onClick={
+                  handleBoardClick
+                }
                 className={[
                   "flex min-h-[clamp(12rem,45dvh,24rem)] w-full select-none flex-col items-center justify-center rounded-3xl border transition-all duration-200 sm:min-h-[clamp(14rem,48dvh,28rem)]",
-                  gameState === "ready"
+
+                  gameState ===
+                  "ready"
                     ? "border-emerald-300/20 bg-emerald-400/8 active:scale-[0.99]"
                     : "border-white/[0.07] bg-white/2.5 active:scale-[0.99]",
-                ].join(" ")}
+                ].join(
+                  " "
+                )}
               >
                 {gameState ===
                 "waiting" ? (
@@ -572,7 +811,8 @@ export default function ReactionRushPage() {
                     </p>
 
                     <p className="mt-2 text-sm font-bold text-white/50">
-                      Don&apos;t click yet!
+                      Don&apos;t click
+                      yet!
                     </p>
 
                     <div className="mt-4 flex items-center gap-2">
@@ -592,7 +832,8 @@ export default function ReactionRushPage() {
                     </p>
 
                     <p className="mt-3 text-sm font-bold text-white/55">
-                      NOW! NOW! NOW!
+                      NOW! NOW!
+                      NOW!
                     </p>
                   </>
                 )}
@@ -601,7 +842,8 @@ export default function ReactionRushPage() {
 
             {/* Round Result */}
 
-            {gameState === "result" && (
+            {gameState ===
+              "result" && (
               <div className="py-10 text-center sm:py-14">
                 {falseStart ? (
                   <>
@@ -614,9 +856,10 @@ export default function ReactionRushPage() {
                     </p>
 
                     <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-white/55">
-                      You clicked before the
-                      signal. Stay focused and
-                      wait for green.
+                      You clicked before
+                      the signal. Stay
+                      focused and wait
+                      for green.
                     </p>
 
                     <div className="mx-auto mt-4 max-w-sm rounded-3xl border border-orange-300/10 bg-orange-300/5 p-5">
@@ -632,11 +875,13 @@ export default function ReactionRushPage() {
                 ) : (
                   <>
                     <div className="text-6xl">
-                      {reactionTime !== null &&
+                      {reactionTime !==
+                        null &&
                       reactionTime <=
                         200
                         ? "🔥"
-                        : reactionTime !== null &&
+                        : reactionTime !==
+                              null &&
                             reactionTime <=
                               350
                           ? "⚡"
@@ -654,7 +899,8 @@ export default function ReactionRushPage() {
                     </p>
 
                     <p className="mt-3 text-sm font-bold text-white/55">
-                      {reactionTime !== null &&
+                      {reactionTime !==
+                        null &&
                       reactionTime <=
                         config.target
                         ? "🔥 Target beaten!"
@@ -664,7 +910,8 @@ export default function ReactionRushPage() {
                     <div className="mx-auto mt-4 max-w-sm rounded-3xl border border-white/[0.07] bg-white/2.5 p-5">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-white/50">
-                          Round points
+                          Round
+                          points
                         </span>
 
                         <span className="text-xl font-black text-white">
@@ -683,7 +930,9 @@ export default function ReactionRushPage() {
 
                 <button
                   type="button"
-                  onClick={continueGame}
+                  onClick={
+                    continueGame
+                  }
                   className="mp-button mt-4 bg-white px-8 py-4 text-sm text-black shadow-xl shadow-white/10 hover:bg-white/90"
                 >
                   {round >=
@@ -700,18 +949,21 @@ export default function ReactionRushPage() {
 
             {/* Final Results */}
 
-            {gameState === "finished" && (
+            {gameState ===
+              "finished" && (
               <div className="py-8 text-center sm:py-12">
                 <div className="mp-float text-7xl">
                   🏆
                 </div>
 
                 <p className="mt-5 text-xs font-black uppercase tracking-[0.2em] text-cyan-300/60">
-                  Challenge Complete
+                  Challenge
+                  Complete
                 </p>
 
                 <h2 className="mt-2 text-3xl font-black sm:text-4xl">
-                  Reaction Rush cleared!
+                  Reaction Rush
+                  cleared!
                 </h2>
 
                 <div className="mx-auto mt-4 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
@@ -762,9 +1014,11 @@ export default function ReactionRushPage() {
 
                 {dailyBonusEarned && (
                   <div className="mx-auto mt-4 max-w-2xl rounded-3xl border border-fuchsia-300/15 bg-fuchsia-300/5 px-4 py-3 text-sm font-bold text-fuchsia-200/70">
-                    🌟 Daily Challenge
-                    complete · +10 points ·
-                    +50 XP
+                    🌟 Daily
+                    Challenge
+                    complete ·
+                    +{DAILY_CHALLENGE_BONUS_POINTS} points ·
+                    +{dailyChallenge.rewardXP} XP
                   </div>
                 )}
 
@@ -804,10 +1058,13 @@ export default function ReactionRushPage() {
                 <div className="mt-4 flex flex-col justify-center gap-3 sm:flex-row">
                   <button
                     type="button"
-                    onClick={startGame}
+                    onClick={
+                      startGame
+                    }
                     className="mp-button bg-white px-8 py-4 text-sm text-black shadow-xl shadow-white/10 hover:bg-white/90"
                   >
                     Play Again
+
                     <span className="ml-2">
                       ↻
                     </span>
@@ -817,7 +1074,8 @@ export default function ReactionRushPage() {
                     href="/games"
                     className="mp-button border border-white/10 bg-white/4 px-8 py-4 text-sm text-white/70 hover:bg-white/[0.07]"
                   >
-                    Back to Arcade
+                    Back to
+                    Arcade
                   </Link>
                 </div>
               </div>

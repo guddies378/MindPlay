@@ -1,13 +1,21 @@
 "use client";
 
 import GameShell from "@/components/GameShell";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+
 import { recordGame } from "@/lib/progress";
+
 import {
   completeDailyChallenge,
   DAILY_CHALLENGE_BONUS_POINTS,
   getDailyChallenge,
 } from "@/lib/dailyChallenge";
+
 import { unlockGameAchievement } from "@/lib/achievements";
 
 type Difficulty = "easy" | "normal" | "hard";
@@ -18,12 +26,30 @@ type ColorOption = {
 };
 
 const COLORS: ColorOption[] = [
-  { name: "RED", value: "#ef4444" },
-  { name: "BLUE", value: "#3b82f6" },
-  { name: "GREEN", value: "#22c55e" },
-  { name: "YELLOW", value: "#eab308" },
-  { name: "PURPLE", value: "#a855f7" },
-  { name: "ORANGE", value: "#f97316" },
+  {
+    name: "RED",
+    value: "#ef4444",
+  },
+  {
+    name: "BLUE",
+    value: "#3b82f6",
+  },
+  {
+    name: "GREEN",
+    value: "#22c55e",
+  },
+  {
+    name: "YELLOW",
+    value: "#eab308",
+  },
+  {
+    name: "PURPLE",
+    value: "#a855f7",
+  },
+  {
+    name: "ORANGE",
+    value: "#f97316",
+  },
 ];
 
 const DIFFICULTIES: Record<
@@ -41,12 +67,14 @@ const DIFFICULTIES: Record<
     responseTime: 3000,
     baseXP: 20,
   },
+
   normal: {
     rounds: 15,
     colors: 5,
     responseTime: 2200,
     baseXP: 35,
   },
+
   hard: {
     rounds: 20,
     colors: 6,
@@ -55,11 +83,17 @@ const DIFFICULTIES: Record<
   },
 };
 
-const getRandomColor = (count: number): ColorOption => {
-  const available = COLORS.slice(0, count);
+const getRandomColor = (
+  count: number
+): ColorOption => {
+  const available =
+    COLORS.slice(0, count);
 
   return available[
-    Math.floor(Math.random() * available.length)
+    Math.floor(
+      Math.random() *
+        available.length
+    )
   ];
 };
 
@@ -67,25 +101,41 @@ const getDifferentColor = (
   correctColor: ColorOption,
   count: number
 ): ColorOption => {
-  const available = COLORS.slice(0, count).filter(
-    (color) => color.name !== correctColor.name
-  );
+  const available =
+    COLORS.slice(0, count).filter(
+      (color) =>
+        color.name !==
+        correctColor.name
+    );
 
   return available[
-    Math.floor(Math.random() * available.length)
+    Math.floor(
+      Math.random() *
+        available.length
+    )
   ];
 };
 
 export default function ColorClashPage() {
+  const dailyChallenge =
+    getDailyChallenge();
+
+  const [dailyMode, setDailyMode] =
+    useState(false);
+
   const [difficulty, setDifficulty] =
     useState<Difficulty>("normal");
 
-  const [gameState, setGameState] = useState<
-    "menu" | "playing" | "finished"
-  >("menu");
+  const [gameState, setGameState] =
+    useState<
+      "menu" | "playing" | "finished"
+    >("menu");
 
-  const [round, setRound] = useState(0);
-  const [score, setScore] = useState(0);
+  const [round, setRound] =
+    useState(0);
+
+  const [score, setScore] =
+    useState(0);
 
   const [targetColor, setTargetColor] =
     useState<ColorOption | null>(null);
@@ -93,22 +143,32 @@ export default function ColorClashPage() {
   const [displayedColor, setDisplayedColor] =
     useState<ColorOption | null>(null);
 
-  const [options, setOptions] = useState<ColorOption[]>([]);
+  const [options, setOptions] =
+    useState<ColorOption[]>([]);
 
-  const [correct, setCorrect] = useState(0);
-  const [wrong, setWrong] = useState(0);
+  const [correct, setCorrect] =
+    useState(0);
 
-  const [combo, setCombo] = useState(0);
-  const [bestCombo, setBestCombo] = useState(0);
+  const [wrong, setWrong] =
+    useState(0);
+
+  const [combo, setCombo] =
+    useState(0);
+
+  const [bestCombo, setBestCombo] =
+    useState(0);
 
   const [lastCorrect, setLastCorrect] =
     useState<boolean | null>(null);
 
-  const [lastPoints, setLastPoints] = useState(0);
+  const [lastPoints, setLastPoints] =
+    useState(0);
 
-  const [timeLeft, setTimeLeft] = useState(0);
+  const [timeLeft, setTimeLeft] =
+    useState(0);
 
-  const [xpEarned, setXpEarned] = useState(0);
+  const [xpEarned, setXpEarned] =
+    useState(0);
 
   const [dailyBonusEarned, setDailyBonusEarned] =
     useState(false);
@@ -121,95 +181,27 @@ export default function ColorClashPage() {
     ReturnType<typeof setInterval> | null
   >(null);
 
-  const config = DIFFICULTIES[difficulty];
+  const config =
+    DIFFICULTIES[difficulty];
 
-  const dailyChallenge = getDailyChallenge();
-
-  const isDailyChallenge =
-    dailyChallenge.game === "color-clash";
-
-  const clearRoundTimers = useCallback(() => {
-    if (roundTimerRef.current) {
-      clearTimeout(roundTimerRef.current);
-      roundTimerRef.current = null;
-    }
-
-    if (countdownTimerRef.current) {
-      clearInterval(countdownTimerRef.current);
-      countdownTimerRef.current = null;
-    }
-  }, []);
-
-  const createRound = useCallback(() => {
-    const wordColor = getRandomColor(config.colors);
-
-    const inkColor = getDifferentColor(
-      wordColor,
-      config.colors
-    );
-
-    const shuffledOptions = [
-      inkColor,
-      ...COLORS.slice(0, config.colors)
-        .filter(
-          (color) => color.name !== inkColor.name
-        )
-        .sort(() => Math.random() - 0.5)
-        .slice(0, config.colors - 1),
-    ].sort(() => Math.random() - 0.5);
-
-    setTargetColor(wordColor);
-    setDisplayedColor(inkColor);
-    setOptions(shuffledOptions);
-
-    setTimeLeft(config.responseTime);
-    setLastCorrect(null);
-    setLastPoints(0);
-
-    if (roundTimerRef.current) {
-      clearTimeout(roundTimerRef.current);
-    }
-
-    if (countdownTimerRef.current) {
-      clearInterval(countdownTimerRef.current);
-    }
-
-    const startTime = Date.now();
-
-    countdownTimerRef.current = setInterval(() => {
-      const elapsed = Date.now() - startTime;
-
-      const remaining = Math.max(
-        0,
-        config.responseTime - elapsed
+  /*
+   * Daily Challenge
+   *
+   * Daily mode is enabled ONLY when:
+   *
+   * 1. ?daily=true is present
+   * 2. difficulty is valid
+   * 3. today's selected game is Color Clash
+   * 4. URL difficulty matches today's
+   *    Daily Challenge difficulty
+   */
+  useEffect(() => {
+    const params =
+      new URLSearchParams(
+        window.location.search
       );
 
-      setTimeLeft(remaining);
-    }, 50);
-
-    roundTimerRef.current = setTimeout(() => {
-      setWrong((current) => current + 1);
-      setCombo(0);
-      setLastCorrect(false);
-      setLastPoints(0);
-
-      setRound((current) => current + 1);
-    }, config.responseTime);
-  }, [
-    config.colors,
-    config.responseTime,
-  ]);
-
-  const startGame = () => {
-    clearRoundTimers();
-
-    let startingDifficulty = difficulty;
-
-    const params = new URLSearchParams(
-      window.location.search
-    );
-
-    const dailyMode =
+    const urlDaily =
       params.get("daily") === "true";
 
     const urlDifficulty =
@@ -221,19 +213,205 @@ export default function ColorClashPage() {
       urlDifficulty === "hard";
 
     if (
-      isDailyChallenge &&
-      dailyMode &&
+      urlDaily &&
       validDifficulty &&
-      urlDifficulty === dailyChallenge.difficulty
+      dailyChallenge.game ===
+        "color-clash" &&
+      urlDifficulty ===
+        dailyChallenge.difficulty
     ) {
-      startingDifficulty =
-        dailyChallenge.difficulty;
+      const dailyTimer = setTimeout(() => {
+        setDailyMode(true);
+      setDifficulty(
+        dailyChallenge.difficulty
+      );
+      }, 0);
 
-      setDifficulty(startingDifficulty);
+      return () => clearTimeout(dailyTimer);
     }
+  }, [
+    dailyChallenge.game,
+    dailyChallenge.difficulty,
+  ]);
+
+  const clearRoundTimers =
+    useCallback(() => {
+      if (
+        roundTimerRef.current
+      ) {
+        clearTimeout(
+          roundTimerRef.current
+        );
+
+        roundTimerRef.current =
+          null;
+      }
+
+      if (
+        countdownTimerRef.current
+      ) {
+        clearInterval(
+          countdownTimerRef.current
+        );
+
+        countdownTimerRef.current =
+          null;
+      }
+    }, []);
+
+  const createRound =
+    useCallback(
+      (
+        activeDifficulty: Difficulty
+      ) => {
+        const activeConfig =
+          DIFFICULTIES[
+            activeDifficulty
+          ];
+
+        const wordColor =
+          getRandomColor(
+            activeConfig.colors
+          );
+
+        const inkColor =
+          getDifferentColor(
+            wordColor,
+            activeConfig.colors
+          );
+
+        const shuffledOptions = [
+          inkColor,
+          ...COLORS.slice(
+            0,
+            activeConfig.colors
+          )
+            .filter(
+              (color) =>
+                color.name !==
+                inkColor.name
+            )
+            .sort(
+              () =>
+                Math.random() -
+                0.5
+            )
+            .slice(
+              0,
+              activeConfig.colors -
+                1
+            ),
+        ].sort(
+          () =>
+            Math.random() -
+            0.5
+        );
+
+        setTargetColor(
+          wordColor
+        );
+
+        setDisplayedColor(
+          inkColor
+        );
+
+        setOptions(
+          shuffledOptions
+        );
+
+        setTimeLeft(
+          activeConfig.responseTime
+        );
+
+        setLastCorrect(null);
+        setLastPoints(0);
+
+        if (
+          roundTimerRef.current
+        ) {
+          clearTimeout(
+            roundTimerRef.current
+          );
+        }
+
+        if (
+          countdownTimerRef.current
+        ) {
+          clearInterval(
+            countdownTimerRef.current
+          );
+        }
+
+        const startTime =
+          Date.now();
+
+        countdownTimerRef.current =
+          setInterval(() => {
+            const elapsed =
+              Date.now() -
+              startTime;
+
+            const remaining =
+              Math.max(
+                0,
+                activeConfig.responseTime -
+                  elapsed
+              );
+
+            setTimeLeft(
+              remaining
+            );
+          }, 50);
+
+        roundTimerRef.current =
+          setTimeout(() => {
+            setWrong(
+              (current) =>
+                current + 1
+            );
+
+            setCombo(0);
+
+            setLastCorrect(
+              false
+            );
+
+            setLastPoints(0);
+
+            setRound(
+              (current) =>
+                current + 1
+            );
+          }, activeConfig.responseTime);
+      },
+      []
+    );
+
+  const startGame = () => {
+    clearRoundTimers();
+
+    /*
+     * Daily Challenge always uses
+     * today's selected difficulty.
+     *
+     * Normal games use the selected
+     * difficulty from the menu.
+     */
+    const activeDifficulty =
+      dailyMode &&
+      dailyChallenge.game ===
+        "color-clash"
+        ? dailyChallenge.difficulty
+        : difficulty;
+
+    setDifficulty(
+      activeDifficulty
+    );
 
     const startingConfig =
-      DIFFICULTIES[startingDifficulty];
+      DIFFICULTIES[
+        activeDifficulty
+      ];
 
     setGameState("playing");
 
@@ -256,177 +434,278 @@ export default function ColorClashPage() {
     setDailyBonusEarned(false);
   };
 
-  const finishGame = useCallback(() => {
-    clearRoundTimers();
-
-    const dailyCompleted =
-      isDailyChallenge &&
-      completeDailyChallenge("color-clash");
-
-    const finalScore =
-      score +
-      (dailyCompleted
-        ? DAILY_CHALLENGE_BONUS_POINTS
-        : 0);
-
-    const comboBonus =
-      bestCombo >= 8
-        ? 20
-        : bestCombo >= 5
-          ? 10
-          : 0;
-
-    const scoreBonus = Math.min(
-      50,
-      Math.floor(finalScore / 20)
-    );
-
-    const baseTotalXP =
-      config.baseXP +
-      scoreBonus +
-      comboBonus;
-
-    const displayedXP =
-      baseTotalXP +
-      (dailyCompleted ? 50 : 0);
-
-    setScore(finalScore);
-    setXpEarned(displayedXP);
-    setDailyBonusEarned(dailyCompleted);
-
-    recordGame(
-      finalScore,
-      baseTotalXP
-    );
-
-    unlockGameAchievement(
-      "color-focus"
-    );
-
-    setGameState("finished");
-  }, [
-    bestCombo,
-    clearRoundTimers,
-    config.baseXP,
-    isDailyChallenge,
-    score,
-  ]);
-
-  const handleAnswer = useCallback(
-    (selectedColor: ColorOption) => {
-      if (
-        gameState !== "playing" ||
-        !displayedColor
-      ) {
-        return;
-      }
-
+  const finishGame =
+    useCallback(() => {
       clearRoundTimers();
 
       /*
-       * Color Clash uses the classic Stroop-style rule:
-       * choose the color the word is displayed in,
-       * not the word itself.
+       * Only a valid Daily Challenge
+       * can claim the daily reward.
        */
-      const isCorrect =
-        selectedColor.name ===
-        displayedColor.name;
+      const dailyCompleted =
+        dailyMode &&
+        dailyChallenge.game ===
+          "color-clash"
+          ? completeDailyChallenge(
+              "color-clash"
+            )
+          : false;
 
-      if (isCorrect) {
-        const newCombo = combo + 1;
+      /*
+       * Daily Challenge gives
+       * +10 score.
+       */
+      const finalScore =
+        score +
+        (dailyCompleted
+          ? DAILY_CHALLENGE_BONUS_POINTS
+          : 0);
 
-        const comboBonus = Math.min(
-          30,
-          Math.floor(newCombo / 3) * 5
-        );
+      /*
+       * Combo bonus.
+       */
+      const comboBonus =
+        bestCombo >= 8
+          ? 20
+          : bestCombo >= 5
+            ? 10
+            : 0;
 
-        const points =
-          10 + comboBonus;
-
-        setScore(
-          (current) => current + points
-        );
-
-        setCorrect(
-          (current) => current + 1
-        );
-
-        setCombo(newCombo);
-
-        setBestCombo((current) =>
-          Math.max(
-            current,
-            newCombo
+      /*
+       * Score bonus.
+       */
+      const scoreBonus =
+        Math.min(
+          50,
+          Math.floor(
+            finalScore / 20
           )
         );
 
-        setLastCorrect(true);
-        setLastPoints(points);
-      } else {
-        setScore((current) =>
-          Math.max(
-            0,
-            current - 5
-          )
-        );
+      /*
+       * Normal XP earned from
+       * playing Color Clash.
+       */
+      const baseTotalXP =
+        config.baseXP +
+        scoreBonus +
+        comboBonus;
 
-        setWrong(
-          (current) => current + 1
-        );
+      /*
+       * Daily XP is separate from
+       * normal game XP.
+       *
+       * Only add it to the displayed
+       * total because completeDailyChallenge()
+       * handles the actual XP award.
+       */
+      const displayedXP =
+        baseTotalXP +
+        (dailyCompleted
+          ? dailyChallenge.rewardXP
+          : 0);
 
-        setCombo(0);
-
-        setLastCorrect(false);
-        setLastPoints(-5);
-      }
-
-      setRound(
-        (current) => current + 1
+      setScore(finalScore);
+      setXpEarned(
+        displayedXP
       );
-    },
-    [
-      clearRoundTimers,
-      combo,
-      displayedColor,
-      gameState,
-    ]
-  );
 
+      setDailyBonusEarned(
+        dailyCompleted
+      );
+
+      recordGame(
+        finalScore,
+        baseTotalXP
+      );
+
+      unlockGameAchievement(
+        "color-focus"
+      );
+
+      setGameState(
+        "finished"
+      );
+    }, [
+      bestCombo,
+      clearRoundTimers,
+      config.baseXP,
+      dailyChallenge.game,
+      dailyChallenge.rewardXP,
+      dailyMode,
+      score,
+    ]);
+
+  const handleAnswer =
+    useCallback(
+      (
+        selectedColor: ColorOption
+      ) => {
+        if (
+          gameState !==
+            "playing" ||
+          !displayedColor
+        ) {
+          return;
+        }
+
+        clearRoundTimers();
+
+        /*
+         * Color Clash uses the classic
+         * Stroop-style rule:
+         *
+         * Choose the color the word
+         * is displayed in, not the word.
+         */
+        const isCorrect =
+          selectedColor.name ===
+          displayedColor.name;
+
+        if (isCorrect) {
+          const newCombo =
+            combo + 1;
+
+          const comboBonus =
+            Math.min(
+              30,
+              Math.floor(
+                newCombo / 3
+              ) * 5
+            );
+
+          const points =
+            10 + comboBonus;
+
+          setScore(
+            (current) =>
+              current + points
+          );
+
+          setCorrect(
+            (current) =>
+              current + 1
+          );
+
+          setCombo(
+            newCombo
+          );
+
+          setBestCombo(
+            (current) =>
+              Math.max(
+                current,
+                newCombo
+              )
+          );
+
+          setLastCorrect(
+            true
+          );
+
+          setLastPoints(
+            points
+          );
+        } else {
+          setScore(
+            (current) =>
+              Math.max(
+                0,
+                current - 5
+              )
+          );
+
+          setWrong(
+            (current) =>
+              current + 1
+          );
+
+          setCombo(0);
+
+          setLastCorrect(
+            false
+          );
+
+          setLastPoints(
+            -5
+          );
+        }
+
+        setRound(
+          (current) =>
+            current + 1
+        );
+      },
+      [
+        clearRoundTimers,
+        combo,
+        displayedColor,
+        gameState,
+      ]
+    );
+
+  /*
+   * Start each round and finish
+   * when all rounds are complete.
+   */
   useEffect(() => {
-    if (gameState !== "playing") {
+    if (
+      gameState !==
+      "playing"
+    ) {
       return;
     }
 
-    if (round >= config.rounds) {
-      const finishTimer = setTimeout(() => {
-        finishGame();
-      }, 0);
+    const activeConfig =
+      DIFFICULTIES[difficulty];
+
+    if (
+      round >=
+      activeConfig.rounds
+    ) {
+      const finishTimer =
+        setTimeout(() => {
+          finishGame();
+        }, 0);
 
       return () => {
-        clearTimeout(finishTimer);
+        clearTimeout(
+          finishTimer
+        );
       };
     }
 
-    const roundTimer = setTimeout(() => {
-      createRound();
-    }, 0);
+    const roundTimer =
+      setTimeout(() => {
+        createRound(
+          difficulty
+        );
+      }, 0);
 
     return () => {
-      clearTimeout(roundTimer);
+      clearTimeout(
+        roundTimer
+      );
     };
   }, [
-    config.rounds,
     createRound,
+    difficulty,
     finishGame,
     gameState,
     round,
   ]);
 
+  /*
+   * Keyboard controls.
+   */
   useEffect(() => {
     const handleKeyboard = (
       event: globalThis.KeyboardEvent
     ) => {
-      if (gameState !== "playing") {
+      if (
+        gameState !==
+        "playing"
+      ) {
         return;
       }
 
@@ -436,10 +715,14 @@ export default function ColorClashPage() {
       const selectedColor =
         options.find(
           (color) =>
-            color.name.charAt(0) === key
+            color.name.charAt(
+              0
+            ) === key
         );
 
-      if (selectedColor) {
+      if (
+        selectedColor
+      ) {
         handleAnswer(
           selectedColor
         );
@@ -463,33 +746,55 @@ export default function ColorClashPage() {
     options,
   ]);
 
+  /*
+   * Clean up timers when leaving
+   * the page.
+   */
   useEffect(() => {
     return () => {
       clearRoundTimers();
     };
-  }, [clearRoundTimers]);
+  }, [
+    clearRoundTimers,
+  ]);
 
-  if (gameState === "finished") {
+  /*
+   * Difficulty is locked during
+   * an active Daily Challenge.
+   */
+  const difficultyLocked =
+    dailyMode ||
+    gameState ===
+      "playing";
+
+  /*
+   * Finished screen.
+   */
+  if (
+    gameState ===
+    "finished"
+  ) {
     const totalAnswers =
       correct + wrong;
 
     const accuracy =
       totalAnswers > 0
         ? Math.round(
-            (correct / totalAnswers) *
+            (correct /
+              totalAnswers) *
               100
           )
         : 0;
 
     return (
       <GameShell
-      icon="🎨"
-      category="FOCUS"
-      title="Color"
-      highlightedTitle="Clash"
-      description="Pick the color the word is displayed in, not the word itself."
-      maxWidth="lg"
-    >
+        icon="🎨"
+        category="FOCUS"
+        title="Color"
+        highlightedTitle="Clash"
+        description="Pick the color the word is displayed in, not the word itself."
+        maxWidth="lg"
+      >
         <div className="mx-auto flex min-h-0 max-w-3xl items-center justify-center">
           <div className="w-full rounded-3xl border border-white/10 bg-white/3 p-8 text-center shadow-2xl sm:p-12">
             <div className="text-6xl">
@@ -497,7 +802,9 @@ export default function ColorClashPage() {
             </div>
 
             <p className="mt-5 text-xs font-black uppercase tracking-[0.3em] text-cyan-300/70">
-              Color Clash Complete
+              {dailyMode
+                ? "Daily Challenge Complete"
+                : "Color Clash Complete"}
             </p>
 
             <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
@@ -547,29 +854,47 @@ export default function ColorClashPage() {
             </div>
 
             <p className="mx-auto mt-4 max-w-md text-sm leading-6 text-white/60">
-              You answered {correct} correctly
-              and missed {wrong}. Keep playing to
-              sharpen your focus and reaction speed.
+              You answered{" "}
+              {correct} correctly
+              and missed{" "}
+              {wrong}. Keep
+              playing to sharpen
+              your focus and
+              reaction speed.
             </p>
 
             {dailyBonusEarned && (
               <div className="mx-auto mt-5 max-w-md rounded-2xl border border-yellow-300/15 bg-yellow-300/5 p-4">
                 <p className="text-sm font-black text-yellow-300">
-                  🏆 Daily Challenge Bonus
+                  🏆 Daily Challenge
+                  Bonus
                 </p>
 
                 <p className="mt-1 text-xs text-white/60">
-                  +10 score · +50 XP
+                  +
+                  {
+                    DAILY_CHALLENGE_BONUS_POINTS
+                  }{" "}
+                  score · +
+                  {
+                    dailyChallenge.rewardXP
+                  }{" "}
+                  XP
                 </p>
               </div>
             )}
 
             <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:justify-center">
               <button
-                onClick={startGame}
+                type="button"
+                onClick={
+                  startGame
+                }
                 className="rounded-2xl bg-white px-6 py-3 text-sm font-black text-black transition hover:scale-[1.02]"
               >
-                Play Again
+                {dailyMode
+                  ? "Play Daily Again"
+                  : "Play Again"}
               </button>
 
               <a
@@ -585,14 +910,23 @@ export default function ColorClashPage() {
     );
   }
 
-  if (gameState === "playing") {
+  /*
+   * Playing screen.
+   */
+  if (
+    gameState ===
+    "playing"
+  ) {
     const progress =
       config.rounds > 0
-        ? (round / config.rounds) * 100
+        ? (round /
+            config.rounds) *
+          100
         : 0;
 
     const timerProgress =
-      config.responseTime > 0
+      config.responseTime >
+      0
         ? (timeLeft /
             config.responseTime) *
           100
@@ -600,13 +934,13 @@ export default function ColorClashPage() {
 
     return (
       <GameShell
-      icon="🎨"
-      category="FOCUS"
-      title="Color"
-      highlightedTitle="Clash"
-      description="Pick the color the word is displayed in, not the word itself."
-      maxWidth="lg"
-    >
+        icon="🎨"
+        category="FOCUS"
+        title="Color"
+        highlightedTitle="Clash"
+        description="Pick the color the word is displayed in, not the word itself."
+        maxWidth="lg"
+      >
         <div className="mx-auto max-w-4xl">
           <div className="mb-4">
             <div className="flex items-center justify-between gap-4">
@@ -621,7 +955,8 @@ export default function ColorClashPage() {
                     round + 1,
                     config.rounds
                   )}{" "}
-                  / {config.rounds}
+                  /{" "}
+                  {config.rounds}
                 </p>
               </div>
 
@@ -652,8 +987,19 @@ export default function ColorClashPage() {
           <div className="rounded-3xl border border-white/10 bg-white/3 p-6 shadow-2xl sm:p-10">
             <div className="text-center">
               <p className="text-xs font-black uppercase tracking-[0.25em] text-white/50">
-                Choose the display color
+                Choose the display
+                color
               </p>
+
+              {dailyMode && (
+                <p className="mt-2 text-[10px] font-black uppercase tracking-[0.2em] text-fuchsia-300/60">
+                  Daily Challenge ·{" "}
+                  {
+                    difficulty
+                  }{" "}
+                  🔒
+                </p>
+              )}
 
               <div className="mt-4">
                 <p
@@ -664,11 +1010,14 @@ export default function ColorClashPage() {
                       "#ffffff",
                   }}
                 >
-                  {targetColor?.name}
+                  {
+                    targetColor?.name
+                  }
                 </p>
 
                 <p className="mt-3 text-sm text-white/50">
-                  Ignore the word. Choose the color
+                  Ignore the word.
+                  Choose the color
                   you see.
                 </p>
               </div>
@@ -676,12 +1025,17 @@ export default function ColorClashPage() {
 
             <div className="mx-auto mt-4 max-w-xl">
               <div className="mb-2 flex items-center justify-between text-xs font-bold text-white/50">
-                <span>Time</span>
+                <span>
+                  Time
+                </span>
 
                 <span>
                   {(
-                    timeLeft / 1000
-                  ).toFixed(1)}
+                    timeLeft /
+                    1000
+                  ).toFixed(
+                    1
+                  )}
                   s
                 </span>
               </div>
@@ -690,7 +1044,10 @@ export default function ColorClashPage() {
                 <div
                   className="h-full rounded-full bg-pink-300 transition-[width] duration-75"
                   style={{
-                    width: `${timerProgress}%`,
+                    width: `${Math.max(
+                      0,
+                      timerProgress
+                    )}%`,
                   }}
                 />
               </div>
@@ -698,9 +1055,14 @@ export default function ColorClashPage() {
 
             <div className="mx-auto mt-5 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-3">
               {options.map(
-                (color) => (
+                (
+                  color
+                ) => (
                   <button
-                    key={color.name}
+                    key={
+                      color.name
+                    }
+                    type="button"
                     onClick={() =>
                       handleAnswer(
                         color
@@ -717,14 +1079,18 @@ export default function ColorClashPage() {
                     />
 
                     <p className="mt-3 text-sm font-black tracking-wider">
-                      {color.name}
+                      {
+                        color.name
+                      }
                     </p>
 
                     <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/40">
                       Press{" "}
-                      {color.name.charAt(
-                        0
-                      )}
+                      {
+                        color.name.charAt(
+                          0
+                        )
+                      }
                     </p>
                   </button>
                 )
@@ -751,7 +1117,8 @@ export default function ColorClashPage() {
               </div>
             </div>
 
-            {lastCorrect !== null && (
+            {lastCorrect !==
+              null && (
               <div
                 className={`mt-4 text-center text-sm font-black ${
                   lastCorrect
@@ -770,6 +1137,9 @@ export default function ColorClashPage() {
     );
   }
 
+  /*
+   * Menu screen.
+   */
   return (
     <GameShell
       icon="🎨"
@@ -787,7 +1157,9 @@ export default function ColorClashPage() {
             </div>
 
             <p className="mt-4 text-[10px] font-black uppercase tracking-[0.25em] text-cyan-300/70">
-              Ready?
+              {dailyMode
+                ? "Daily Challenge"
+                : "Ready?"}
             </p>
 
             <h2 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">
@@ -795,104 +1167,159 @@ export default function ColorClashPage() {
             </h2>
 
             <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-white/60 sm:text-base">
-              Pick the color the word is displayed in, not the word itself.
+              Pick the color the
+              word is displayed
+              in, not the word
+              itself.
             </p>
 
-            {isDailyChallenge && (
-            <div className="mx-auto mt-5 max-w-md rounded-2xl border border-yellow-300/15 bg-yellow-300/5 p-4">
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-yellow-300/70">
-                🏆 Daily Challenge
-              </p>
+            {dailyMode && (
+              <div className="mx-auto mt-5 max-w-md rounded-2xl border border-yellow-300/15 bg-yellow-300/5 p-4">
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-yellow-300/70">
+                  🏆 Daily Challenge
+                  🔒
+                </p>
 
-              <p className="mt-2 text-sm text-white/70">
-                Today&apos;s challenge is set to{" "}
-                <strong className="capitalize text-yellow-300">
-                  {dailyChallenge.difficulty}
-                </strong>{" "}
-                difficulty.
-              </p>
+                <p className="mt-2 text-sm text-white/70">
+                  Today&apos;s
+                  challenge is
+                  locked to{" "}
+                  <strong className="capitalize text-yellow-300">
+                    {
+                      dailyChallenge.difficulty
+                    }
+                  </strong>{" "}
+                  difficulty.
+                </p>
 
-              <p className="mt-1 text-xs text-white/50">
-                Complete it for +10 score and +50 XP.
-              </p>
-            </div>
-          )}
+                <p className="mt-1 text-xs text-white/50">
+                  Complete it for +
+                  {
+                    DAILY_CHALLENGE_BONUS_POINTS
+                  }{" "}
+                  score and +
+                  {
+                    dailyChallenge.rewardXP
+                  }{" "}
+                  XP.
+                </p>
+              </div>
+            )}
 
-          <div className="mx-auto mt-5 max-w-md">
-            <div className="grid grid-cols-3 gap-2 rounded-2xl border border-white/10 bg-white/3 p-2">
-              {(
-                Object.keys(
-                  DIFFICULTIES
-                ) as Difficulty[]
-              ).map((level) => (
-                <button
-                  key={level}
-                  onClick={() =>
-                    setDifficulty(level)
+            <div className="mx-auto mt-5 max-w-md">
+              <div className="grid grid-cols-3 gap-2 rounded-2xl border border-white/10 bg-white/3 p-2">
+                {(
+                  Object.keys(
+                    DIFFICULTIES
+                  ) as Difficulty[]
+                ).map(
+                  (
+                    level
+                  ) => {
+                    const active =
+                      difficulty ===
+                      level;
+
+                    return (
+                      <button
+                        key={
+                          level
+                        }
+                        type="button"
+                        onClick={() => {
+                          if (
+                            difficultyLocked
+                          ) {
+                            return;
+                          }
+
+                          setDifficulty(
+                            level
+                          );
+                        }}
+                        disabled={
+                          difficultyLocked
+                        }
+                        className={`rounded-xl px-3 py-3 text-xs font-black uppercase tracking-wider transition ${
+                          active
+                            ? "bg-white text-black"
+                            : "text-white/60 hover:bg-white/5 hover:text-white"
+                        } ${
+                          difficultyLocked
+                            ? "cursor-not-allowed opacity-40"
+                            : ""
+                        }`}
+                      >
+                        {
+                          level
+                        }
+                      </button>
+                    );
                   }
-                  className={`rounded-xl px-3 py-3 text-xs font-black uppercase tracking-wider transition ${
-                    difficulty === level
-                      ? "bg-white text-black"
-                      : "text-white/60 hover:bg-white/5 hover:text-white"
-                  }`}
-                >
-                  {level}
-                </button>
-              ))}
+                )}
+              </div>
+
+              <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs">
+                <div className="rounded-xl border border-white/5 bg-white/2 p-3">
+                  <p className="font-black text-white/60">
+                    {
+                      config.rounds
+                    }
+                  </p>
+
+                  <p className="mt-1 text-white/40">
+                    Rounds
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-white/5 bg-white/2 p-3">
+                  <p className="font-black text-white/60">
+                    {(
+                      config.responseTime /
+                      1000
+                    ).toFixed(
+                      1
+                    )}
+                    s
+                  </p>
+
+                  <p className="mt-1 text-white/40">
+                    Time
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-white/5 bg-white/2 p-3">
+                  <p className="font-black text-yellow-300/70">
+                    +{config.baseXP}
+                  </p>
+
+                  <p className="mt-1 text-white/40">
+                    Base XP
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={
+                  startGame
+                }
+                className="mt-4 w-full rounded-2xl bg-white px-6 py-4 text-sm font-black text-black transition hover:scale-[1.02] active:scale-[0.99]"
+              >
+                {dailyMode
+                  ? "Start Daily Challenge"
+                  : "Start Game"}
+              </button>
+
+              <a
+                href="/games"
+                className="mt-4 block text-sm font-bold text-white/50 transition hover:text-white"
+              >
+                Back to Arcade
+              </a>
             </div>
-
-            <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs">
-              <div className="rounded-xl border border-white/5 bg-white/2 p-3">
-                <p className="font-black text-white/60">
-                  {config.rounds}
-                </p>
-
-                <p className="mt-1 text-white/40">
-                  Rounds
-                </p>
-              </div>
-
-              <div className="rounded-xl border border-white/5 bg-white/2 p-3">
-                <p className="font-black text-white/60">
-                  {(
-                    config.responseTime /
-                    1000
-                  ).toFixed(1)}
-                  s
-                </p>
-
-                <p className="mt-1 text-white/40">
-                  Time
-                </p>
-              </div>
-
-              <div className="rounded-xl border border-white/5 bg-white/2 p-3">
-                <p className="font-black text-yellow-300/70">
-                  +{config.baseXP}
-                </p>
-
-                <p className="mt-1 text-white/40">
-                  Base XP
-                </p>
-              </div>
-            </div>
-
-            <button
-              onClick={startGame}
-              className="mt-4 w-full rounded-2xl bg-white px-6 py-4 text-sm font-black text-black transition hover:scale-[1.02] active:scale-[0.99]"
-            >
-              Start Game
-            </button>
-
-            <a
-              href="/games"
-              className="mt-4 block text-sm font-bold text-white/50 transition hover:text-white"
-            >
-              Back to Arcade
-            </a>
           </div>
         </div>
-      </div>
       </div>
     </GameShell>
   );

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
   completeDailyChallenge,
+  DAILY_CHALLENGE_BONUS_POINTS,
   getDailyChallenge,
 } from "@/lib/dailyChallenge";
 import {
@@ -139,6 +140,9 @@ export default function SequenceMasterPage() {
   const [difficulty, setDifficulty] =
     useState<Difficulty>("normal");
 
+  const [dailyMode, setDailyMode] =
+    useState(false);
+
   const [gameState, setGameState] =
     useState<GameState>("idle");
 
@@ -201,10 +205,66 @@ export default function SequenceMasterPage() {
       [],
     );
 
+  /*
+   * Detect Daily Challenge mode.
+   *
+   * The difficulty comes from the URL:
+   *
+   * ?daily=true&difficulty=easy
+   * ?daily=true&difficulty=normal
+   * ?daily=true&difficulty=hard
+   *
+   * We also verify that the URL matches
+   * today's actual Sequence Master challenge.
+   */
+  useEffect(() => {
+    const params =
+      new URLSearchParams(
+        window.location.search,
+      );
+
+    const urlDaily =
+      params.get("daily") === "true";
+
+    const urlDifficulty =
+      params.get("difficulty");
+
+    const validDifficulty =
+      urlDifficulty === "easy" ||
+      urlDifficulty === "normal" ||
+      urlDifficulty === "hard";
+
+    if (
+      urlDaily &&
+      validDifficulty &&
+      dailyChallenge.game ===
+        "sequence-master" &&
+      urlDifficulty ===
+        dailyChallenge.difficulty
+    ) {
+      const dailyTimer = setTimeout(() => {
+        setDailyMode(true);
+      setDifficulty(
+        dailyChallenge.difficulty,
+      );
+      }, 0);
+
+      return () => clearTimeout(dailyTimer);
+    }
+  }, [dailyChallenge.game, dailyChallenge.difficulty]);
+
   const settings =
     DIFFICULTIES[difficulty];
 
   function startGame() {
+    const activeDifficulty =
+      dailyMode &&
+      dailyChallenge.game === "sequence-master"
+        ? dailyChallenge.difficulty
+        : difficulty;
+
+    setDifficulty(activeDifficulty);
+
     setRound(1);
     setScore(0);
     setCorrectCount(0);
@@ -219,7 +279,7 @@ export default function SequenceMasterPage() {
 
     startRound(
       1,
-      difficulty,
+      activeDifficulty,
     );
   }
 
@@ -418,20 +478,26 @@ export default function SequenceMasterPage() {
       false;
 
     /*
-     * Complete the daily challenge first.
-     *
-     * completeDailyChallenge() handles
-     * awarding the daily XP itself.
+     * Only complete the daily challenge
+     * when this page was actually opened
+     * in valid Daily Challenge mode.
      */
     if (
+      dailyMode &&
       dailyChallenge.game ===
-      "sequence-master"
+        "sequence-master"
     ) {
       receivedDailyBonus =
         completeDailyChallenge(
           "sequence-master",
         );
     }
+
+    const finalScore =
+      score +
+      (receivedDailyBonus
+        ? DAILY_CHALLENGE_BONUS_POINTS
+        : 0);
 
     const totalXP =
       gameXP +
@@ -454,17 +520,17 @@ export default function SequenceMasterPage() {
     /*
      * Record only the normal game XP.
      *
-     * The daily challenge reward is already
-     * added separately by completeDailyChallenge().
+     * The Daily Challenge reward is
+     * handled separately.
      */
     recordGame(
-      score,
+      finalScore,
       gameXP,
     );
 
     /*
-     * Sequence Master has one game-specific
-     * achievement in achievements.ts.
+     * Sequence Master has a
+     * game-specific achievement.
      */
     unlockGameAchievement(
       "sequence-master",
@@ -478,6 +544,13 @@ export default function SequenceMasterPage() {
   function changeDifficulty(
     nextDifficulty: Difficulty,
   ) {
+    /*
+     * Daily Challenge difficulty is locked.
+     */
+    if (dailyMode) {
+      return;
+    }
+
     if (
       gameState !== "idle"
     ) {
@@ -575,7 +648,9 @@ export default function SequenceMasterPage() {
                   </p>
 
                   <p className="mt-1 text-sm font-bold text-white/75">
-                    Choose your pace.
+                    {dailyMode
+                      ? "Daily difficulty is locked."
+                      : "Choose your pace."}
                   </p>
                 </div>
 
@@ -583,6 +658,16 @@ export default function SequenceMasterPage() {
                   {settings.icon}
                 </span>
               </div>
+
+              {dailyMode && (
+                <div className="mb-4 rounded-2xl border border-cyan-300/15 bg-cyan-300/6 px-4 py-3 text-center text-sm font-bold text-cyan-200">
+                  🌟 Daily Challenge ·{" "}
+                  <span className="capitalize">
+                    {difficulty}
+                  </span>{" "}
+                  🔒
+                </div>
+              )}
 
               <div className="grid grid-cols-3 gap-2">
 
@@ -599,6 +684,9 @@ export default function SequenceMasterPage() {
                     <button
                       key={level}
                       type="button"
+                      disabled={
+                        dailyMode
+                      }
                       onClick={() =>
                         changeDifficulty(
                           level,
@@ -608,9 +696,20 @@ export default function SequenceMasterPage() {
                         active
                           ? "border-cyan-300/30 bg-cyan-300/10 text-cyan-200"
                           : "border-white/8 bg-white/2.5 text-white/50 hover:bg-white/5 hover:text-white"
+                      } ${
+                        dailyMode
+                          ? "cursor-not-allowed opacity-50"
+                          : ""
                       }`}
                     >
                       {level}
+
+                      {dailyMode &&
+                        active && (
+                          <span className="ml-1">
+                            🔒
+                          </span>
+                        )}
                     </button>
                   );
                 })}
@@ -640,7 +739,9 @@ export default function SequenceMasterPage() {
               onClick={startGame}
               className="w-full rounded-2xl bg-white px-6 py-4 text-sm font-black text-black transition hover:scale-[1.01] hover:bg-cyan-100 active:scale-[0.99] sm:text-base"
             >
-              Start Sequence
+              {dailyMode
+                ? "Start Daily Challenge"
+                : "Start Sequence"}
             </button>
 
           </div>
@@ -665,9 +766,19 @@ export default function SequenceMasterPage() {
                 </p>
               </div>
 
-              <div className="rounded-full border border-white/10 bg-white/4 px-3 py-1.5 text-xs font-bold text-white/50">
-                {sequence.length}{" "}
-                symbols
+              <div className="flex items-center gap-2">
+
+                {dailyMode && (
+                  <div className="rounded-full border border-cyan-300/15 bg-cyan-300/6 px-3 py-1.5 text-xs font-bold text-cyan-200">
+                    Daily 🔒
+                  </div>
+                )}
+
+                <div className="rounded-full border border-white/10 bg-white/4 px-3 py-1.5 text-xs font-bold text-white/50">
+                  {sequence.length}{" "}
+                  symbols
+                </div>
+
               </div>
 
             </div>
@@ -984,11 +1095,8 @@ export default function SequenceMasterPage() {
                   complete
 
                   <span className="ml-2 text-cyan-200/60">
-                    +
-                    {
-                      dailyChallenge.rewardXP
-                    }{" "}
-                    XP
+                    +{DAILY_CHALLENGE_BONUS_POINTS} score · +
+                    {dailyChallenge.rewardXP} XP
                   </span>
                 </div>
               )}
@@ -1004,7 +1112,9 @@ export default function SequenceMasterPage() {
                 }
                 className="rounded-2xl bg-white px-6 py-4 text-sm font-black text-black transition hover:bg-cyan-100 active:scale-[0.99]"
               >
-                Play Again
+                {dailyMode
+                  ? "Play Daily Again"
+                  : "Play Again"}
               </button>
 
               <Link

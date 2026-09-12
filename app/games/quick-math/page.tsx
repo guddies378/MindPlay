@@ -5,6 +5,11 @@ import { useEffect, useState } from "react";
 import GameShell from "@/components/GameShell";
 import { recordGame } from "@/lib/progress";
 import { unlockGameAchievement } from "@/lib/achievements";
+import {
+  completeDailyChallenge,
+  DAILY_CHALLENGE_BONUS_POINTS,
+  getDailyChallenge,
+} from "@/lib/dailyChallenge";
 
 type Difficulty = "easy" | "normal" | "hard";
 
@@ -143,6 +148,20 @@ function createQuestion(
 }
 
 export default function QuickMathPage() {
+  /*
+   * Daily Challenge
+   *
+   * The daily challenge is determined from
+   * the current date. We only activate daily
+   * mode when the URL explicitly contains:
+   *
+   * ?daily=true&difficulty=easy|normal|hard
+   */
+  const dailyChallenge = getDailyChallenge();
+
+  const [dailyMode, setDailyMode] =
+    useState(false);
+
   const [difficulty, setDifficulty] =
     useState<Difficulty>("normal");
 
@@ -182,9 +201,62 @@ export default function QuickMathPage() {
   const [xpEarned, setXpEarned] =
     useState(0);
 
+  /*
+   * Detect Daily Challenge mode.
+   *
+   * We do this after the component mounts
+   * so normal gameplay and server rendering
+   * remain unchanged.
+   */
+  useEffect(() => {
+    const params =
+      new URLSearchParams(
+        window.location.search,
+      );
+
+    const urlDaily =
+      params.get("daily") === "true";
+
+    const urlDifficulty =
+      params.get("difficulty");
+
+    const validDifficulty =
+      urlDifficulty === "easy" ||
+      urlDifficulty === "normal" ||
+      urlDifficulty === "hard";
+
+    const matchesDailyChallenge =
+      urlDaily &&
+      validDifficulty &&
+      urlDifficulty ===
+        dailyChallenge.difficulty &&
+      dailyChallenge.game ===
+        "quick-math";
+
+    if (matchesDailyChallenge) {
+      const dailyDifficulty =
+        dailyChallenge.difficulty;
+
+      const dailyTimer = setTimeout(() => {
+        setDailyMode(true);
+        setDifficulty(dailyDifficulty);
+      }, 0);
+
+      return () => clearTimeout(dailyTimer);
+    }
+  }, [dailyChallenge.game, dailyChallenge.difficulty]);
+
   const startGame = () => {
+    const activeDifficulty =
+      dailyMode &&
+      dailyChallenge.game === "quick-math"
+        ? dailyChallenge.difficulty
+        : difficulty;
+
+    setDifficulty(activeDifficulty);
+
     setQuestion(
-      createQuestion(difficulty),
+      createQuestion(activeDifficulty),
     );
 
     setAnswer("");
@@ -193,7 +265,7 @@ export default function QuickMathPage() {
     setWrong(0);
 
     setTimeLeft(
-      DIFFICULTIES[difficulty].time,
+      DIFFICULTIES[activeDifficulty].time,
     );
 
     setStarted(true);
@@ -246,22 +318,41 @@ export default function QuickMathPage() {
       setGameOver(true);
       setStarted(false);
 
+      const dailyCompleted =
+        dailyMode &&
+        dailyChallenge.game === "quick-math"
+          ? completeDailyChallenge("quick-math")
+          : false;
+
+      const finalScore =
+        score +
+        (dailyCompleted
+          ? DAILY_CHALLENGE_BONUS_POINTS
+          : 0);
+
       const baseXP =
         DIFFICULTIES[difficulty].xp;
 
       const scoreBonus = Math.min(
         30,
-        Math.floor(score / 10),
+        Math.floor(finalScore / 10),
       );
 
-      const totalXP =
+      const baseTotalXP =
         baseXP + scoreBonus;
 
-      setXpEarned(totalXP);
+      const displayedXP =
+        baseTotalXP +
+        (dailyCompleted
+          ? dailyChallenge.rewardXP
+          : 0);
+
+      setScore(finalScore);
+      setXpEarned(displayedXP);
 
       recordGame(
-        score,
-        totalXP,
+        finalScore,
+        baseTotalXP,
       );
 
       unlockGameAchievement(
@@ -277,6 +368,9 @@ export default function QuickMathPage() {
     timeLeft,
     difficulty,
     score,
+    dailyMode,
+    dailyChallenge.game,
+    dailyChallenge.rewardXP,
   ]);
 
   const submitAnswer = () => {
@@ -364,12 +458,16 @@ export default function QuickMathPage() {
               </p>
 
               <p className="mt-1 text-xs font-semibold text-white/65 sm:text-sm">
-                Choose your pace.
+                {dailyMode
+                  ? "Today&apos;s challenge."
+                  : "Choose your pace."}
               </p>
             </div>
 
             <span className="text-[9px] font-medium text-white/45 sm:text-[10px]">
-              More risk · more XP
+              {dailyMode
+                ? "Daily Challenge 🔒"
+                : "More risk · more XP"}
             </span>
           </div>
 
@@ -387,7 +485,10 @@ export default function QuickMathPage() {
                   key={level}
                   type="button"
                   onClick={() => {
-                    if (started) {
+                    if (
+                      started ||
+                      dailyMode
+                    ) {
                       return;
                     }
 
@@ -404,14 +505,18 @@ export default function QuickMathPage() {
                         .time,
                     );
                   }}
-                  disabled={started}
+                  disabled={
+                    started ||
+                    dailyMode
+                  }
                   className={`group relative overflow-hidden rounded-2xl border p-3 text-left transition-all duration-300 sm:rounded-3xl sm:p-4 ${
                     selected
                       ? "border-cyan-300/25 bg-white/7.5 shadow-[0_12px_40px_rgba(34,211,238,0.06)]"
                       : "border-white/8 bg-white/2.5 hover:border-white/15 hover:bg-white/4.5"
                   } ${
-                    started
-                      ? "cursor-not-allowed opacity-text-white/60"
+                    started ||
+                    dailyMode
+                      ? "cursor-not-allowed opacity-60"
                       : ""
                   }`}
                 >
@@ -561,17 +666,21 @@ export default function QuickMathPage() {
                 </div>
 
                 <p className="mt-6 text-[9px] font-black uppercase tracking-[0.22em] text-cyan-300/55">
-                  Ready?
+                  {dailyMode
+                    ? "Daily Challenge"
+                    : "Ready?"}
                 </p>
 
                 <h2 className="mt-2 text-2xl font-black tracking-tight sm:text-4xl">
-                  Think fast.
+                  {dailyMode
+                    ? `${DIFFICULTIES[difficulty].label} mode.`
+                    : "Think fast."}
                 </h2>
 
                 <p className="mx-auto mt-2 max-w-md text-xs leading-5 text-white/55 sm:text-sm">
-                  Answer as many equations
-                  as possible before time runs
-                  out.
+                  {dailyMode
+                    ? `Today&apos;s Quick Math challenge is set to ${DIFFICULTIES[difficulty].label}.`
+                    : "Answer as many equations as possible before time runs out."}
                 </p>
 
                 <button
@@ -579,7 +688,9 @@ export default function QuickMathPage() {
                   onClick={startGame}
                   className="mp-button mt-7 rounded-full bg-white px-7 py-3 text-xs font-black text-black shadow-[0_12px_40px_rgba(255,255,255,0.08)] transition-all hover:bg-cyan-100 hover:shadow-[0_15px_45px_rgba(34,211,238,0.12)] sm:mt-9 sm:px-8 sm:py-3.5 sm:text-sm"
                 >
-                  Start challenge
+                  {dailyMode
+                    ? "Start Daily Challenge"
+                    : "Start challenge"}
                 </button>
               </div>
             )}
@@ -633,7 +744,7 @@ export default function QuickMathPage() {
                         ? "border-cyan-300/50 shadow-[0_0_35px_rgba(34,211,238,0.08)]"
                         : feedback ===
                             "wrong"
-                          ? "border-fuchsia-300/50 shadow-[0_0_35px_rgba(217,text-white/70,239,0.08)]"
+                          ? "border-fuchsia-300/50 shadow-[0_0_35px_rgba(217,239,239,0.08)]"
                           : "border-white/10 focus:border-cyan-300/35 focus:bg-white/[0.035]"
                     }`}
                   />
@@ -684,6 +795,12 @@ export default function QuickMathPage() {
                 correctly and missed{" "}
                 {wrong}.
               </p>
+
+              {dailyMode && (
+                <div className="mx-auto mt-4 max-w-md rounded-2xl border border-fuchsia-300/15 bg-fuchsia-300/5 px-4 py-3 text-xs font-bold text-fuchsia-200/70">
+                  🌟 Daily Challenge complete · +{DAILY_CHALLENGE_BONUS_POINTS} score · +{dailyChallenge.rewardXP} XP
+                </div>
+              )}
 
               <div className="mx-auto mt-7 grid max-w-sm grid-cols-2 gap-2 sm:mt-9 sm:gap-3">
                 <div className="rounded-2xl border border-white/8 bg-white/2.5 px-4 py-4">

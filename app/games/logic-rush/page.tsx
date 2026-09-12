@@ -423,35 +423,33 @@ function difficultyToKey(
   return difficulty;
 }
 
+function urlDifficultyToDifficulty(
+  value: string | null
+): Difficulty | null {
+  if (value === "easy") {
+    return "Easy";
+  }
+
+  if (value === "normal") {
+    return "Normal";
+  }
+
+  if (value === "hard") {
+    return "Hard";
+  }
+
+  return null;
+}
+
 export default function LogicRushPage() {
+  const dailyChallenge =
+    getDailyChallenge();
+
   const [difficulty, setDifficulty] =
-    useState<Difficulty>(() => {
-      if (typeof window === "undefined") {
-        return "Normal";
-      }
+    useState<Difficulty>("Normal");
 
-      const params =
-        new URLSearchParams(
-          window.location.search
-        );
-
-      const urlDifficulty =
-        params.get("difficulty");
-
-      if (urlDifficulty === "easy") {
-        return "Easy";
-      }
-
-      if (urlDifficulty === "normal") {
-        return "Normal";
-      }
-
-      if (urlDifficulty === "hard") {
-        return "Hard";
-      }
-
-      return "Normal";
-    });
+  const [dailyMode, setDailyMode] =
+    useState(false);
 
   const [gameState, setGameState] =
     useState<GameState>("menu");
@@ -489,17 +487,63 @@ export default function LogicRushPage() {
   const [questionSet, setQuestionSet] =
     useState<Puzzle[]>([]);
 
+  /*
+   * Activate Daily Challenge only when:
+   *
+   * 1. daily=true is present
+   * 2. difficulty is valid
+   * 3. this is today's Logic Rush challenge
+   * 4. URL difficulty matches today's
+   *    actual Daily Challenge difficulty
+   */
+  useEffect(() => {
+    const params =
+      new URLSearchParams(
+        window.location.search
+      );
+
+    const urlDaily =
+      params.get("daily") === "true";
+
+    const urlDifficulty =
+      params.get("difficulty");
+
+    const parsedDifficulty =
+      urlDifficultyToDifficulty(
+        urlDifficulty
+      );
+
+    if (
+      urlDaily &&
+      parsedDifficulty &&
+      dailyChallenge.game === "logic-rush" &&
+      urlDifficulty ===
+        dailyChallenge.difficulty
+    ) {
+      const dailyTimer = setTimeout(() => {
+        setDailyMode(true);
+      setDifficulty(
+        parsedDifficulty
+      );
+      }, 0);
+
+      return () => clearTimeout(dailyTimer);
+    }
+  }, [
+    dailyChallenge.game,
+    dailyChallenge.difficulty,
+  ]);
+
   const config =
     DIFFICULTIES[difficulty];
 
   const currentPuzzle =
     questionSet[round - 1];
 
-  const dailyChallenge =
-    getDailyChallenge();
-
-  const isDailyChallenge =
-    dailyChallenge.game === "logic-rush";
+  const difficultyLocked =
+    dailyMode ||
+    (gameState !== "menu" &&
+      gameState !== "finished");
 
   const handleAnswer = useCallback(
     (answerIndex: number | null) => {
@@ -611,7 +655,8 @@ export default function LogicRushPage() {
     const timer =
       window.setTimeout(() => {
         setTimeLeft(
-          (current) => current - 1
+          (current) =>
+            current - 1
         );
       }, 1000);
 
@@ -624,11 +669,39 @@ export default function LogicRushPage() {
   ]);
 
   function startGame() {
+    const activeDifficulty =
+      dailyMode &&
+      dailyChallenge.game ===
+        "logic-rush"
+        ? urlDifficultyToDifficulty(
+            dailyChallenge.difficulty
+          ) ?? "Normal"
+        : difficulty;
+
+    if (
+      activeDifficulty !==
+      difficulty
+    ) {
+      setDifficulty(
+        activeDifficulty
+      );
+    }
+
+    const activeConfig =
+      DIFFICULTIES[
+        activeDifficulty
+      ];
+
     const puzzles = shuffle(
       PUZZLES[
-        difficultyToKey(difficulty)
+        difficultyToKey(
+          activeDifficulty
+        )
       ]
-    ).slice(0, config.rounds);
+    ).slice(
+      0,
+      activeConfig.rounds
+    );
 
     setQuestionSet(puzzles);
     setRound(1);
@@ -641,7 +714,7 @@ export default function LogicRushPage() {
     setFinalXP(0);
     setDailyBonusEarned(false);
     setTimeLeft(
-      config.timeLimit
+      activeConfig.timeLimit
     );
     setGameState("playing");
   }
@@ -673,27 +746,28 @@ export default function LogicRushPage() {
 
   function finishGame() {
     /*
-     * The score state already contains
-     * all normal round points and penalties.
-     *
-     * Daily Challenge gives +10 score.
+     * Daily Challenge bonus is ONLY
+     * available when the game was started
+     * through valid Daily Challenge mode.
      */
     const dailyCompleted =
-      isDailyChallenge &&
-      completeDailyChallenge(
+      dailyMode &&
+      dailyChallenge.game ===
         "logic-rush"
-      );
+        ? completeDailyChallenge(
+            "logic-rush"
+          )
+        : false;
 
+    /*
+     * Daily Challenge gives +10 score.
+     */
     const finalScore =
       score +
       (dailyCompleted
         ? DAILY_CHALLENGE_BONUS_POINTS
         : 0);
 
-    /*
-     * Keep the displayed result score
-     * consistent with the recorded score.
-     */
     setScore(finalScore);
 
     const scoreBonus =
@@ -713,11 +787,10 @@ export default function LogicRushPage() {
     }
 
     /*
-     * completeDailyChallenge()
-     * already adds +50 XP.
+     * Normal Logic Rush XP.
      *
-     * Therefore recordGame() receives
-     * only the normal XP.
+     * completeDailyChallenge() already
+     * awards the Daily Challenge XP.
      */
     const baseXP =
       config.baseXP +
@@ -727,7 +800,7 @@ export default function LogicRushPage() {
     const displayXP =
       baseXP +
       (dailyCompleted
-        ? 50
+        ? dailyChallenge.rewardXP
         : 0);
 
     setFinalXP(displayXP);
@@ -827,6 +900,9 @@ export default function LogicRushPage() {
                     <button
                       key={level}
                       type="button"
+                      disabled={
+                        difficultyLocked
+                      }
                       onClick={() =>
                         setDifficulty(
                           level
@@ -836,6 +912,10 @@ export default function LogicRushPage() {
                         active
                           ? "border-cyan-300/40 bg-cyan-300/10 text-cyan-200"
                           : "border-white/10 bg-white/3 text-white/70 hover:bg-white/6 hover:text-white"
+                      } ${
+                        difficultyLocked
+                          ? "cursor-not-allowed opacity-60"
+                          : ""
                       }`}
                     >
                       {level}
@@ -845,27 +925,33 @@ export default function LogicRushPage() {
               </div>
             </div>
 
-            {isDailyChallenge && (
-              <div className="mb-4 rounded-2xl border border-yellow-300/15 bg-yellow-300/5 p-4 text-center">
-                <p className="text-xs font-black uppercase tracking-[0.2em] text-yellow-300/70">
-                  🏆 Daily Challenge
-                </p>
+            {dailyMode &&
+              dailyChallenge.game ===
+                "logic-rush" && (
+                <div className="mb-4 rounded-2xl border border-yellow-300/15 bg-yellow-300/5 p-4 text-center">
+                  <p className="text-xs font-black uppercase tracking-[0.2em] text-yellow-300/70">
+                    🏆 Daily Challenge
+                  </p>
 
-                <p className="mt-2 text-sm text-white/70">
-                  Today&apos;s Logic Rush
-                  challenge is{" "}
-                  <strong className="text-yellow-300">
-                    {dailyChallenge.difficulty}
-                  </strong>
-                  .
-                </p>
+                  <p className="mt-2 text-sm text-white/70">
+                    Today&apos;s Logic Rush
+                    challenge is{" "}
+                    <strong className="text-yellow-300">
+                      {dailyChallenge.difficulty}
+                    </strong>
+                    .
+                  </p>
 
-                <p className="mt-1 text-xs text-white/50">
-                  Complete it for +10 score
-                  and +50 XP.
-                </p>
-              </div>
-            )}
+                  <p className="mt-1 text-xs text-white/50">
+                    Difficulty is locked.
+                    Complete it for +
+                    {DAILY_CHALLENGE_BONUS_POINTS}{" "}
+                    score and +
+                    {dailyChallenge.rewardXP}{" "}
+                    XP.
+                  </p>
+                </div>
+              )}
 
             <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
               <div className="rounded-2xl bg-white/4 p-4 text-center">
@@ -930,7 +1016,9 @@ export default function LogicRushPage() {
               onClick={startGame}
               className="mp-button w-full bg-white px-6 py-4 text-sm text-black hover:opacity-90"
             >
-              Start Logic Rush
+              {dailyMode
+                ? "🏆 Start Daily Challenge"
+                : "Start Logic Rush"}
             </button>
           </section>
         )}
@@ -1007,6 +1095,23 @@ export default function LogicRushPage() {
                   />
                 </div>
               </div>
+
+              {/* Daily Challenge Banner */}
+              {dailyMode &&
+                dailyChallenge.game ===
+                  "logic-rush" && (
+                  <div className="mb-3 rounded-2xl border border-yellow-300/15 bg-yellow-300/5 px-4 py-3 text-center">
+                    <p className="text-xs font-black uppercase tracking-[0.18em] text-yellow-300/70">
+                      🏆 Daily Challenge
+                    </p>
+
+                    <p className="mt-1 text-sm font-black text-white/80">
+                      {dailyChallenge.title}{" "}
+                      ·{" "}
+                      {dailyChallenge.difficulty.toUpperCase()}
+                    </p>
+                  </div>
+                )}
 
               {/* Question */}
               {gameState ===
@@ -1172,7 +1277,10 @@ export default function LogicRushPage() {
                 </p>
 
                 <p className="mt-1 text-xs text-white/60">
-                  +10 score · +50 XP
+                  +{DAILY_CHALLENGE_BONUS_POINTS}{" "}
+                  score · +
+                  {dailyChallenge.rewardXP}{" "}
+                  XP
                 </p>
               </div>
             )}
@@ -1241,7 +1349,9 @@ export default function LogicRushPage() {
                 onClick={playAgain}
                 className="mp-button bg-white py-4 text-sm text-black hover:opacity-90"
               >
-                Play Again
+                {dailyMode
+                  ? "🏆 Play Daily Again"
+                  : "Play Again"}
               </button>
 
               <Link

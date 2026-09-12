@@ -2,7 +2,11 @@
 
 import GameShell from "@/components/GameShell";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { recordGame } from "@/lib/progress";
 import {
   completeDailyChallenge,
@@ -11,7 +15,10 @@ import {
 } from "@/lib/dailyChallenge";
 import { unlockGameAchievement } from "@/lib/achievements";
 
-type Difficulty = "easy" | "normal" | "hard";
+type Difficulty =
+  | "easy"
+  | "normal"
+  | "hard";
 
 type GameState =
   | "idle"
@@ -23,7 +30,8 @@ type GameState =
 const DIFFICULTIES = {
   easy: {
     label: "Easy",
-    description: "Start with short numbers",
+    description:
+      "Start with short numbers",
     startingLength: 3,
     maxLength: 9,
     rounds: 8,
@@ -34,7 +42,8 @@ const DIFFICULTIES = {
 
   normal: {
     label: "Normal",
-    description: "Your memory gets tested",
+    description:
+      "Your memory gets tested",
     startingLength: 4,
     maxLength: 12,
     rounds: 9,
@@ -45,7 +54,8 @@ const DIFFICULTIES = {
 
   hard: {
     label: "Hard",
-    description: "For serious brain power",
+    description:
+      "For serious brain power",
     startingLength: 5,
     maxLength: 15,
     rounds: 10,
@@ -55,13 +65,23 @@ const DIFFICULTIES = {
   },
 } as const;
 
-function generateNumber(length: number) {
+function generateNumber(
+  length: number
+) {
   let result = String(
-    Math.floor(Math.random() * 9) + 1
+    Math.floor(
+      Math.random() * 9
+    ) + 1
   );
 
-  for (let i = 1; i < length; i++) {
-    result += Math.floor(Math.random() * 10);
+  for (
+    let i = 1;
+    i < length;
+    i++
+  ) {
+    result += Math.floor(
+      Math.random() * 10
+    );
   }
 
   return result;
@@ -79,55 +99,22 @@ function getRoundScore(
 }
 
 export default function NumberMemoryPage() {
-  const dailyChallenge = getDailyChallenge();
+  const dailyChallenge =
+    getDailyChallenge();
 
-  const isDailyChallenge =
-    dailyChallenge.game ===
-    "number-memory";
+  const [dailyMode, setDailyMode] =
+    useState(false);
 
   const [difficulty, setDifficulty] =
-    useState<Difficulty>(() => {
-      if (
-        typeof window === "undefined" ||
-        dailyChallenge.game !==
-          "number-memory"
-      ) {
-        return "normal";
-      }
-
-      const params =
-        new URLSearchParams(
-          window.location.search
-        );
-
-      const dailyMode =
-        params.get("daily") ===
-        "true";
-
-      const urlDifficulty =
-        params.get("difficulty");
-
-      const validDifficulty =
-        urlDifficulty === "easy" ||
-        urlDifficulty === "normal" ||
-        urlDifficulty === "hard";
-
-      if (
-        dailyMode &&
-        validDifficulty &&
-        urlDifficulty ===
-          dailyChallenge.difficulty
-      ) {
-        return dailyChallenge.difficulty;
-      }
-
-      return "normal";
-    });
+    useState<Difficulty>(
+      "normal"
+    );
 
   const [gameState, setGameState] =
     useState<GameState>("idle");
 
-  const [round, setRound] = useState(0);
+  const [round, setRound] =
+    useState(0);
 
   const [currentNumber, setCurrentNumber] =
     useState("");
@@ -157,7 +144,9 @@ export default function NumberMemoryPage() {
     useState(false);
 
   const [lastCorrect, setLastCorrect] =
-    useState<boolean | null>(null);
+    useState<boolean | null>(
+      null
+    );
 
   const [showCountdown, setShowCountdown] =
     useState(false);
@@ -166,25 +155,27 @@ export default function NumberMemoryPage() {
     useState(0);
 
   const timeoutRef =
-    useRef<ReturnType<typeof setTimeout> | null>(
-      null
-    );
+    useRef<
+      ReturnType<typeof setTimeout> | null
+    >(null);
 
   const countdownRef =
-    useRef<ReturnType<typeof setInterval> | null>(
+    useRef<
+      ReturnType<typeof setInterval> | null
+    >(null);
+
+  const inputRef =
+    useRef<HTMLInputElement | null>(
       null
     );
 
-  const inputRef =
-    useRef<HTMLInputElement | null>(null);
-
   /*
-   * Prevent finishGame() from running more than
-   * once for the same game.
+   * Prevent finishGame() from running
+   * more than once for the same game.
    *
-   * This protects against both:
-   * - the automatic final-round timeout
-   * - the "See Results" button calling finishGame()
+   * This protects against:
+   * - automatic final-round timeout
+   * - "See Results" button
    */
   const finishedRef =
     useRef(false);
@@ -192,9 +183,62 @@ export default function NumberMemoryPage() {
   const config =
     DIFFICULTIES[difficulty];
 
+  /*
+   * Daily Challenge
+   *
+   * Daily Mode activates ONLY when:
+   *
+   * 1. ?daily=true is present
+   * 2. difficulty is valid
+   * 3. today's game is Number Memory
+   * 4. URL difficulty matches today's
+   *    Daily Challenge difficulty
+   */
+  useEffect(() => {
+    const params =
+      new URLSearchParams(
+        window.location.search
+      );
+
+    const urlDaily =
+      params.get("daily") ===
+      "true";
+
+    const urlDifficulty =
+      params.get("difficulty");
+
+    const validDifficulty =
+      urlDifficulty === "easy" ||
+      urlDifficulty === "normal" ||
+      urlDifficulty === "hard";
+
+    if (
+      urlDaily &&
+      validDifficulty &&
+      dailyChallenge.game ===
+        "number-memory" &&
+      urlDifficulty ===
+        dailyChallenge.difficulty
+    ) {
+      const dailyTimer = setTimeout(() => {
+        setDailyMode(true);
+        setDifficulty(
+          dailyChallenge.difficulty
+        );
+      }, 0);
+
+      return () => clearTimeout(dailyTimer);
+    }
+  }, [
+    dailyChallenge.game,
+    dailyChallenge.difficulty,
+  ]);
+
   function clearTimers() {
     if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
+      clearTimeout(
+        timeoutRef.current
+      );
 
       timeoutRef.current = null;
     }
@@ -209,24 +253,41 @@ export default function NumberMemoryPage() {
   }
 
   function getNumberLength(
-    nextRound: number
+    nextRound: number,
+    activeDifficulty: Difficulty =
+      difficulty
   ) {
+    const activeConfig =
+      DIFFICULTIES[
+        activeDifficulty
+      ];
+
     return Math.min(
-      config.startingLength +
+      activeConfig.startingLength +
         Math.floor(
           (nextRound - 1) / 2
         ),
-      config.maxLength
+      activeConfig.maxLength
     );
   }
 
   function startRound(
-    nextRound: number
+    nextRound: number,
+    activeDifficulty: Difficulty =
+      difficulty
   ) {
     clearTimers();
 
+    const activeConfig =
+      DIFFICULTIES[
+        activeDifficulty
+      ];
+
     const length =
-      getNumberLength(nextRound);
+      getNumberLength(
+        nextRound,
+        activeDifficulty
+      );
 
     const number =
       generateNumber(length);
@@ -240,13 +301,15 @@ export default function NumberMemoryPage() {
 
     setCountdown(
       Math.ceil(
-        config.displayTime / 1000
+        activeConfig.displayTime /
+          1000
       )
     );
 
     let secondsLeft =
       Math.ceil(
-        config.displayTime / 1000
+        activeConfig.displayTime /
+          1000
       );
 
     countdownRef.current =
@@ -260,8 +323,12 @@ export default function NumberMemoryPage() {
           )
         );
 
-        if (secondsLeft <= 0) {
-          if (countdownRef.current) {
+        if (
+          secondsLeft <= 0
+        ) {
+          if (
+            countdownRef.current
+          ) {
             clearInterval(
               countdownRef.current
             );
@@ -280,16 +347,35 @@ export default function NumberMemoryPage() {
         setTimeout(() => {
           inputRef.current?.focus();
         }, 50);
-      }, config.displayTime);
+      }, activeConfig.displayTime);
   }
 
   function startGame() {
     clearTimers();
 
     /*
-     * Allow finishGame() again for the new game.
+     * Allow finishGame() again
+     * for the new game.
      */
     finishedRef.current = false;
+
+    /*
+     * Daily Challenge always uses
+     * today's selected difficulty.
+     *
+     * Normal games use the selected
+     * menu difficulty.
+     */
+    const activeDifficulty =
+      dailyMode &&
+      dailyChallenge.game ===
+        "number-memory"
+        ? dailyChallenge.difficulty
+        : difficulty;
+
+    setDifficulty(
+      activeDifficulty
+    );
 
     setRound(0);
     setScore(0);
@@ -304,19 +390,19 @@ export default function NumberMemoryPage() {
     setLastCorrect(null);
     setShowCountdown(false);
 
-    startRound(1);
+    startRound(
+      1,
+      activeDifficulty
+    );
   }
 
   function finishGame(
     finalScore: number
   ) {
     /*
-     * Safety guard:
+     * Safety guard.
      *
-     * If the game has already been finished,
-     * do absolutely nothing.
-     *
-     * This prevents duplicate:
+     * Prevents duplicate:
      * - progress records
      * - XP
      * - achievement unlock attempts
@@ -330,12 +416,24 @@ export default function NumberMemoryPage() {
 
     clearTimers();
 
+    /*
+     * Daily reward is processed ONLY
+     * when this game was actually
+     * entered through Daily Mode.
+     */
     const dailyCompleted =
-      isDailyChallenge &&
-      completeDailyChallenge(
+      dailyMode &&
+      dailyChallenge.game ===
         "number-memory"
-      );
+        ? completeDailyChallenge(
+            "number-memory"
+          )
+        : false;
 
+    /*
+     * Daily Challenge gives
+     * +10 score.
+     */
     const finalScoreWithDailyBonus =
       finalScore +
       (dailyCompleted
@@ -346,7 +444,8 @@ export default function NumberMemoryPage() {
       Math.min(
         40,
         Math.floor(
-          finalScoreWithDailyBonus / 50
+          finalScoreWithDailyBonus /
+            50
         )
       );
 
@@ -357,15 +456,25 @@ export default function NumberMemoryPage() {
           ? 10
           : 0;
 
+    /*
+     * Normal Number Memory XP.
+     */
     const baseTotalXP =
       config.xp +
       scoreBonus +
       streakBonus;
 
+    /*
+     * Daily XP is separate from
+     * normal game XP.
+     *
+     * completeDailyChallenge()
+     * handles the actual daily XP.
+     */
     const displayedXP =
       baseTotalXP +
       (dailyCompleted
-        ? 50
+        ? dailyChallenge.rewardXP
         : 0);
 
     setScore(
@@ -393,12 +502,15 @@ export default function NumberMemoryPage() {
   }
 
   function submitAnswer() {
-    if (gameState !== "input") {
+    if (
+      gameState !== "input"
+    ) {
       return;
     }
 
     const isCorrect =
-      answer === currentNumber;
+      answer ===
+      currentNumber;
 
     const length =
       currentNumber.length;
@@ -421,7 +533,8 @@ export default function NumberMemoryPage() {
         streak + 1;
 
       setCorrect(
-        (value) => value + 1
+        (value) =>
+          value + 1
       );
 
       setStreak(
@@ -453,7 +566,9 @@ export default function NumberMemoryPage() {
       setStreak(0);
     }
 
-    setGameState("result");
+    setGameState(
+      "result"
+    );
 
     if (
       round >=
@@ -479,17 +594,24 @@ export default function NumberMemoryPage() {
       config.rounds
     ) {
       /*
-       * finishGame() is protected by finishedRef,
-       * so even if the automatic timeout is still
-       * pending, this cannot finish the game twice.
+       * finishGame() is protected
+       * by finishedRef.
        */
       finishGame(score);
 
       return;
     }
 
+    const activeDifficulty =
+      dailyMode &&
+      dailyChallenge.game ===
+        "number-memory"
+        ? dailyChallenge.difficulty
+        : difficulty;
+
     startRound(
-      round + 1
+      round + 1,
+      activeDifficulty
     );
   }
 
@@ -509,6 +631,16 @@ export default function NumberMemoryPage() {
       clearTimers();
     };
   }, []);
+
+  /*
+   * Difficulty is locked during
+   * Daily Challenge and while
+   * the game is active.
+   */
+  const difficultyLocked =
+    dailyMode ||
+    (gameState !== "idle" &&
+      gameState !== "finished");
 
   const progress =
     config.rounds > 0
@@ -574,16 +706,28 @@ export default function NumberMemoryPage() {
                     <button
                       key={level}
                       type="button"
-                      onClick={() =>
+                      onClick={() => {
+                        if (
+                          difficultyLocked
+                        ) {
+                          return;
+                        }
+
                         setDifficulty(
                           level
-                        )
+                        );
+                      }}
+                      disabled={
+                        difficultyLocked
                       }
                       className={[
                         "rounded-3xl border p-5 text-left transition-all duration-200",
                         selected
                           ? "border-cyan-300/25 bg-cyan-300/[0.07] shadow-lg shadow-cyan-400/5"
                           : "border-white/[0.07] bg-white/2.5 hover:-translate-y-1 hover:border-white/15 hover:bg-white/5",
+                        difficultyLocked
+                          ? "cursor-not-allowed opacity-40"
+                          : "",
                       ].join(
                         " "
                       )}
@@ -605,7 +749,9 @@ export default function NumberMemoryPage() {
                       </h2>
 
                       <p className="mt-1 text-xs text-white/55">
-                        {item.description}
+                        {
+                          item.description
+                        }
                       </p>
 
                       <div className="mt-4 flex items-center justify-between text-[10px] font-black uppercase tracking-wider">
@@ -624,15 +770,15 @@ export default function NumberMemoryPage() {
               )}
             </div>
 
-            {isDailyChallenge && (
+            {dailyMode && (
               <div className="mt-4 rounded-2xl border border-yellow-300/15 bg-yellow-300/5 p-4 text-center">
                 <p className="text-xs font-black uppercase tracking-[0.2em] text-yellow-300/70">
-                  🏆 Daily Challenge
+                  🏆 Daily Challenge 🔒
                 </p>
 
                 <p className="mt-2 text-sm text-white/70">
-                  Today&apos;s challenge is set
-                  to{" "}
+                  Today&apos;s challenge is
+                  locked to{" "}
                   <strong className="capitalize text-yellow-300">
                     {
                       dailyChallenge.difficulty
@@ -642,8 +788,15 @@ export default function NumberMemoryPage() {
                 </p>
 
                 <p className="mt-1 text-xs text-white/50">
-                  Complete it for +10 score
-                  and +50 XP.
+                  Complete it for +
+                  {
+                    DAILY_CHALLENGE_BONUS_POINTS
+                  }{" "}
+                  score and +
+                  {
+                    dailyChallenge.rewardXP
+                  }{" "}
+                  XP.
                 </p>
               </div>
             )}
@@ -662,7 +815,8 @@ export default function NumberMemoryPage() {
             {/* Stats */}
 
             {gameState !== "idle" &&
-              gameState !== "finished" && (
+              gameState !==
+                "finished" && (
                 <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
                   <div className="rounded-2xl border border-white/[0.07] bg-white/2.5 p-3 text-center">
                     <p className="text-[9px] font-black uppercase tracking-wider text-white/45">
@@ -671,7 +825,9 @@ export default function NumberMemoryPage() {
 
                     <p className="mt-1 text-lg font-black">
                       {round}/
-                      {config.rounds}
+                      {
+                        config.rounds
+                      }
                     </p>
                   </div>
 
@@ -701,7 +857,9 @@ export default function NumberMemoryPage() {
                     </p>
 
                     <p className="mt-1 text-lg font-black text-fuchsia-300">
-                      {currentLength}
+                      {
+                        currentLength
+                      }
                     </p>
                   </div>
                 </div>
@@ -710,7 +868,8 @@ export default function NumberMemoryPage() {
             {/* Progress */}
 
             {gameState !== "idle" &&
-              gameState !== "finished" && (
+              gameState !==
+                "finished" && (
                 <div className="mb-4">
                   <div className="mb-2 flex justify-between text-[9px] font-black uppercase tracking-wider text-white/40">
                     <span>
@@ -749,9 +908,9 @@ export default function NumberMemoryPage() {
                 </h2>
 
                 <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-white/55">
-                  A number will appear for a
-                  few seconds. Memorize it, then
-                  type it back.
+                  A number will appear for
+                  a few seconds. Memorize it,
+                  then type it back.
                 </p>
 
                 <div className="mt-4 flex flex-wrap justify-center gap-3">
@@ -771,7 +930,9 @@ export default function NumberMemoryPage() {
                   }
                   className="mp-button mt-4 bg-white px-8 py-4 text-sm text-black shadow-xl shadow-white/10 hover:bg-white/90"
                 >
-                  Start Number Memory
+                  {dailyMode
+                    ? "Start Daily Challenge"
+                    : "Start Number Memory"}
 
                   <span className="ml-2">
                     →
@@ -782,15 +943,28 @@ export default function NumberMemoryPage() {
 
             {/* Showing Number */}
 
-            {gameState === "showing" && (
+            {gameState ===
+              "showing" && (
               <div className="flex min-h-[clamp(13rem,42dvh,24rem)] flex-col items-center justify-center text-center sm:min-h-[clamp(15rem,48dvh,30rem)]">
                 <p className="text-xs font-black uppercase tracking-[0.25em] text-cyan-300/60">
                   Memorize this
                 </p>
 
+                {dailyMode && (
+                  <p className="mt-2 text-[10px] font-black uppercase tracking-[0.2em] text-fuchsia-300/60">
+                    Daily Challenge ·{" "}
+                    {
+                      config.label
+                    }{" "}
+                    🔒
+                  </p>
+                )}
+
                 <div className="mt-4 rounded-4xl border border-cyan-300/15 bg-cyan-300/4 px-6 py-8 shadow-2xl shadow-cyan-400/5 sm:px-12">
                   <p className="select-none break-all font-mono text-4xl font-black tracking-[0.12em] text-white sm:text-6xl">
-                    {currentNumber}
+                    {
+                      currentNumber
+                    }
                   </p>
                 </div>
 
@@ -810,7 +984,8 @@ export default function NumberMemoryPage() {
 
             {/* Input */}
 
-            {gameState === "input" && (
+            {gameState ===
+              "input" && (
               <div className="flex min-h-[clamp(13rem,42dvh,24rem)] flex-col items-center justify-center text-center sm:min-h-[clamp(15rem,48dvh,30rem)]">
                 <div className="text-6xl">
                   🧠
@@ -821,7 +996,8 @@ export default function NumberMemoryPage() {
                 </h2>
 
                 <p className="mt-2 text-sm text-white/55">
-                  {currentLength} digits
+                  {currentLength}{" "}
+                  digits
                 </p>
 
                 <div className="mt-4 w-full max-w-md">
@@ -835,7 +1011,9 @@ export default function NumberMemoryPage() {
                     maxLength={
                       currentLength
                     }
-                    value={answer}
+                    value={
+                      answer
+                    }
                     onChange={(
                       event
                     ) => {
@@ -880,7 +1058,8 @@ export default function NumberMemoryPage() {
 
             {/* Result */}
 
-            {gameState === "result" && (
+            {gameState ===
+              "result" && (
               <div className="py-10 text-center sm:py-14">
                 {lastCorrect ? (
                   <>
@@ -903,7 +1082,9 @@ export default function NumberMemoryPage() {
                       </p>
 
                       <p className="mt-3 break-all font-mono text-2xl font-black tracking-wider text-white">
-                        {currentNumber}
+                        {
+                          currentNumber
+                        }
                       </p>
 
                       <div className="mt-5 border-t border-white/6 pt-5">
@@ -942,7 +1123,9 @@ export default function NumberMemoryPage() {
                         </p>
 
                         <p className="mt-2 break-all font-mono text-xl font-black tracking-wider text-emerald-300">
-                          {currentNumber}
+                          {
+                            currentNumber
+                          }
                         </p>
                       </div>
 
@@ -1006,7 +1189,15 @@ export default function NumberMemoryPage() {
                     </p>
 
                     <p className="mt-1 text-xs text-white/60">
-                      +10 score · +50 XP
+                      +
+                      {
+                        DAILY_CHALLENGE_BONUS_POINTS
+                      }{" "}
+                      score · +
+                      {
+                        dailyChallenge.rewardXP
+                      }{" "}
+                      XP
                     </p>
                   </div>
                 )}
@@ -1029,7 +1220,9 @@ export default function NumberMemoryPage() {
 
                     <p className="mt-2 text-2xl font-black text-emerald-300">
                       {correct}/
-                      {config.rounds}
+                      {
+                        config.rounds
+                      }
                     </p>
                   </div>
 
@@ -1039,7 +1232,10 @@ export default function NumberMemoryPage() {
                     </p>
 
                     <p className="mt-2 text-2xl font-black text-orange-300">
-                      🔥 {bestStreak}
+                      🔥{" "}
+                      {
+                        bestStreak
+                      }
                     </p>
                   </div>
 
@@ -1064,7 +1260,9 @@ export default function NumberMemoryPage() {
                       <p className="mt-1 text-sm font-bold text-white/60">
                         Longest number remembered:{" "}
                         <span className="text-cyan-300">
-                          {longestNumber}{" "}
+                          {
+                            longestNumber
+                          }{" "}
                           digits
                         </span>
                       </p>
@@ -1084,7 +1282,9 @@ export default function NumberMemoryPage() {
                     }
                     className="mp-button bg-white px-8 py-4 text-sm text-black shadow-xl shadow-white/10 hover:bg-white/90"
                   >
-                    Play Again
+                    {dailyMode
+                      ? "Play Daily Again"
+                      : "Play Again"}
 
                     <span className="ml-2">
                       ↻

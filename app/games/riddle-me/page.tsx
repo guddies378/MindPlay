@@ -471,6 +471,9 @@ export default function RiddleMePage() {
   const [difficulty, setDifficulty] =
     useState<Difficulty>("normal");
 
+  const [dailyMode, setDailyMode] =
+    useState(false);
+
   const [riddle, setRiddle] =
     useState<Riddle>(() =>
       getRandomRiddle("normal"),
@@ -512,16 +515,71 @@ export default function RiddleMePage() {
   const dailyChallenge =
     getDailyChallenge();
 
-  const isDailyChallenge =
-    dailyChallenge.game === "riddle-me";
+  /*
+   * Daily Challenge is only active when:
+   *
+   * 1. ?daily=true is present
+   * 2. difficulty is valid
+   * 3. this is today's selected game
+   * 4. URL difficulty matches today's difficulty
+   */
+  useEffect(() => {
+    const params = new URLSearchParams(
+      window.location.search,
+    );
+
+    const urlDaily =
+      params.get("daily") === "true";
+
+    const urlDifficulty =
+      params.get("difficulty");
+
+    const validDifficulty =
+      urlDifficulty === "easy" ||
+      urlDifficulty === "normal" ||
+      urlDifficulty === "hard";
+
+    if (
+      urlDaily &&
+      validDifficulty &&
+      dailyChallenge.game === "riddle-me" &&
+      urlDifficulty ===
+        dailyChallenge.difficulty
+    ) {
+      const dailyTimer = setTimeout(() => {
+        setDailyMode(true);
+        setDifficulty(
+          dailyChallenge.difficulty,
+        );
+        setRiddle(
+          getRandomRiddle(
+            dailyChallenge.difficulty,
+          ),
+        );
+        setTimeLeft(
+          DIFFICULTIES[
+            dailyChallenge.difficulty
+          ].time,
+        );
+      }, 0);
+
+      return () => clearTimeout(dailyTimer);
+    }
+  }, [dailyChallenge.game, dailyChallenge.difficulty]);
 
   const startGame = (
     selectedDifficulty: Difficulty,
   ) => {
-    setDifficulty(selectedDifficulty);
+    const activeDifficulty =
+      dailyMode &&
+      dailyChallenge.game === "riddle-me"
+        ? dailyChallenge.difficulty
+        : selectedDifficulty;
+
+    setDifficulty(activeDifficulty);
 
     setRiddle(
-      getRandomRiddle(selectedDifficulty),
+      getRandomRiddle(activeDifficulty),
     );
 
     setAnswer("");
@@ -530,7 +588,7 @@ export default function RiddleMePage() {
     setWrong(0);
 
     setTimeLeft(
-      DIFFICULTIES[selectedDifficulty].time,
+      DIFFICULTIES[activeDifficulty].time,
     );
 
     setStarted(true);
@@ -562,10 +620,18 @@ export default function RiddleMePage() {
           const totalXP =
             baseXP + scoreBonus;
 
+          /*
+           * Only a genuine Daily Challenge
+           * can claim the daily reward.
+           */
           const dailyCompleted =
-            completeDailyChallenge(
-              "riddle-me",
-            );
+            dailyMode &&
+            dailyChallenge.game ===
+              "riddle-me"
+              ? completeDailyChallenge(
+                  "riddle-me",
+                )
+              : false;
 
           setDailyChallengeCompleted(
             dailyCompleted,
@@ -579,7 +645,9 @@ export default function RiddleMePage() {
 
           const displayedXP =
             totalXP +
-            (dailyCompleted ? 50 : 0);
+            (dailyCompleted
+              ? dailyChallenge.rewardXP
+              : 0);
 
           setScore(finalScore);
 
@@ -615,6 +683,9 @@ export default function RiddleMePage() {
     timeLeft,
     difficulty,
     score,
+    dailyMode,
+    dailyChallenge.game,
+    dailyChallenge.rewardXP,
   ]);
 
   const submitAnswer = () => {
@@ -697,7 +768,8 @@ export default function RiddleMePage() {
     timeLeft <= 5 && started;
 
   const difficultyLocked =
-    started && !gameOver;
+    dailyMode ||
+    (started && !gameOver);
 
   return (
     <GameShell
@@ -727,7 +799,9 @@ export default function RiddleMePage() {
               </p>
 
               <p className="mt-1 text-xs font-semibold text-white/60 sm:text-sm">
-                Choose your challenge.
+                {dailyMode
+                  ? "Today&apos;s challenge difficulty."
+                  : "Choose your challenge."}
               </p>
             </div>
 
@@ -828,6 +902,13 @@ export default function RiddleMePage() {
               );
             })}
           </div>
+
+          {dailyMode && (
+            <div className="mt-2 flex items-center justify-center gap-1 text-[9px] font-bold text-cyan-300/60 sm:text-[10px]">
+              🎯 Daily Challenge ·{" "}
+              {DIFFICULTIES[difficulty].label} 🔒
+            </div>
+          )}
         </section>
 
         {/* Stats */}
@@ -968,9 +1049,10 @@ export default function RiddleMePage() {
                 </div>
               </div>
 
-              {isDailyChallenge && (
+              {dailyMode && (
                 <div className="mx-auto mt-5 w-fit rounded-full border border-purple-300/10 bg-purple-300/5 px-3.5 py-2 text-[10px] font-bold text-purple-200/60">
-                  🎯 Today&apos;s Daily Challenge
+                  🎯 Today&apos;s Daily Challenge ·{" "}
+                  {DIFFICULTIES[difficulty].label} 🔒
                 </div>
               )}
 
@@ -981,7 +1063,10 @@ export default function RiddleMePage() {
                 }
                 className="mp-button mt-7 rounded-full bg-white px-7 py-3 text-xs font-black text-black shadow-[0_12px_40px_rgba(255,255,255,0.08)] transition-all hover:bg-cyan-100 hover:shadow-[0_15px_45px_rgba(34,211,238,0.12)] sm:px-8 sm:py-3.5 sm:text-sm"
               >
-                Start challenge
+                {dailyMode
+                  ? "Start Daily Challenge"
+                  : "Start challenge"}
+
                 <span className="ml-2">
                   →
                 </span>
@@ -1147,7 +1232,9 @@ export default function RiddleMePage() {
               </div>
 
               <p className="mt-6 text-[9px] font-black uppercase tracking-[0.22em] text-cyan-300/55">
-                Challenge complete
+                {dailyMode
+                  ? "Daily Challenge complete"
+                  : "Challenge complete"}
               </p>
 
               <h2 className="mt-2 text-3xl font-black tracking-tight sm:text-5xl">
@@ -1225,7 +1312,9 @@ export default function RiddleMePage() {
                   </p>
 
                   <p className="mt-1 text-sm font-black text-white/75">
-                    +50 XP · +10 Score
+                    +{dailyChallenge.rewardXP} XP ·
+                    +{DAILY_CHALLENGE_BONUS_POINTS}{" "}
+                    Score
                   </p>
 
                   <p className="mt-1 text-[10px] leading-4 text-white/45 sm:text-xs">
@@ -1242,7 +1331,10 @@ export default function RiddleMePage() {
                 }
                 className="mp-button mt-7 rounded-full bg-white px-7 py-3 text-xs font-black text-black shadow-[0_12px_40px_rgba(255,255,255,0.08)] transition-all hover:bg-cyan-100 sm:mt-9 sm:px-8 sm:py-3.5 sm:text-sm"
               >
-                Play again
+                {dailyMode
+                  ? "Play Daily Again"
+                  : "Play again"}
+
                 <span className="ml-2">
                   →
                 </span>
@@ -1277,13 +1369,11 @@ export default function RiddleMePage() {
 
       <style jsx>{`
         .mp-riddle-correct {
-          animation: riddleCorrect 0.45s
-            ease-out;
+          animation: riddleCorrect 0.45s ease-out;
         }
 
         .mp-riddle-wrong {
-          animation: riddleWrong 0.45s
-            ease-out;
+          animation: riddleWrong 0.45s ease-out;
         }
 
         @keyframes riddleCorrect {

@@ -1,6 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
 
 import GameDailyChallenge from "@/components/GameDailyChallenge";
 import GameShell from "@/components/GameShell";
@@ -38,6 +42,7 @@ const DIFFICULTIES = {
     drawXP: 15,
     lossXP: 10,
   },
+
   normal: {
     label: "Normal",
     description: "Smart AI",
@@ -46,6 +51,7 @@ const DIFFICULTIES = {
     drawXP: 20,
     lossXP: 10,
   },
+
   hard: {
     label: "Hard",
     description: "Unbeatable",
@@ -94,7 +100,8 @@ function getEmptyCells(board: Cell[]) {
 }
 
 function getRandomMove(board: Cell[]) {
-  const emptyCells = getEmptyCells(board);
+  const emptyCells =
+    getEmptyCells(board);
 
   if (emptyCells.length === 0) {
     return null;
@@ -111,14 +118,16 @@ function getWinningMove(
   board: Cell[],
   player: Player
 ) {
-  const emptyCells = getEmptyCells(board);
+  const emptyCells =
+    getEmptyCells(board);
 
   for (const index of emptyCells) {
     const testBoard = [...board];
 
     testBoard[index] = player;
 
-    const result = getWinner(testBoard);
+    const result =
+      getWinner(testBoard);
 
     if (result?.winner === player) {
       return index;
@@ -133,19 +142,21 @@ function getNormalMove(
   ai: Player,
   human: Player
 ) {
-  const winningMove = getWinningMove(
-    board,
-    ai
-  );
+  const winningMove =
+    getWinningMove(
+      board,
+      ai
+    );
 
   if (winningMove !== null) {
     return winningMove;
   }
 
-  const blockingMove = getWinningMove(
-    board,
-    human
-  );
+  const blockingMove =
+    getWinningMove(
+      board,
+      human
+    );
 
   if (blockingMove !== null) {
     return blockingMove;
@@ -158,7 +169,12 @@ function getNormalMove(
     return 4;
   }
 
-  const corners = [0, 2, 6, 8].filter(
+  const corners = [
+    0,
+    2,
+    6,
+    8,
+  ].filter(
     (index) => board[index] === null
   );
 
@@ -168,7 +184,8 @@ function getNormalMove(
   ) {
     return corners[
       Math.floor(
-        Math.random() * corners.length
+        Math.random() *
+          corners.length
       )
     ];
   }
@@ -183,7 +200,8 @@ function minimax(
   ai: Player,
   human: Player
 ): number {
-  const result = getWinner(board);
+  const result =
+    getWinner(board);
 
   if (result?.winner === ai) {
     return 10 - depth;
@@ -197,13 +215,16 @@ function minimax(
     return 0;
   }
 
-  const emptyCells = getEmptyCells(board);
+  const emptyCells =
+    getEmptyCells(board);
 
   if (maximizing) {
     let bestScore = -Infinity;
 
     for (const index of emptyCells) {
-      const newBoard = [...board];
+      const newBoard = [
+        ...board,
+      ];
 
       newBoard[index] = ai;
 
@@ -227,7 +248,9 @@ function minimax(
   let bestScore = Infinity;
 
   for (const index of emptyCells) {
-    const newBoard = [...board];
+    const newBoard = [
+      ...board,
+    ];
 
     newBoard[index] = human;
 
@@ -253,17 +276,21 @@ function getHardMove(
   ai: Player,
   human: Player
 ) {
-  const emptyCells = getEmptyCells(board);
+  const emptyCells =
+    getEmptyCells(board);
 
   if (emptyCells.length === 0) {
     return null;
   }
 
   let bestScore = -Infinity;
-  let bestMove = emptyCells[0];
+  let bestMove =
+    emptyCells[0];
 
   for (const index of emptyCells) {
-    const newBoard = [...board];
+    const newBoard = [
+      ...board,
+    ];
 
     newBoard[index] = ai;
 
@@ -285,142 +312,283 @@ function getHardMove(
 }
 
 export default function TicTacToePage() {
-  const [board, setBoard] = useState<Cell[]>(
+  const [
+    board,
+    setBoard,
+  ] = useState<Cell[]>(
     Array(9).fill(null)
   );
 
-  const [humanPlayer, setHumanPlayer] =
-    useState<Player>("X");
+  const [
+    humanPlayer,
+    setHumanPlayer,
+  ] = useState<Player>("X");
 
-  const [currentPlayer, setCurrentPlayer] =
-    useState<Player>("X");
+  const [
+    currentPlayer,
+    setCurrentPlayer,
+  ] = useState<Player>("X");
 
-  const [difficulty, setDifficulty] =
-    useState<Difficulty>("normal");
+  const [
+    difficulty,
+    setDifficulty,
+  ] = useState<Difficulty>(
+    "normal"
+  );
 
-  const [winner, setWinner] = useState<
+  const [
+    dailyMode,
+    setDailyMode,
+  ] = useState(false);
+
+  const [
+    winner,
+    setWinner,
+  ] = useState<
     Player | "draw" | null
   >(null);
 
-  const [winningLine, setWinningLine] =
-    useState<number[]>([]);
+  const [
+    winningLine,
+    setWinningLine,
+  ] = useState<number[]>([]);
 
-  const [thinking, setThinking] =
-    useState(false);
+  const [
+    thinking,
+    setThinking,
+  ] = useState(false);
 
-  const [dailyChallengeCompleted, setDailyChallengeCompleted] =
-    useState(false);
+  const [
+    dailyChallengeCompleted,
+    setDailyChallengeCompleted,
+  ] = useState(false);
 
-  const [gameXP, setGameXP] =
-    useState(0);
+  const [
+    gameXP,
+    setGameXP,
+  ] = useState(0);
 
-  const [scores, setScores] = useState({
+  const [
+    scores,
+    setScores,
+  ] = useState({
     player: 0,
     ai: 0,
     draws: 0,
   });
 
+  const dailyChallenge =
+    getDailyChallenge();
+
+  /*
+   * Detect Daily Challenge mode.
+   *
+   * The Daily Challenge URL contains:
+   *
+   * ?daily=true&difficulty=easy
+   * ?daily=true&difficulty=normal
+   * ?daily=true&difficulty=hard
+   *
+   * We verify that the URL difficulty
+   * matches today's actual challenge.
+   */
+  useEffect(() => {
+    const params =
+      new URLSearchParams(
+        window.location.search
+      );
+
+    const urlDaily =
+      params.get("daily") === "true";
+
+    const urlDifficulty =
+      params.get("difficulty");
+
+    const validDifficulty =
+      urlDifficulty === "easy" ||
+      urlDifficulty === "normal" ||
+      urlDifficulty === "hard";
+
+    if (
+      urlDaily &&
+      validDifficulty &&
+      dailyChallenge.game ===
+        "tic-tac-toe" &&
+      urlDifficulty ===
+        dailyChallenge.difficulty
+    ) {
+      const dailyTimer = setTimeout(() => {
+        setDailyMode(true);
+
+      setDifficulty(
+        dailyChallenge.difficulty
+      );
+      }, 0);
+
+      return () => clearTimeout(dailyTimer);
+    }
+  }, [dailyChallenge]);
+
   const gameInProgress =
-    board.some((cell) => cell !== null) &&
+    board.some(
+      (cell) => cell !== null
+    ) &&
     winner === null;
 
   function resetBoard(
     selectedPlayer: Player = humanPlayer
   ) {
-    setBoard(Array(9).fill(null));
+    setBoard(
+      Array(9).fill(null)
+    );
+
     setWinner(null);
+
     setWinningLine([]);
+
     setThinking(false);
+
     setCurrentPlayer("X");
-    setHumanPlayer(selectedPlayer);
-    setDailyChallengeCompleted(false);
+
+    setHumanPlayer(
+      selectedPlayer
+    );
+
+    setDailyChallengeCompleted(
+      false
+    );
+
     setGameXP(0);
   }
 
-  const finishGame = useCallback(
-    (
-      result: Player | "draw",
-      line: number[]
-    ) => {
-      setWinner(result);
-      setWinningLine(line);
+  const finishGame =
+    useCallback(
+      (
+        result:
+          | Player
+          | "draw",
+        line: number[]
+      ) => {
+        setWinner(result);
 
-      setScores((previous) => {
-        if (result === "draw") {
-          return {
-            ...previous,
-            draws: previous.draws + 1,
-          };
+        setWinningLine(line);
+
+        setScores(
+          (previous) => {
+            if (
+              result === "draw"
+            ) {
+              return {
+                ...previous,
+                draws:
+                  previous.draws +
+                  1,
+              };
+            }
+
+            if (
+              result ===
+              humanPlayer
+            ) {
+              return {
+                ...previous,
+                player:
+                  previous.player +
+                  1,
+              };
+            }
+
+            return {
+              ...previous,
+              ai:
+                previous.ai +
+                1,
+            };
+          }
+        );
+
+        let xp = 10;
+
+        if (
+          result ===
+          humanPlayer
+        ) {
+          xp =
+            DIFFICULTIES[
+              difficulty
+            ].winXP;
+        } else if (
+          result === "draw"
+        ) {
+          xp =
+            DIFFICULTIES[
+              difficulty
+            ].drawXP;
+        } else {
+          xp =
+            DIFFICULTIES[
+              difficulty
+            ].lossXP;
         }
 
-        if (result === humanPlayer) {
-          return {
-            ...previous,
-            player:
-              previous.player + 1,
-          };
+        setGameXP(xp);
+
+        /*
+         * Only complete the daily challenge
+         * when the game was opened through
+         * the valid Daily Challenge URL.
+         */
+        const dailyCompleted =
+          dailyMode &&
+          dailyChallenge.game ===
+            "tic-tac-toe"
+            ? completeDailyChallenge(
+                "tic-tac-toe"
+              )
+            : false;
+
+        if (dailyCompleted) {
+          setDailyChallengeCompleted(
+            true
+          );
         }
 
-        return {
-          ...previous,
-          ai: previous.ai + 1,
-        };
-      });
+        const baseScore =
+          result === humanPlayer
+            ? 100
+            : result === "draw"
+              ? 50
+              : 25;
 
-      let xp = 10;
+        const finalScore =
+          baseScore +
+          (dailyCompleted
+            ? DAILY_CHALLENGE_BONUS_POINTS
+            : 0);
 
-      if (result === humanPlayer) {
-        xp =
-          DIFFICULTIES[difficulty].winXP;
-      } else if (result === "draw") {
-        xp =
-          DIFFICULTIES[difficulty].drawXP;
-      } else {
-        xp =
-          DIFFICULTIES[difficulty].lossXP;
-      }
+        recordGame(
+          finalScore,
+          xp
+        );
 
-      setGameXP(xp);
-
-      const dailyCompleted =
-        completeDailyChallenge("tic-tac-toe");
-
-      if (dailyCompleted) {
-        setDailyChallengeCompleted(true);
-      }
-
-      const baseScore =
-        result === humanPlayer
-          ? 100
-          : result === "draw"
-            ? 50
-            : 25;
-
-      const finalScore =
-        baseScore +
-        (dailyCompleted
-          ? DAILY_CHALLENGE_BONUS_POINTS
-          : 0);
-
-      recordGame(
-        finalScore,
-        xp
-      );
-
-      unlockGameAchievement(
-        "strategy-master"
-      );
-    },
-    [
-      difficulty,
-      humanPlayer,
-    ]
-  );
+        unlockGameAchievement(
+          "strategy-master"
+        );
+      },
+      [
+        dailyChallenge.game,
+        dailyMode,
+        difficulty,
+        humanPlayer,
+      ]
+    );
 
   function handlePlayerMove(
     index: number
   ) {
-    if (board[index] !== null) {
+    if (
+      board[index] !== null
+    ) {
       return;
     }
 
@@ -432,13 +600,19 @@ export default function TicTacToePage() {
       return;
     }
 
-    if (currentPlayer !== humanPlayer) {
+    if (
+      currentPlayer !==
+      humanPlayer
+    ) {
       return;
     }
 
-    const newBoard = [...board];
+    const newBoard = [
+      ...board,
+    ];
 
-    newBoard[index] = humanPlayer;
+    newBoard[index] =
+      humanPlayer;
 
     setBoard(newBoard);
 
@@ -450,70 +624,96 @@ export default function TicTacToePage() {
         result.winner,
         result.line
       );
+
       return;
     }
 
-    setCurrentPlayer(aiPlayer);
+    setCurrentPlayer(
+      aiPlayer
+    );
   }
 
   const aiPlayer: Player =
-    humanPlayer === "X" ? "O" : "X";
+    humanPlayer === "X"
+      ? "O"
+      : "X";
 
-  const makeAIMove = useCallback(() => {
-    let move: number | null = null;
+  const makeAIMove =
+    useCallback(() => {
+      let move:
+        | number
+        | null = null;
 
-    if (difficulty === "easy") {
-      move = getRandomMove(board);
-    }
+      if (
+        difficulty === "easy"
+      ) {
+        move =
+          getRandomMove(board);
+      }
 
-    if (difficulty === "normal") {
-      move = getNormalMove(
-        board,
-        aiPlayer,
+      if (
+        difficulty === "normal"
+      ) {
+        move =
+          getNormalMove(
+            board,
+            aiPlayer,
+            humanPlayer
+          );
+      }
+
+      if (
+        difficulty === "hard"
+      ) {
+        move =
+          getHardMove(
+            board,
+            aiPlayer,
+            humanPlayer
+          );
+      }
+
+      if (move === null) {
+        return;
+      }
+
+      const newBoard = [
+        ...board,
+      ];
+
+      newBoard[move] =
+        aiPlayer;
+
+      setBoard(newBoard);
+
+      const result =
+        getWinner(newBoard);
+
+      if (result) {
+        finishGame(
+          result.winner,
+          result.line
+        );
+
+        return;
+      }
+
+      setCurrentPlayer(
         humanPlayer
       );
-    }
-
-    if (difficulty === "hard") {
-      move = getHardMove(
-        board,
-        aiPlayer,
-        humanPlayer
-      );
-    }
-
-    if (move === null) {
-      return;
-    }
-
-    const newBoard = [...board];
-
-    newBoard[move] = aiPlayer;
-
-    setBoard(newBoard);
-
-    const result =
-      getWinner(newBoard);
-
-    if (result) {
-      finishGame(
-        result.winner,
-        result.line
-      );
-      return;
-    }
-
-    setCurrentPlayer(humanPlayer);
-  }, [
-    aiPlayer,
-    board,
-    difficulty,
-    finishGame,
-    humanPlayer,
-  ]);
+    }, [
+      aiPlayer,
+      board,
+      difficulty,
+      finishGame,
+      humanPlayer,
+    ]);
 
   useEffect(() => {
-    if (currentPlayer !== aiPlayer) {
+    if (
+      currentPlayer !==
+      aiPlayer
+    ) {
       return;
     }
 
@@ -522,16 +722,21 @@ export default function TicTacToePage() {
     }
 
     const timeout =
-      window.setTimeout(() => {
-        setThinking(true);
+      window.setTimeout(
+        () => {
+          setThinking(true);
 
-        makeAIMove();
+          makeAIMove();
 
-        setThinking(false);
-      }, 550);
+          setThinking(false);
+        },
+        550
+      );
 
     return () =>
-      window.clearTimeout(timeout);
+      window.clearTimeout(
+        timeout
+      );
   }, [
     currentPlayer,
     aiPlayer,
@@ -540,15 +745,21 @@ export default function TicTacToePage() {
   ]);
 
   function getStatus() {
-    if (winner === humanPlayer) {
+    if (
+      winner === humanPlayer
+    ) {
       return "🎉 You win!";
     }
 
-    if (winner === aiPlayer) {
+    if (
+      winner === aiPlayer
+    ) {
       return "🤖 AI wins!";
     }
 
-    if (winner === "draw") {
+    if (
+      winner === "draw"
+    ) {
       return "🤝 Draw game!";
     }
 
@@ -559,12 +770,27 @@ export default function TicTacToePage() {
     return `Your turn · ${humanPlayer}`;
   }
 
+  function changeDifficulty(
+    level: Difficulty
+  ) {
+    if (dailyMode) {
+      return;
+    }
+
+    if (gameInProgress) {
+      return;
+    }
+
+    setDifficulty(level);
+  }
+
   const gameFinished =
     winner !== null;
 
   const isDailyChallengeGame =
-    getDailyChallenge().game ===
-    "tic-tac-toe";
+    dailyMode &&
+    dailyChallenge.game ===
+      "tic-tac-toe";
 
   const baseScore =
     winner === humanPlayer
@@ -598,87 +824,113 @@ export default function TicTacToePage() {
           <p className="text-[10px] text-white/50 sm:text-xs">
             Current{" "}
             <span className="font-bold text-cyan-300">
-              {DIFFICULTIES[difficulty].label}
+              {
+                DIFFICULTIES[
+                  difficulty
+                ].label
+              }
             </span>
           </p>
         </div>
 
+        {dailyMode && (
+          <div className="mb-2 rounded-2xl border border-cyan-300/15 bg-cyan-300/6 px-4 py-2.5 text-center text-xs font-bold text-cyan-200">
+            🎯 Daily Challenge ·{" "}
+            <span className="capitalize">
+              {difficulty}
+            </span>{" "}
+            🔒
+          </div>
+        )}
+
         <div className="grid grid-cols-3 gap-2">
-          {(Object.keys(
-            DIFFICULTIES
-          ) as Difficulty[]).map(
-            (level) => {
-              const active =
-                difficulty === level;
+          {(
+            Object.keys(
+              DIFFICULTIES
+            ) as Difficulty[]
+          ).map((level) => {
+            const active =
+              difficulty === level;
 
-              return (
-                <button
-                  key={level}
-                  onClick={() => {
-                    if (gameInProgress) {
-                      return;
+            return (
+              <button
+                key={level}
+                type="button"
+                onClick={() =>
+                  changeDifficulty(
+                    level
+                  )
+                }
+                disabled={
+                  gameInProgress ||
+                  dailyMode
+                }
+                className={[
+                  "rounded-2xl border p-2.5 text-left transition-all duration-200 sm:p-3",
+
+                  active
+                    ? "border-cyan-300/30 bg-cyan-300/8 shadow-[0_0_25px_rgba(103,232,249,0.05)]"
+                    : "border-white/10 bg-white/[0.035] hover:bg-white/6",
+
+                  gameInProgress ||
+                  dailyMode
+                    ? "cursor-not-allowed opacity-40"
+                    : "",
+                ].join(" ")}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-lg sm:text-xl">
+                    {
+                      DIFFICULTIES[
+                        level
+                      ].icon
                     }
+                  </span>
 
-                    setDifficulty(
-                      level
-                    );
-                  }}
-                  disabled={gameInProgress}
+                  {active && (
+                    <span className="flex items-center gap-1">
+                      <span className="h-1.5 w-1.5 rounded-full bg-cyan-300 shadow-[0_0_8px_rgba(103,232,249,0.8)]" />
+
+                      {dailyMode && (
+                        <span className="text-[9px] text-cyan-300">
+                          🔒
+                        </span>
+                      )}
+                    </span>
+                  )}
+                </div>
+
+                <p
                   className={[
-                    "rounded-2xl border p-2.5 text-left transition-all duration-200 sm:p-3",
+                    "mt-1.5 text-xs font-black sm:text-sm",
                     active
-                      ? "border-cyan-300/30 bg-cyan-300/8 shadow-[0_0_25px_rgba(103,232,249,0.05)]"
-                      : "border-white/10 bg-white/[0.035] hover:bg-white/6",
-                    gameInProgress
-                      ? "cursor-not-allowed opacity-40"
-                      : "",
+                      ? "text-cyan-200"
+                      : "text-white/70",
                   ].join(" ")}
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="text-lg sm:text-xl">
-                      {
-                        DIFFICULTIES[
-                          level
-                        ].icon
-                      }
-                    </span>
+                  {
+                    DIFFICULTIES[
+                      level
+                    ].label
+                  }
+                </p>
 
-                    {active && (
-                      <span className="h-1.5 w-1.5 rounded-full bg-cyan-300 shadow-[0_0_8px_rgba(103,232,249,0.8)]" />
-                    )}
-                  </div>
-
-                  <p
-                    className={[
-                      "mt-1.5 text-xs font-black sm:text-sm",
-                      active
-                        ? "text-cyan-200"
-                        : "text-white/70",
-                    ].join(" ")}
-                  >
-                    {
-                      DIFFICULTIES[
-                        level
-                      ].label
-                    }
-                  </p>
-
-                  <p className="mt-0.5 text-[9px] text-white/50 sm:text-[11px]">
-                    {
-                      DIFFICULTIES[
-                        level
-                      ].description
-                    }
-                  </p>
-                </button>
-              );
-            }
-          )}
+                <p className="mt-0.5 text-[9px] text-white/50 sm:text-[11px]">
+                  {
+                    DIFFICULTIES[
+                      level
+                    ].description
+                  }
+                </p>
+              </button>
+            );
+          })}
         </div>
 
         {gameInProgress && (
           <p className="mt-1.5 text-center text-[9px] text-white/45 sm:text-[11px]">
-            Difficulty is locked during the match.
+            Difficulty is locked during
+            the match.
           </p>
         )}
       </div>
@@ -692,6 +944,7 @@ export default function TicTacToePage() {
 
         <div className="grid grid-cols-2 gap-2">
           <button
+            type="button"
             onClick={() => {
               if (gameInProgress) {
                 return;
@@ -699,12 +952,16 @@ export default function TicTacToePage() {
 
               resetBoard("X");
             }}
-            disabled={gameInProgress}
+            disabled={
+              gameInProgress
+            }
             className={[
               "rounded-2xl border p-2.5 transition-all duration-200 sm:p-3",
+
               humanPlayer === "X"
                 ? "border-cyan-300/30 bg-cyan-300/8"
                 : "border-white/10 bg-white/[0.035] hover:bg-white/6",
+
               gameInProgress
                 ? "cursor-not-allowed opacity-40"
                 : "",
@@ -720,6 +977,7 @@ export default function TicTacToePage() {
           </button>
 
           <button
+            type="button"
             onClick={() => {
               if (gameInProgress) {
                 return;
@@ -727,12 +985,16 @@ export default function TicTacToePage() {
 
               resetBoard("O");
             }}
-            disabled={gameInProgress}
+            disabled={
+              gameInProgress
+            }
             className={[
               "rounded-2xl border p-2.5 transition-all duration-200 sm:p-3",
+
               humanPlayer === "O"
                 ? "border-fuchsia-300/30 bg-fuchsia-300/8"
                 : "border-white/10 bg-white/[0.035] hover:bg-white/6",
+
               gameInProgress
                 ? "cursor-not-allowed opacity-40"
                 : "",
@@ -750,7 +1012,8 @@ export default function TicTacToePage() {
 
         {gameInProgress && (
           <p className="mt-1.5 text-center text-[9px] text-white/45 sm:text-[11px]">
-            Your symbol is locked during the match.
+            Your symbol is locked during
+            the match.
           </p>
         )}
       </div>
@@ -813,6 +1076,7 @@ export default function TicTacToePage() {
         <div
           className={[
             "inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-black transition-all sm:px-5 sm:py-2 sm:text-sm",
+
             winner === humanPlayer
               ? "border-emerald-300/20 bg-emerald-300/8 text-emerald-300"
               : winner === aiPlayer
@@ -855,81 +1119,107 @@ export default function TicTacToePage() {
             </p>
           </div>
 
-          <div className="rounded-full border border-white/10 bg-white/4 px-2.5 py-1 text-[10px] font-bold text-white/55 sm:px-3 sm:py-1.5 sm:text-xs">
-            {DIFFICULTIES[difficulty].icon}{" "}
-            {DIFFICULTIES[difficulty].label}
+          <div className="flex items-center gap-1 rounded-full border border-white/10 bg-white/4 px-2.5 py-1 text-[10px] font-bold text-white/55 sm:px-3 sm:py-1.5 sm:text-xs">
+            {
+              DIFFICULTIES[
+                difficulty
+              ].icon
+            }{" "}
+            {
+              DIFFICULTIES[
+                difficulty
+              ].label
+            }
+
+            {dailyMode && (
+              <span className="ml-0.5">
+                🔒
+              </span>
+            )}
           </div>
         </div>
 
         <div className="mx-auto grid w-full max-w-105 grid-cols-3 gap-2 sm:gap-2.5">
-          {board.map((cell, index) => {
-            const winning =
-              winningLine.includes(index);
+          {board.map(
+            (cell, index) => {
+              const winning =
+                winningLine.includes(
+                  index
+                );
 
-            const playable =
-              cell === null &&
-              winner === null &&
-              !thinking &&
-              currentPlayer ===
-                humanPlayer;
+              const playable =
+                cell === null &&
+                winner === null &&
+                !thinking &&
+                currentPlayer ===
+                  humanPlayer;
 
-            return (
-              <button
-                key={index}
-                onClick={() =>
-                  handlePlayerMove(index)
-                }
-                disabled={!playable}
-                aria-label={`Cell ${
-                  index + 1
-                }`}
-                className={[
-                  "group relative aspect-square overflow-hidden rounded-2xl border transition-all duration-200 sm:rounded-3xl",
-                  winning
-                    ? "scale-[0.97] border-cyan-300/40 bg-cyan-300/12 shadow-[0_0_35px_rgba(103,232,249,0.12)]"
-                    : "border-white/10 bg-white/[0.035]",
-                  playable
-                    ? "cursor-pointer hover:-translate-y-1 hover:border-cyan-300/25 hover:bg-white/[0.07] active:scale-95"
-                    : "cursor-default",
-                ].join(" ")}
-              >
-                <span className="absolute left-2 top-2 text-[7px] font-black text-white/10 sm:left-3 sm:top-3 sm:text-[9px]">
-                  {String(
+              return (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() =>
+                    handlePlayerMove(
+                      index
+                    )
+                  }
+                  disabled={!playable}
+                  aria-label={`Cell ${
                     index + 1
-                  ).padStart(2, "0")}
-                </span>
+                  }`}
+                  className={[
+                    "group relative aspect-square overflow-hidden rounded-2xl border transition-all duration-200 sm:rounded-3xl",
 
-                {cell ? (
-                  <span
-                    className={[
-                      "relative z-10 text-4xl font-black transition-transform duration-200 sm:text-6xl",
-                      "animate-[ticPop_220ms_ease-out]",
-                      cell === "X"
-                        ? "text-cyan-300"
-                        : "text-fuchsia-300",
-                      winning
-                        ? "scale-110"
-                        : "group-hover:scale-105",
-                    ].join(" ")}
-                  >
-                    {cell}
+                    winning
+                      ? "scale-[0.97] border-cyan-300/40 bg-cyan-300/12 shadow-[0_0_35px_rgba(103,232,249,0.12)]"
+                      : "border-white/10 bg-white/[0.035]",
+
+                    playable
+                      ? "cursor-pointer hover:-translate-y-1 hover:border-cyan-300/25 hover:bg-white/[0.07] active:scale-95"
+                      : "cursor-default",
+                  ].join(" ")}
+                >
+                  <span className="absolute left-2 top-2 text-[7px] font-black text-white/10 sm:left-3 sm:top-3 sm:text-[9px]">
+                    {String(
+                      index + 1
+                    ).padStart(
+                      2,
+                      "0"
+                    )}
                   </span>
-                ) : (
-                  playable && (
-                    <span className="text-xl font-black text-white/0 transition group-hover:text-cyan-300/20 sm:text-2xl">
-                      +
+
+                  {cell ? (
+                    <span
+                      className={[
+                        "relative z-10 text-4xl font-black transition-transform duration-200 sm:text-6xl",
+                        "animate-[ticPop_220ms_ease-out]",
+                        cell === "X"
+                          ? "text-cyan-300"
+                          : "text-fuchsia-300",
+                        winning
+                          ? "scale-110"
+                          : "group-hover:scale-105",
+                      ].join(" ")}
+                    >
+                      {cell}
                     </span>
-                  )
-                )}
+                  ) : (
+                    playable && (
+                      <span className="text-xl font-black text-white/0 transition group-hover:text-cyan-300/20 sm:text-2xl">
+                        +
+                      </span>
+                    )
+                  )}
 
-                {winning && (
-                  <span className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[7px] font-black uppercase tracking-widest text-cyan-300/60 sm:bottom-3 sm:text-[9px]">
-                    Winner
-                  </span>
-                )}
-              </button>
-            );
-          })}
+                  {winning && (
+                    <span className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[7px] font-black uppercase tracking-widest text-cyan-300/60 sm:bottom-3 sm:text-[9px]">
+                      Winner
+                    </span>
+                  )}
+                </button>
+              );
+            }
+          )}
         </div>
 
         <div className="mt-3 flex items-center justify-center gap-1.5 text-[9px] text-white/45 sm:mt-4 sm:text-[11px]">
@@ -953,6 +1243,7 @@ export default function TicTacToePage() {
 
       <div className="mx-auto mt-3 w-full max-w-2xl">
         <button
+          type="button"
           onClick={() =>
             resetBoard()
           }
@@ -976,6 +1267,7 @@ export default function TicTacToePage() {
             <p
               className={[
                 "mt-1.5 text-xl font-black sm:text-2xl",
+
                 winner === humanPlayer
                   ? "text-emerald-300"
                   : winner === "draw"
@@ -1004,11 +1296,12 @@ export default function TicTacToePage() {
               isDailyChallengeGame && (
                 <div className="mt-2.5 flex flex-wrap items-center justify-center gap-2">
                   <span className="rounded-xl border border-purple-300/10 bg-purple-300/5 px-2.5 py-1.5 text-[10px] font-black text-purple-200/80 sm:px-3 sm:text-xs">
-                    🎯 Daily Challenge Complete
+                    🎯 Daily Challenge
+                    Complete
                   </span>
 
                   <span className="rounded-xl border border-purple-300/10 bg-purple-300/5 px-2.5 py-1.5 text-[10px] font-black text-purple-200/70 sm:px-3 sm:text-xs">
-                    +50 Bonus XP
+                    +{dailyChallenge.rewardXP} Bonus XP
                   </span>
 
                   <span className="rounded-xl border border-white/6 bg-white/3 px-2.5 py-1.5 text-[10px] font-black text-white/60 sm:px-3 sm:text-xs">
@@ -1055,7 +1348,7 @@ export default function TicTacToePage() {
               •
             </span>
 
-            +50 XP
+            +{dailyChallenge.rewardXP} XP
 
             <span className="text-purple-200/40">
               •

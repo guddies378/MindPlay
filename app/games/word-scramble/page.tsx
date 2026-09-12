@@ -175,6 +175,10 @@ function createRound(
 }
 
 export default function WordScramblePage() {
+  const dailyChallenge = getDailyChallenge();
+
+  const [dailyMode, setDailyMode] = useState(false);
+
   const [difficulty, setDifficulty] =
     useState<Difficulty>("normal");
 
@@ -211,17 +215,69 @@ export default function WordScramblePage() {
   const [dailyChallengeCompleted, setDailyChallengeCompleted] =
     useState(false);
 
-  const dailyChallenge = getDailyChallenge();
+  /*
+   * Detect Daily Challenge mode from the URL.
+   *
+   * Normal:
+   * /games/word-scramble
+   *
+   * Daily Challenge:
+   * /games/word-scramble?daily=true&difficulty=hard
+   *
+   * Daily mode is only enabled when the URL matches
+   * today's actual challenge.
+   */
+  useEffect(() => {
+    const params = new URLSearchParams(
+      window.location.search
+    );
 
-  const isDailyChallenge =
-    dailyChallenge.game === "word-scramble";
+    const urlDaily =
+      params.get("daily") === "true";
+
+    const urlDifficulty =
+      params.get("difficulty");
+
+    const validDifficulty =
+      urlDifficulty === "easy" ||
+      urlDifficulty === "normal" ||
+      urlDifficulty === "hard";
+
+    if (
+      urlDaily &&
+      validDifficulty &&
+      dailyChallenge.game === "word-scramble" &&
+      urlDifficulty === dailyChallenge.difficulty
+    ) {
+      const dailyTimer = setTimeout(() => {
+        setDailyMode(true);
+        setDifficulty(
+          dailyChallenge.difficulty
+        );
+      }, 0);
+
+      return () => clearTimeout(dailyTimer);
+    }
+  }, [dailyChallenge]);
 
   const difficultyLocked =
-    started && !gameOver;
+    dailyMode ||
+    (started && !gameOver);
 
   const startGame = (
     selectedDifficulty: Difficulty
   ) => {
+    /*
+     * Daily Challenge difficulty cannot be changed.
+     */
+    if (
+      dailyMode &&
+      selectedDifficulty !==
+        dailyChallenge.difficulty
+    ) {
+      return;
+    }
+
     const round = createRound(
       selectedDifficulty
     );
@@ -270,21 +326,18 @@ export default function WordScramblePage() {
           baseXP + scoreBonus;
 
         /*
-         * Daily Challenge
-         *
-         * Only complete the Daily Challenge
-         * if Word Scramble is today's game.
-         *
-         * completeDailyChallenge() handles:
-         *
-         * +50 XP
-         * once-per-day protection
+         * Daily Challenge bonus is only awarded
+         * when the game was actually launched
+         * through Daily Challenge mode.
          */
         const dailyCompleted =
-          isDailyChallenge &&
-          completeDailyChallenge(
+          dailyMode &&
+          dailyChallenge.game ===
             "word-scramble"
-          );
+            ? completeDailyChallenge(
+                "word-scramble"
+              )
+            : false;
 
         setDailyChallengeCompleted(
           dailyCompleted
@@ -300,17 +353,17 @@ export default function WordScramblePage() {
             : 0);
 
         /*
-         * Display normal game XP plus
+         * completeDailyChallenge() already adds
          * the Daily Challenge XP.
          *
-         * IMPORTANT:
-         * completeDailyChallenge() already adds
-         * the +50 XP, so recordGame() receives
-         * only the normal game XP.
+         * recordGame() receives only normal
+         * game XP.
          */
         const displayedXP =
           totalXP +
-          (dailyCompleted ? 50 : 0);
+          (dailyCompleted
+            ? dailyChallenge.rewardXP
+            : 0);
 
         setScore(finalScore);
         setXpEarned(displayedXP);
@@ -345,7 +398,8 @@ export default function WordScramblePage() {
     timeLeft,
     difficulty,
     score,
-    isDailyChallenge,
+    dailyMode,
+    dailyChallenge,
   ]);
 
   const submitAnswer = () => {
@@ -358,12 +412,14 @@ export default function WordScramblePage() {
       return;
     }
 
-    const normalizedAnswer = answer
-      .trim()
-      .toUpperCase();
+    const normalizedAnswer =
+      answer
+        .trim()
+        .toUpperCase();
 
     if (
-      normalizedAnswer === word.word
+      normalizedAnswer ===
+      word.word
     ) {
       setScore(
         (previous) =>
@@ -378,7 +434,8 @@ export default function WordScramblePage() {
       setFeedback("correct");
       setShowHint(false);
 
-      const currentWord = word.word;
+      const currentWord =
+        word.word;
 
       window.setTimeout(() => {
         const nextRound =
@@ -451,9 +508,19 @@ export default function WordScramblePage() {
 
       <div className="mx-auto mt-4 max-w-2xl">
         <div className="mb-3 flex items-center justify-between">
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-white/50">
-            Difficulty
-          </p>
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-white/50">
+              {dailyMode
+                ? "Daily difficulty"
+                : "Difficulty"}
+            </p>
+
+            <p className="mt-1 text-[11px] font-medium text-white/35">
+              {dailyMode
+                ? "Today's difficulty is locked."
+                : "Higher difficulty, higher reward."}
+            </p>
+          </div>
 
           <p className="text-xs text-white/50">
             Base XP{" "}
@@ -479,7 +546,9 @@ export default function WordScramblePage() {
                 onClick={() =>
                   setDifficulty(level)
                 }
-                disabled={difficultyLocked}
+                disabled={
+                  difficultyLocked
+                }
                 className={[
                   "group rounded-2xl border p-3 text-left transition-all duration-200 sm:p-4",
                   active
@@ -567,7 +636,9 @@ export default function WordScramblePage() {
           >
             {started
               ? timeLeft
-              : DIFFICULTIES[difficulty].time}
+              : DIFFICULTIES[
+                  difficulty
+                ].time}
             s
           </p>
         </div>
@@ -662,9 +733,11 @@ export default function WordScramblePage() {
                 </div>
               </div>
 
-              {isDailyChallenge && (
+              {dailyMode && (
                 <div className="mx-auto mt-4 w-fit rounded-xl border border-purple-300/10 bg-purple-300/5 px-3 py-2 text-xs font-bold text-purple-200/60">
-                  🎯 Today&apos;s Daily Challenge
+                  🎯 Daily Challenge ·{" "}
+                  {dailyChallenge.difficulty.toUpperCase()}{" "}
+                  🔒
                 </div>
               )}
 
@@ -677,7 +750,10 @@ export default function WordScramblePage() {
                 }
                 className="mp-button mt-4 rounded-2xl bg-white px-7 py-3.5 text-sm font-black text-[#080b14] shadow-lg hover:bg-cyan-100"
               >
-                Start Game
+                {dailyMode
+                  ? "Start Daily Challenge"
+                  : "Start Game"}
+
                 <span className="ml-2">
                   →
                 </span>
@@ -702,7 +778,9 @@ export default function WordScramblePage() {
                 </div>
 
                 <div className="rounded-full border border-white/10 bg-white/4 px-3 py-1.5 text-xs font-bold text-white/60">
-                  +10 points
+                  {dailyMode
+                    ? `Daily · ${DIFFICULTIES[difficulty].label} 🔒`
+                    : "+10 points"}
                 </div>
               </div>
 
@@ -844,7 +922,7 @@ export default function WordScramblePage() {
                     answer.trim() ===
                       ""
                   }
-                  className="mp-button rounded-2xl bg-white px-6 py-4 text-sm font-black text-[#080b14] hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-text-white/40"
+                  className="mp-button rounded-2xl bg-white px-6 py-4 text-sm font-black text-[#080b14] hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   Check
                 </button>
@@ -880,7 +958,9 @@ export default function WordScramblePage() {
             </div>
 
             <p className="mt-4 text-xs font-black uppercase tracking-[0.25em] text-fuchsia-300/60">
-              Challenge Complete
+              {dailyMode
+                ? "Daily Challenge Complete"
+                : "Challenge Complete"}
             </p>
 
             <h2 className="mt-2 text-3xl font-black sm:text-4xl">
@@ -954,7 +1034,8 @@ export default function WordScramblePage() {
                 </p>
 
                 <p className="mt-1 text-sm font-black text-white/80">
-                  +50 XP · +10 Score
+                  +{dailyChallenge.rewardXP}{" "}
+                  XP · +10 Score
                 </p>
 
                 <p className="mt-1 text-xs text-white/50">
