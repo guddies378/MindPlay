@@ -1,6 +1,7 @@
 import type { AchievementId } from "@/lib/achievements";
 import { addXP } from "@/lib/progress";
 import { DAILY_CHALLENGE_XP } from "@/lib/gameXP";
+import { supabase } from "@/lib/supabase";
 
 export const DAILY_CHALLENGE_BONUS_POINTS = 10;
 
@@ -35,7 +36,16 @@ export type DailyChallenge = {
   achievementId: AchievementId;
 };
 
-const STORAGE_KEY = "mindplay-daily-challenge";
+export const DAILY_CHALLENGE_UPDATED_EVENT =
+  "mindplay-daily-challenge-updated";
+
+/*
+ * Cloud-first in-memory cache.
+ *
+ * Nothing is stored in localStorage or sessionStorage.
+ */
+let completedChallengeId: string | null = null;
+let completedChallengeUserId: string | null = null;
 
 const CHALLENGES: Omit<
   DailyChallenge,
@@ -149,11 +159,11 @@ function getToday(): string {
   const year = now.getFullYear();
 
   const month = String(
-    now.getMonth() + 1
+    now.getMonth() + 1,
   ).padStart(2, "0");
 
   const day = String(
-    now.getDate()
+    now.getDate(),
   ).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
@@ -187,7 +197,7 @@ function hashString(value: string): number {
  * same value for many consecutive dates.
  */
 function getDailyDifficulty(
-  date: string
+  date: string,
 ): DailyChallengeDifficulty {
   const difficulties: DailyChallengeDifficulty[] = [
     "easy",
@@ -197,7 +207,7 @@ function getDailyDifficulty(
 
   const difficultyIndex =
     hashString(
-      `${date}-daily-difficulty-v2`
+      `${date}-daily-difficulty-v2`,
     ) % difficulties.length;
 
   return difficulties[difficultyIndex];
@@ -232,13 +242,17 @@ export function getDailyChallenge(): DailyChallenge {
 }
 
 export function isDailyChallenge(
-  game: DailyChallengeGame
+  game: DailyChallengeGame,
 ): boolean {
   return (
     getDailyChallenge().game === game
   );
 }
 
+/*
+ * Synchronous check against the in-memory
+ * cache loaded from Supabase.
+ */
 export function isDailyChallengeCompleted(): boolean {
   if (!isBrowser()) {
     return false;
@@ -248,15 +262,92 @@ export function isDailyChallengeCompleted(): boolean {
     getDailyChallenge();
 
   return (
-    localStorage.getItem(
-      STORAGE_KEY
-    ) === challenge.id
+    completedChallengeId ===
+      challenge.id &&
+    completedChallengeUserId !== null
   );
 }
 
-export function completeDailyChallenge(
-  game: DailyChallengeGame
-): boolean {
+/*
+ * Loads today's completion from Supabase.
+ *
+ * Call this after the user has authenticated.
+ */
+export async function loadDailyChallengeFromSupabase(): Promise<boolean> {
+  if (!isBrowser()) {
+    return false;
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    completedChallengeId = null;
+    completedChallengeUserId = null;
+
+    window.dispatchEvent(
+      new Event(
+        DAILY_CHALLENGE_UPDATED_EVENT,
+      ),
+    );
+
+    return false;
+  }
+
+  const challenge =
+    getDailyChallenge();
+
+  const { data, error } =
+    await supabase
+      .from("daily_challenges")
+      .select("challenge_id")
+      .eq("user_id", user.id)
+      .eq(
+        "challenge_date",
+        challenge.date,
+      )
+      .maybeSingle();
+
+  if (error) {
+    console.error(
+      "Failed to load daily challenge:",
+      error.message,
+    );
+
+    return false;
+  }
+
+  completedChallengeUserId =
+    user.id;
+
+  completedChallengeId =
+    data?.challenge_id ?? null;
+
+  window.dispatchEvent(
+    new Event(
+      DAILY_CHALLENGE_UPDATED_EVENT,
+    ),
+  );
+
+  return (
+    completedChallengeId ===
+    challenge.id
+  );
+}
+
+/*
+ * Completes today's challenge.
+ *
+ * Supabase is the source of truth.
+ *
+ * The database unique constraint
+ * (user_id, challenge_date) prevents
+ * duplicate completion and duplicate XP.
+ */
+export async function completeDailyChallenge(
+  game: DailyChallengeGame,
+): Promise<boolean> {
   if (!isBrowser()) {
     return false;
   }
@@ -264,56 +355,175 @@ export function completeDailyChallenge(
   const challenge =
     getDailyChallenge();
 
+  /*
+   * Make sure the game being completed
+   * is today's selected daily challenge.
+   */
   if (challenge.game !== game) {
     return false;
   }
 
+  /*
+   * Check the in-memory cache first.
+   */
   if (isDailyChallengeCompleted()) {
     return false;
   }
 
-  localStorage.setItem(
-    STORAGE_KEY,
-    challenge.id
-  );
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return false;
+  }
+
+  /*
+   * Get the user's MindPlay name from
+   * the profiles table.
+   */
+  const {
+    data: profile,
+    error: profileError,
+  } = await supabase
+    .from("profiles")
+    .select("mindplay_name")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (profileError) {
+    console.error(
+      "Failed to load player profile:",
+      profileError.message,
+    );
+
+    return false;
+  }
+
+  const mindPlayName =
+    profile?.mindplay_name?.trim();
+
+  if (!mindPlayName) {
+    console.error(
+      "Cannot complete daily challenge: MindPlay name is missing.",
+    );
+
+    return false;
+  }
+
+  /*
+   * Save the completion to Supabase.
+   *
+   * The unique(user_id, challenge_date)
+   * constraint prevents the same user
+   * from completing the daily challenge
+   * more than once on the same date.
+   */
+  const { error } =
+    await supabase
+      .from("daily_challenges")
+      .insert({
+        user_id: user.id,
+        mindplay_name: mindPlayName,
+        challenge_date:
+          challenge.date,
+        challenge_id:
+          challenge.id,
+      });
+
+  /*
+   * PostgreSQL error 23505 means the
+   * unique constraint was triggered.
+   *
+   * This can happen if the user completed
+   * today's challenge on another device
+   * or another browser tab.
+   */
+  if (error) {
+    if (error.code === "23505") {
+      completedChallengeUserId =
+        user.id;
+
+      completedChallengeId =
+        challenge.id;
+
+      window.dispatchEvent(
+        new Event(
+          DAILY_CHALLENGE_UPDATED_EVENT,
+        ),
+      );
+
+      return false;
+    }
+
+    console.error(
+      "Failed to save daily challenge:",
+      error.message,
+    );
+
+    return false;
+  }
+
+  /*
+   * Update the in-memory cache after
+   * Supabase confirms the completion.
+   */
+  completedChallengeUserId =
+    user.id;
+
+  completedChallengeId =
+    challenge.id;
 
   window.dispatchEvent(
     new Event(
-      "mindplay-daily-challenge-updated"
-    )
+      DAILY_CHALLENGE_UPDATED_EVENT,
+    ),
   );
 
+  /*
+   * Award the daily challenge XP only
+   * after the database insert succeeds.
+   */
   addXP(challenge.rewardXP);
 
   return true;
 }
 
+/*
+ * Clears only the in-memory cache.
+ *
+ * The Supabase record is intentionally
+ * NOT deleted.
+ */
+export function clearDailyChallengeCache(): void {
+  completedChallengeId = null;
+  completedChallengeUserId = null;
+
+  if (isBrowser()) {
+    window.dispatchEvent(
+      new Event(
+        DAILY_CHALLENGE_UPDATED_EVENT,
+      ),
+    );
+  }
+}
+
 export function subscribeToDailyChallenge(
-  callback: () => void
+  callback: () => void,
 ): () => void {
   if (!isBrowser()) {
     return () => {};
   }
 
   window.addEventListener(
-    "mindplay-daily-challenge-updated",
-    callback
-  );
-
-  window.addEventListener(
-    "storage",
-    callback
+    DAILY_CHALLENGE_UPDATED_EVENT,
+    callback,
   );
 
   return () => {
     window.removeEventListener(
-      "mindplay-daily-challenge-updated",
-      callback
-    );
-
-    window.removeEventListener(
-      "storage",
-      callback
+      DAILY_CHALLENGE_UPDATED_EVENT,
+      callback,
     );
   };
 }

@@ -606,7 +606,7 @@ export default function RiddleMePage() {
 
     if (timeLeft <= 0) {
       const timeout =
-        window.setTimeout(() => {
+        window.setTimeout(async () => {
           setGameOver(true);
 
           const baseXP =
@@ -628,7 +628,7 @@ export default function RiddleMePage() {
             dailyMode &&
             dailyChallenge.game ===
               "riddle-me"
-              ? completeDailyChallenge(
+              ? await completeDailyChallenge(
                   "riddle-me",
                 )
               : false;

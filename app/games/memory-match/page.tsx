@@ -234,7 +234,7 @@ export default function MemoryMatchPage() {
       matchedPairs;
     const currentTime = time;
 
-    const timer = window.setTimeout(() => {
+    const timer = window.setTimeout(async () => {
       const isMatch =
         firstCard.symbol ===
         secondCard.symbol;
@@ -302,7 +302,7 @@ export default function MemoryMatchPage() {
             dailyMode &&
             dailyChallenge.game ===
               "memory-match"
-              ? completeDailyChallenge(
+              ? await completeDailyChallenge(
                   "memory-match",
                 )
               : false;

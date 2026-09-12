@@ -257,7 +257,7 @@ export default function ReactionRushPage() {
     startRound(1, activeDifficulty);
   }
 
-  function finishGame(
+  async function finishGame(
     finalScore: number,
     finalHistory: number[]
   ) {
@@ -293,7 +293,7 @@ export default function ReactionRushPage() {
 
     const dailyCompleted =
       dailyMode &&
-      completeDailyChallenge(
+      await completeDailyChallenge(
         "reaction-rush"
       );
 

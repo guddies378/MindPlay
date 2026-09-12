@@ -314,14 +314,14 @@ export default function QuickMathPage() {
       return;
     }
 
-    const finishTimer = setTimeout(() => {
+    const finishTimer = setTimeout(async () => {
       setGameOver(true);
       setStarted(false);
 
       const dailyCompleted =
         dailyMode &&
         dailyChallenge.game === "quick-math"
-          ? completeDailyChallenge("quick-math")
+          ? await completeDailyChallenge("quick-math")
           : false;
 
       const finalScore =

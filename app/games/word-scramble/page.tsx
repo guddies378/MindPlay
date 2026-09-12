@@ -311,7 +311,7 @@ export default function WordScramblePage() {
     }
 
     if (timeLeft <= 0) {
-      const timer = window.setTimeout(() => {
+      const timer = window.setTimeout(async () => {
         setGameOver(true);
 
         const baseXP =
@@ -334,7 +334,7 @@ export default function WordScramblePage() {
           dailyMode &&
           dailyChallenge.game ===
             "word-scramble"
-            ? completeDailyChallenge(
+            ? await completeDailyChallenge(
                 "word-scramble"
               )
             : false;
@@ -383,7 +383,7 @@ export default function WordScramblePage() {
       };
     }
 
-    const timer = window.setTimeout(() => {
+    const timer = window.setTimeout(async () => {
       setTimeLeft(
         (previous) => previous - 1
       );

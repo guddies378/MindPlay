@@ -1,4 +1,7 @@
-import { createClient } from "@supabase/supabase-js";
+import {
+  createBrowserClient,
+  type CookieMethodsBrowser,
+} from "@supabase/ssr";
 
 const supabaseUrl =
   process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -20,158 +23,256 @@ if (!supabasePublishableKey) {
 
 /*
  * =========================================================
- * REMEMBER ME
+ * REMEMBER ME COOKIE
  * =========================================================
  *
- * MindPlay stores the Remember Me preference separately.
+ * This is NOT localStorage.
  *
- * true  -> localStorage
- * false -> sessionStorage
- *
- * The Supabase auth session itself is then stored in the
- * appropriate storage automatically.
+ * true  = persistent login
+ * false = session-only login
  */
 
-const REMEMBER_ME_KEY =
+export const REMEMBER_ME_COOKIE =
   "mindplay-remember-me";
 
-const storage = {
-  getItem(key: string) {
-    if (
-      typeof window ===
-      "undefined"
-    ) {
-      return null;
-    }
+const REMEMBER_ME_MAX_AGE =
+  60 * 60 * 24 * 30; // 30 days
 
-    const rememberMe =
-      localStorage.getItem(
-        REMEMBER_ME_KEY,
-      ) === "true";
+/*
+ * =========================================================
+ * COOKIE HELPERS
+ * =========================================================
+ */
 
-    /*
-     * Remember Me ON
-     *
-     * Session survives browser
-     * closing.
-     */
-    if (rememberMe) {
-      return localStorage.getItem(
-        key,
-      );
-    }
-
-    /*
-     * Remember Me OFF
-     *
-     * Session only survives while
-     * the browser session is active.
-     */
-    return sessionStorage.getItem(
-      key,
-    );
-  },
-
-  setItem(
-    key: string,
-    value: string,
+function readBrowserCookies() {
+  if (
+    typeof document ===
+    "undefined"
   ) {
-    if (
-      typeof window ===
-      "undefined"
-    ) {
-      return;
-    }
+    return [];
+  }
 
-    const rememberMe =
-      localStorage.getItem(
-        REMEMBER_ME_KEY,
-      ) === "true";
+  return document.cookie
+    .split(";")
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((part) => {
+      const separator =
+        part.indexOf("=");
 
-    if (rememberMe) {
-      /*
-       * Persistent login.
-       */
-      localStorage.setItem(
-        key,
-        value,
-      );
+      if (separator === -1) {
+        return {
+          name: decodeURIComponent(part),
+          value: "",
+        };
+      }
 
-      /*
-       * Make sure there isn't an
-       * older session copy in
-       * sessionStorage.
-       */
-      sessionStorage.removeItem(
-        key,
-      );
-    } else {
-      /*
-       * Session-only login.
-       */
-      sessionStorage.setItem(
-        key,
-        value,
-      );
+      return {
+        name: decodeURIComponent(
+          part.slice(0, separator),
+        ),
+        value: decodeURIComponent(
+          part.slice(separator + 1),
+        ),
+      };
+    });
+}
 
-      /*
-       * Make sure there isn't an
-       * older persistent copy in
-       * localStorage.
-       */
-      localStorage.removeItem(
-        key,
-      );
-    }
-  },
+function getRememberMePreference() {
+  if (
+    typeof document ===
+    "undefined"
+  ) {
+    return true;
+  }
 
-  removeItem(key: string) {
-    if (
-      typeof window ===
-      "undefined"
-    ) {
-      return;
-    }
-
-    /*
-     * Always remove the session
-     * from both storage locations.
-     */
-    localStorage.removeItem(
-      key,
+  const cookie =
+    readBrowserCookies().find(
+      (item) =>
+        item.name ===
+        REMEMBER_ME_COOKIE,
     );
 
-    sessionStorage.removeItem(
-      key,
-    );
+  /*
+   * Default to ON when no preference
+   * exists yet.
+   */
+  if (!cookie) {
+    return true;
+  }
+
+  return cookie.value === "true";
+}
+
+function serializeBrowserCookie(
+  name: string,
+  value: string,
+  options: {
+    path?: string;
+    domain?: string;
+    sameSite?:
+      | "lax"
+      | "strict"
+      | "none"
+      | boolean;
+    secure?: boolean;
+    maxAge?: number;
   },
-};
+) {
+  let cookie =
+    `${encodeURIComponent(name)}=${encodeURIComponent(value)}`;
+
+  cookie += `; Path=${options.path ?? "/"}`;
+
+  if (options.domain) {
+    cookie += `; Domain=${options.domain}`;
+  }
+
+  if (
+    options.maxAge !==
+    undefined
+  ) {
+    cookie += `; Max-Age=${Math.floor(
+      options.maxAge,
+    )}`;
+  }
+
+  if (options.sameSite) {
+    const sameSite =
+      options.sameSite === true
+        ? "Strict"
+        : options.sameSite ===
+            "lax"
+          ? "Lax"
+          : options.sameSite ===
+              "strict"
+            ? "Strict"
+            : options.sameSite ===
+                "none"
+              ? "None"
+              : "";
+
+    if (sameSite) {
+      cookie += `; SameSite=${sameSite}`;
+    }
+  }
+
+  if (options.secure) {
+    cookie += "; Secure";
+  }
+
+  return cookie;
+}
+
+/*
+ * =========================================================
+ * SUPABASE BROWSER COOKIE ADAPTER
+ * =========================================================
+ *
+ * This lets Remember Me control whether the
+ * Supabase auth cookies are persistent or
+ * session-only.
+ */
+
+const browserCookies: CookieMethodsBrowser =
+  {
+    getAll() {
+      return readBrowserCookies();
+    },
+
+    setAll(cookiesToSet) {
+      const rememberMe =
+        getRememberMePreference();
+
+      for (const {
+        name,
+        value,
+        options,
+      } of cookiesToSet) {
+        /*
+         * Supabase uses maxAge = 0 when
+         * deleting a cookie.
+         *
+         * Never override that.
+         */
+        const isRemoving =
+          options?.maxAge === 0;
+
+        const cookieOptions = {
+          ...options,
+
+          /*
+           * Remember Me ON:
+           *     persistent cookie
+           *
+           * Remember Me OFF:
+           *     session cookie
+           *
+           * Remove:
+           *     Max-Age=0
+           */
+          maxAge: isRemoving
+            ? 0
+            : rememberMe
+              ? REMEMBER_ME_MAX_AGE
+              : undefined,
+        };
+
+        document.cookie =
+          serializeBrowserCookie(
+            name,
+            value,
+            cookieOptions,
+          );
+      }
+    },
+  };
+
+/*
+ * =========================================================
+ * MAIN SUPABASE CLIENT
+ * =========================================================
+ */
 
 export const supabase =
-  createClient(
+  createBrowserClient(
     supabaseUrl,
     supabasePublishableKey,
     {
-      auth: {
-        storage,
-
-        /*
-         * Automatically refresh the
-         * Supabase access token.
-         */
-        autoRefreshToken: true,
-
-        /*
-         * Keep the authenticated
-         * session between page loads.
-         */
-        persistSession: true,
-
-        /*
-         * Allows Supabase auth links
-         * to be detected if needed.
-         */
-        detectSessionInUrl: true,
-      },
+      cookies:
+        browserCookies,
     },
   );
+
+/*
+ * =========================================================
+ * REMEMBER ME PREFERENCE
+ * =========================================================
+ */
+
+export function setRememberMePreference(
+  rememberMe: boolean,
+) {
+  if (
+    typeof document ===
+    "undefined"
+  ) {
+    return;
+  }
+
+  document.cookie =
+    serializeBrowserCookie(
+      REMEMBER_ME_COOKIE,
+      String(rememberMe),
+      {
+        path: "/",
+        sameSite: "lax",
+        secure:
+          window.location.protocol ===
+          "https:",
+        maxAge: rememberMe
+          ? REMEMBER_ME_MAX_AGE
+          : undefined,
+      },
+    );
+}

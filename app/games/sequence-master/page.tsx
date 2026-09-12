@@ -451,7 +451,7 @@ export default function SequenceMasterPage() {
     );
   }
 
-  function finishGame() {
+  async function finishGame() {
     const baseXP =
       settings.xp;
 
@@ -488,7 +488,7 @@ export default function SequenceMasterPage() {
         "sequence-master"
     ) {
       receivedDailyBonus =
-        completeDailyChallenge(
+        await completeDailyChallenge(
           "sequence-master",
         );
     }

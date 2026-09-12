@@ -1,4 +1,5 @@
 import {
+  loadAchievementsFromSupabase,
   setAchievementUser,
   syncProgressAchievements,
   unlockGameAchievement,
@@ -16,8 +17,6 @@ export type MindPlayProgress = {
   bestScore: number;
 };
 
-const STORAGE_KEY = "mindplay-progress";
-
 const DEFAULT_PROGRESS: MindPlayProgress = {
   xp: 0,
   gamesPlayed: 0,
@@ -26,8 +25,28 @@ const DEFAULT_PROGRESS: MindPlayProgress = {
   bestScore: 0,
 };
 
-const UPDATE_EVENT =
-  "mindplay-progress-updated";
+const UPDATE_EVENT = "mindplay-progress-updated";
+
+/*
+ * ==========================================
+ * IN-MEMORY PROGRESS
+ * ==========================================
+ *
+ * Supabase is the permanent source of truth.
+ *
+ * This variable only keeps the currently
+ * loaded progress in memory so existing
+ * components can continue using getProgress()
+ * synchronously.
+ *
+ * Nothing is stored in localStorage.
+ */
+
+let cachedProgress: MindPlayProgress = {
+  ...DEFAULT_PROGRESS,
+};
+
+let progressLoaded = false;
 
 function isBrowser() {
   return typeof window !== "undefined";
@@ -45,45 +64,36 @@ function notifyUpdate() {
 
 /*
  * ==========================================
- * LOCAL PROGRESS
+ * GET PROGRESS
  * ==========================================
+ *
+ * Returns the currently loaded in-memory
+ * progress.
+ *
+ * Persistent progress comes from Supabase
+ * through loadProgressFromSupabase().
  */
 
 export function getProgress(): MindPlayProgress {
-  if (!isBrowser()) {
-    return DEFAULT_PROGRESS;
-  }
-
-  try {
-    const saved =
-      localStorage.getItem(STORAGE_KEY);
-
-    if (!saved) {
-      return DEFAULT_PROGRESS;
-    }
-
-    const parsed = JSON.parse(saved);
-
-    return {
-      ...DEFAULT_PROGRESS,
-      ...parsed,
-    };
-  } catch {
-    return DEFAULT_PROGRESS;
-  }
+  return {
+    ...cachedProgress,
+  };
 }
 
-function saveProgress(
+/*
+ * ==========================================
+ * SET IN-MEMORY PROGRESS
+ * ==========================================
+ */
+
+function setProgress(
   progress: MindPlayProgress,
 ) {
-  if (!isBrowser()) {
-    return;
-  }
+  cachedProgress = {
+    ...progress,
+  };
 
-  localStorage.setItem(
-    STORAGE_KEY,
-    JSON.stringify(progress),
-  );
+  progressLoaded = true;
 
   notifyUpdate();
 }
@@ -116,9 +126,6 @@ function getYesterday(): string {
  * ==========================================
  * SAVE PROGRESS TO SUPABASE
  * ==========================================
- *
- * Overall progress belongs to the
- * currently logged-in Supabase user.
  */
 
 async function saveProgressToSupabase(
@@ -134,11 +141,8 @@ async function saveProgressToSupabase(
 
   /*
    * No authenticated user.
-   *
-   * Clear the active achievement user so
-   * achievements cannot accidentally be
-   * saved for another account.
    */
+
   if (!user) {
     setAchievementUser(null);
     return;
@@ -148,6 +152,7 @@ async function saveProgressToSupabase(
    * Tell the achievement system which
    * Supabase account is currently active.
    */
+
   setAchievementUser(user.id);
 
   const { error } =
@@ -177,6 +182,8 @@ async function saveProgressToSupabase(
       "Failed to save progress to Supabase:",
       error.message,
     );
+
+    return;
   }
 }
 
@@ -184,6 +191,9 @@ async function saveProgressToSupabase(
  * ==========================================
  * LOAD PROGRESS FROM SUPABASE
  * ==========================================
+ *
+ * This is now the ONLY place where
+ * persistent progress is loaded.
  */
 
 export async function loadProgressFromSupabase(): Promise<
@@ -198,19 +208,30 @@ export async function loadProgressFromSupabase(): Promise<
   } = await supabase.auth.getUser();
 
   /*
-   * No logged-in user means there is
-   * no account-specific progress to load.
+   * No logged-in user.
    */
+
   if (!user) {
     setAchievementUser(null);
+
+    cachedProgress = {
+      ...DEFAULT_PROGRESS,
+    };
+
+    progressLoaded = false;
+
+    notifyUpdate();
+
     return null;
   }
 
   /*
-   * Set the active achievement account
-   * as soon as we know the Supabase user.
+   * Set active achievement account.
    */
+
   setAchievementUser(user.id);
+
+  await loadAchievementsFromSupabase();
 
   const { data, error } =
     await supabase
@@ -230,11 +251,25 @@ export async function loadProgressFromSupabase(): Promise<
     return null;
   }
 
+  /*
+   * This account has no progress row yet.
+   *
+   * Start with a clean account instead
+   * of reading another source such as
+   * localStorage.
+   */
+
   if (!data) {
-    return null;
+    const freshProgress: MindPlayProgress = {
+      ...DEFAULT_PROGRESS,
+    };
+
+    setProgress(freshProgress);
+
+    return freshProgress;
   }
 
-  return {
+  const progress: MindPlayProgress = {
     xp: data.xp,
     gamesPlayed:
       data.games_played,
@@ -244,133 +279,21 @@ export async function loadProgressFromSupabase(): Promise<
     lastPlayed:
       data.last_played,
   };
-}
 
-/*
- * ==========================================
- * SYNC LOCAL PROGRESS WITH SUPABASE
- * ==========================================
- *
- * If cloud progress exists:
- *     cloud progress becomes the source
- *     of truth.
- *
- * If no cloud progress exists:
- *     existing local progress is uploaded
- *     to the newly logged-in account.
- */
-
-export async function syncLocalProgressToSupabase(): Promise<void> {
-  if (!isBrowser()) {
-    return;
-  }
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  setProgress(progress);
 
   /*
-   * No logged-in user.
-   *
-   * Make sure the achievement system does
-   * not continue using the previous account.
+   * Re-check progression achievements
+   * using the current account's progress.
    */
-  if (!user) {
-    setAchievementUser(null);
-    return;
-  }
-
-  /*
-   * IMPORTANT:
-   *
-   * Set the active achievement user BEFORE
-   * reading or synchronizing achievements.
-   */
-  setAchievementUser(user.id);
-
-  const {
-    data: cloudProgress,
-    error,
-  } = await supabase
-    .from("overall_progress")
-    .select(
-      "xp, games_played, streak, best_score, last_played",
-    )
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (error) {
-    console.error(
-      "Failed to check cloud progress:",
-      error.message,
-    );
-
-    return;
-  }
-
-  /*
-   * ========================================
-   * EXISTING ACCOUNT
-   * ========================================
-   */
-
-  if (cloudProgress) {
-    const progress: MindPlayProgress =
-      {
-        xp: cloudProgress.xp,
-        gamesPlayed:
-          cloudProgress.games_played,
-        streak:
-          cloudProgress.streak,
-        bestScore:
-          cloudProgress.best_score,
-        lastPlayed:
-          cloudProgress.last_played,
-      };
-
-    saveProgress(progress);
-
-    /*
-     * Re-check progression achievements
-     * using THIS user's progress.
-     */
-    syncProgressAchievements(
-      progress.xp,
-      progress.gamesPlayed,
-      progress.streak,
-    );
-
-    return;
-  }
-
-  /*
-   * ========================================
-   * NEW ACCOUNT
-   * ========================================
-   *
-   * There is no cloud progress yet.
-   *
-   * We currently preserve your existing
-   * behavior and upload the local progress.
-   *
-   * IMPORTANT:
-   * Achievements are now account-specific,
-   * so the new account will NOT read the
-   * previous account's achievement list.
-   */
-
-  const localProgress =
-    getProgress();
-
-  await saveProgressToSupabase(
-    localProgress,
-  );
 
   syncProgressAchievements(
-    localProgress.xp,
-    localProgress.gamesPlayed,
-    localProgress.streak,
+    progress.xp,
+    progress.gamesPlayed,
+    progress.streak,
   );
+
+  return progress;
 }
 
 /*
@@ -431,16 +354,21 @@ export function recordGame(
     };
 
   /*
-   * Save locally for immediate UI updates.
+   * Update memory immediately so the
+   * UI responds without waiting for
+   * the network.
    */
-  saveProgress(
+
+  setProgress(
     updatedProgress,
   );
 
   /*
    * Unlock progression achievements
-   * for the currently active account.
+   * for the currently authenticated
+   * account.
    */
+
   syncProgressAchievements(
     updatedProgress.xp,
     updatedProgress.gamesPlayed,
@@ -448,8 +376,9 @@ export function recordGame(
   );
 
   /*
-   * Save account progress to Supabase.
+   * Persist the new progress in Supabase.
    */
+
   void saveProgressToSupabase(
     updatedProgress,
   );
@@ -478,19 +407,27 @@ export function addXP(
         amount,
     };
 
-  saveProgress(
+  /*
+   * Update memory immediately.
+   */
+
+  setProgress(
     updatedProgress,
   );
 
   /*
-   * XP achievements are checked
-   * for the active account.
+   * Check XP achievements.
    */
+
   syncProgressAchievements(
     updatedProgress.xp,
     updatedProgress.gamesPlayed,
     updatedProgress.streak,
   );
+
+  /*
+   * Persist in Supabase.
+   */
 
   void saveProgressToSupabase(
     updatedProgress,
@@ -506,15 +443,37 @@ export function addXP(
  */
 
 export function resetProgress(): MindPlayProgress {
-  saveProgress(
-    DEFAULT_PROGRESS,
-  );
+  const reset: MindPlayProgress = {
+    ...DEFAULT_PROGRESS,
+  };
 
-  void saveProgressToSupabase(
-    DEFAULT_PROGRESS,
-  );
+  /*
+   * Reset in-memory state.
+   */
 
-  return DEFAULT_PROGRESS;
+  setProgress(reset);
+
+  /*
+   * Persist reset in Supabase.
+   */
+
+  void saveProgressToSupabase(reset);
+
+  return reset;
+}
+
+/*
+ * ==========================================
+ * PROGRESS LOADED
+ * ==========================================
+ *
+ * Useful for components that want to know
+ * whether the initial Supabase progress
+ * has been loaded.
+ */
+
+export function isProgressLoaded(): boolean {
+  return progressLoaded;
 }
 
 /*
@@ -539,19 +498,9 @@ export function subscribeToProgress(
     handleUpdate,
   );
 
-  window.addEventListener(
-    "storage",
-    handleUpdate,
-  );
-
   return () => {
     window.removeEventListener(
       UPDATE_EVENT,
-      handleUpdate,
-    );
-
-    window.removeEventListener(
-      "storage",
       handleUpdate,
     );
   };

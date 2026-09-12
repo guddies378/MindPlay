@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
+
 import {
   getProgress,
   subscribeToProgress,
-  syncLocalProgressToSupabase,
+  loadProgressFromSupabase,
   type MindPlayProgress,
 } from "@/lib/progress";
+
 import { getLevelProgress } from "@/lib/levels";
 import PlayerFooterText from "@/components/PlayerFooterText";
 import PlayerBrand from "@/components/PlayerBrand";
@@ -281,7 +283,7 @@ export default function HomePage() {
     let mounted = true;
 
     const loadProgress = async () => {
-      await syncLocalProgressToSupabase();
+      await void loadProgressFromSupabase();
 
       if (mounted) {
         setProgress(getProgress());

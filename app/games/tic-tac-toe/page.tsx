@@ -463,7 +463,7 @@ export default function TicTacToePage() {
 
   const finishGame =
     useCallback(
-      (
+      async (
         result:
           | Player
           | "draw",
@@ -542,7 +542,7 @@ export default function TicTacToePage() {
           dailyMode &&
           dailyChallenge.game ===
             "tic-tac-toe"
-            ? completeDailyChallenge(
+            ? await completeDailyChallenge(
                 "tic-tac-toe"
               )
             : false;

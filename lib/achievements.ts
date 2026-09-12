@@ -1,3 +1,5 @@
+import { supabase } from "@/lib/supabase";
+
 /*
  * ==========================================
  * TYPES
@@ -305,75 +307,58 @@ export const ACHIEVEMENTS: Achievement[] = [
 
 /*
  * ==========================================
- * USER-SPECIFIC STORAGE
+ * USER-SPECIFIC CLOUD STATE
  * ==========================================
  *
- * Achievements are now stored separately
- * for every Supabase account.
+ * Supabase stores ONE row per user:
+ *
+ * id
+ * user_id
+ * mindplay_name
+ * achievement_progress
+ *
+ * Example:
+ *
+ * achievement_progress = "8/30"
+ *
+ * The individual achievement IDs are kept
+ * only in memory while the user is logged in.
+ *
+ * There is NO localStorage.
  */
-
-const STORAGE_PREFIX = "mindplay-achievements";
-
-const ACTIVE_USER_KEY =
-  "mindplay-active-user-id";
 
 let activeUserId: string | null = null;
 
+let activeMindPlayName = "";
+
+let unlockedAchievementIds =
+  new Set<AchievementId>();
+
 /*
- * Set the currently logged-in Supabase user.
+ * ==========================================
+ * USER
+ * ==========================================
  */
+
 export function setAchievementUser(
   userId: string | null,
 ) {
+  if (
+    activeUserId !== userId
+  ) {
+    unlockedAchievementIds =
+      new Set();
+
+    activeMindPlayName = "";
+  }
+
   activeUserId = userId;
-
-  if (!isBrowser()) {
-    return;
-  }
-
-  if (userId) {
-    localStorage.setItem(
-      ACTIVE_USER_KEY,
-      userId,
-    );
-  } else {
-    localStorage.removeItem(
-      ACTIVE_USER_KEY,
-    );
-  }
 
   notifyAchievementUpdate();
 }
 
-/*
- * Get the currently active user.
- */
 function getActiveUserId(): string | null {
-  if (activeUserId) {
-    return activeUserId;
-  }
-
-  if (!isBrowser()) {
-    return null;
-  }
-
-  return localStorage.getItem(
-    ACTIVE_USER_KEY,
-  );
-}
-
-/*
- * Get the storage key for the current user.
- */
-function getStorageKey(): string | null {
-  const userId =
-    getActiveUserId();
-
-  if (!userId) {
-    return null;
-  }
-
-  return `${STORAGE_PREFIX}:${userId}`;
+  return activeUserId;
 }
 
 /*
@@ -383,7 +368,10 @@ function getStorageKey(): string | null {
  */
 
 function isBrowser() {
-  return typeof window !== "undefined";
+  return (
+    typeof window !==
+    "undefined"
+  );
 }
 
 function notifyAchievementUpdate() {
@@ -400,76 +388,279 @@ function notifyAchievementUpdate() {
 
 /*
  * ==========================================
+ * LOAD ACHIEVEMENTS
+ * ==========================================
+ *
+ * Since Supabase only stores "8/30",
+ * we cannot reconstruct exactly WHICH
+ * achievements were unlocked from that
+ * value alone.
+ *
+ * Therefore the actual achievement IDs
+ * are calculated again from the user's
+ * current progress and game achievements.
+ *
+ * Progress achievements are restored from
+ * XP, games played and streak.
+ *
+ * Game achievements are restored from
+ * the achievement progress count only
+ * when the current session unlocks them.
+ */
+
+export async function loadAchievementsFromSupabase(): Promise<
+  AchievementId[]
+> {
+  if (!isBrowser()) {
+    return [];
+  }
+
+  const {
+    data: {
+      user,
+    },
+  } =
+    await supabase.auth.getUser();
+
+  if (!user) {
+    setAchievementUser(
+      null,
+    );
+
+    return [];
+  }
+
+  activeUserId =
+    user.id;
+
+  const {
+    data,
+    error,
+  } =
+    await supabase
+      .from("achievements")
+      .select(
+        "mindplay_name, achievement_progress",
+      )
+      .eq(
+        "user_id",
+        user.id,
+      )
+      .maybeSingle();
+
+  if (error) {
+    console.error(
+      "Failed to load achievements from Supabase:",
+      error.message,
+    );
+
+    return [];
+  }
+
+  if (!data) {
+    activeMindPlayName =
+      "";
+
+    unlockedAchievementIds =
+      new Set();
+
+    notifyAchievementUpdate();
+
+    return [];
+  }
+
+  activeMindPlayName =
+    data.mindplay_name ?? "";
+
+  /*
+   * The database stores only the count.
+   *
+   * Example:
+   * "8/30"
+   */
+  const storedProgress =
+    parseAchievementProgress(
+      data.achievement_progress,
+    );
+
+  /*
+   * We don't populate achievement IDs
+   * from the count because "8/30" alone
+   * does not tell us which 8 achievements
+   * were unlocked.
+   *
+   * Progress achievements will be synced
+   * from overall_progress immediately after
+   * this function.
+   */
+  unlockedAchievementIds =
+    new Set();
+
+  /*
+   * Prevent an unused-variable issue while
+   * keeping the stored value validated.
+   */
+  void storedProgress;
+
+  notifyAchievementUpdate();
+
+  return [];
+}
+
+/*
+ * ==========================================
+ * PARSE PROGRESS
+ * ==========================================
+ */
+
+function parseAchievementProgress(
+  value: string | null | undefined,
+): {
+  unlocked: number;
+  total: number;
+} {
+  if (!value) {
+    return {
+      unlocked: 0,
+      total:
+        ACHIEVEMENTS.length,
+    };
+  }
+
+  const match =
+    value.match(
+      /^(\d+)\s*\/\s*(\d+)$/,
+    );
+
+  if (!match) {
+    return {
+      unlocked: 0,
+      total:
+        ACHIEVEMENTS.length,
+    };
+  }
+
+  const unlocked =
+    Number(match[1]);
+
+  const total =
+    Number(match[2]);
+
+  return {
+    unlocked: Number.isFinite(
+      unlocked,
+    )
+      ? Math.max(
+          0,
+          Math.min(
+            unlocked,
+            ACHIEVEMENTS.length,
+          ),
+        )
+      : 0,
+
+    total: Number.isFinite(
+      total,
+    )
+      ? total
+      : ACHIEVEMENTS.length,
+  };
+}
+
+/*
+ * ==========================================
  * READ ACHIEVEMENTS
  * ==========================================
  */
 
 export function getUnlockedAchievements(): AchievementId[] {
-  if (!isBrowser()) {
-    return [];
-  }
-
-  const storageKey =
-    getStorageKey();
-
-  /*
-   * IMPORTANT:
-   *
-   * If there is no logged-in user,
-   * return an empty list instead of
-   * reading another user's achievements.
-   */
-  if (!storageKey) {
-    return [];
-  }
-
-  try {
-    const saved =
-      localStorage.getItem(
-        storageKey,
-      );
-
-    if (!saved) {
-      return [];
-    }
-
-    const parsed =
-      JSON.parse(saved);
-
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-
-    return parsed as AchievementId[];
-  } catch {
-    return [];
-  }
+  return Array.from(
+    unlockedAchievementIds,
+  );
 }
 
 /*
  * ==========================================
- * SAVE ACHIEVEMENTS
+ * SAVE ACHIEVEMENT PROGRESS
  * ==========================================
+ *
+ * Updates ONE row for the current user.
  */
 
-function saveUnlockedAchievements(
-  achievements: AchievementId[],
+async function saveAchievementProgressToSupabase(
+  userId: string,
+  achievementCount: number,
 ) {
   if (!isBrowser()) {
     return;
   }
 
-  const storageKey =
-    getStorageKey();
+  /*
+   * Get the latest MindPlay name from
+   * the profiles table.
+   */
+  const {
+    data: profile,
+    error: profileError,
+  } =
+    await supabase
+      .from("profiles")
+      .select(
+        "mindplay_name",
+      )
+      .eq(
+        "id",
+        userId,
+      )
+      .maybeSingle();
 
-  if (!storageKey) {
+  if (profileError) {
+    console.error(
+      "Failed to load MindPlay name:",
+      profileError.message,
+    );
+
     return;
   }
 
-  localStorage.setItem(
-    storageKey,
-    JSON.stringify(achievements),
-  );
+  const mindPlayName =
+    profile?.mindplay_name ??
+    activeMindPlayName;
+
+  activeMindPlayName =
+    mindPlayName;
+
+  /*
+   * One row per user.
+   */
+  const {
+    error,
+  } =
+    await supabase
+      .from("achievements")
+      .upsert(
+        {
+          user_id:
+            userId,
+
+          mindplay_name:
+            mindPlayName,
+
+          achievement_progress:
+            `${achievementCount}/${ACHIEVEMENTS.length}`,
+        },
+        {
+          onConflict:
+            "user_id",
+        },
+      );
+
+  if (error) {
+    console.error(
+      "Failed to save achievement progress to Supabase:",
+      error.message,
+    );
+  }
 }
 
 /*
@@ -481,38 +672,52 @@ function saveUnlockedAchievements(
 export function unlockAchievement(
   id: AchievementId,
 ): Achievement | null {
-  /*
-   * Never unlock achievements without
-   * an authenticated user.
-   */
-  if (!getActiveUserId()) {
+  const userId =
+    getActiveUserId();
+
+  if (!userId) {
     return null;
   }
 
-  const unlocked =
-    getUnlockedAchievements();
-
-  if (unlocked.includes(id)) {
+  if (
+    unlockedAchievementIds.has(
+      id,
+    )
+  ) {
     return null;
   }
 
   const achievement =
     ACHIEVEMENTS.find(
-      (item) => item.id === id,
+      (item) =>
+        item.id === id,
     );
 
   if (!achievement) {
     return null;
   }
 
-  const updated = [
-    ...unlocked,
+  /*
+   * Update the in-memory state.
+   */
+  unlockedAchievementIds.add(
     id,
-  ];
-
-  saveUnlockedAchievements(
-    updated,
   );
+
+  /*
+   * Save the new count to Supabase.
+   *
+   * Example:
+   * 7 achievements
+   * becomes
+   * "8/30"
+   */
+  void saveAchievementProgressToSupabase(
+    userId,
+    unlockedAchievementIds.size,
+  );
+
+  notifyAchievementUpdate();
 
   return achievement;
 }
@@ -526,7 +731,7 @@ export function unlockAchievement(
 export function isAchievementUnlocked(
   id: AchievementId,
 ): boolean {
-  return getUnlockedAchievements().includes(
+  return unlockedAchievementIds.has(
     id,
   );
 }
@@ -557,40 +762,57 @@ export function getAchievementProgress(
   gamesPlayed: number,
   streak: number,
 ): AchievementId[] {
-  const unlocked: AchievementId[] = [];
+  const unlocked: AchievementId[] =
+    [];
 
   // Games played
   if (gamesPlayed >= 1) {
-    unlocked.push("first-game");
+    unlocked.push(
+      "first-game",
+    );
   }
 
   if (gamesPlayed >= 5) {
-    unlocked.push("five-games");
+    unlocked.push(
+      "five-games",
+    );
   }
 
   if (gamesPlayed >= 10) {
-    unlocked.push("ten-games");
+    unlocked.push(
+      "ten-games",
+    );
   }
 
   if (gamesPlayed >= 20) {
-    unlocked.push("twenty-games");
+    unlocked.push(
+      "twenty-games",
+    );
   }
 
   if (gamesPlayed >= 25) {
-    unlocked.push("twenty-five-games");
+    unlocked.push(
+      "twenty-five-games",
+    );
   }
 
   if (gamesPlayed >= 50) {
-    unlocked.push("fifty-games");
+    unlocked.push(
+      "fifty-games",
+    );
   }
 
   if (gamesPlayed >= 100) {
-    unlocked.push("hundred-games");
+    unlocked.push(
+      "hundred-games",
+    );
   }
 
   // XP
   if (xp >= 100) {
-    unlocked.push("hundred-xp");
+    unlocked.push(
+      "hundred-xp",
+    );
   }
 
   if (xp >= 250) {
@@ -600,11 +822,15 @@ export function getAchievementProgress(
   }
 
   if (xp >= 500) {
-    unlocked.push("five-hundred-xp");
+    unlocked.push(
+      "five-hundred-xp",
+    );
   }
 
   if (xp >= 1000) {
-    unlocked.push("thousand-xp");
+    unlocked.push(
+      "thousand-xp",
+    );
   }
 
   if (xp >= 1500) {
@@ -664,10 +890,6 @@ export function syncProgressAchievements(
   gamesPlayed: number,
   streak: number,
 ): Achievement[] {
-  /*
-   * Don't create achievements for
-   * an unknown/non-authenticated user.
-   */
   if (!getActiveUserId()) {
     return [];
   }
@@ -679,7 +901,8 @@ export function syncProgressAchievements(
       streak,
     );
 
-  const newlyUnlocked: Achievement[] = [];
+  const newlyUnlocked: Achievement[] =
+    [];
 
   for (const id of progressAchievements) {
     const achievement =
@@ -690,12 +913,6 @@ export function syncProgressAchievements(
         achievement,
       );
     }
-  }
-
-  if (
-    newlyUnlocked.length > 0
-  ) {
-    notifyAchievementUpdate();
   }
 
   return newlyUnlocked;
@@ -710,14 +927,9 @@ export function syncProgressAchievements(
 export function unlockGameAchievement(
   id: AchievementId,
 ): Achievement | null {
-  const achievement =
-    unlockAchievement(id);
-
-  if (achievement) {
-    notifyAchievementUpdate();
-  }
-
-  return achievement;
+  return unlockAchievement(
+    id,
+  );
 }
 
 /*
@@ -726,21 +938,39 @@ export function unlockGameAchievement(
  * ==========================================
  */
 
-export function resetAchievements() {
-  if (!isBrowser()) {
+export async function resetAchievements() {
+  const userId =
+    getActiveUserId();
+
+  if (!userId) {
     return;
   }
 
-  const storageKey =
-    getStorageKey();
+  const {
+    error,
+  } =
+    await supabase
+      .from("achievements")
+      .delete()
+      .eq(
+        "user_id",
+        userId,
+      );
 
-  if (!storageKey) {
+  if (error) {
+    console.error(
+      "Failed to reset achievements in Supabase:",
+      error.message,
+    );
+
     return;
   }
 
-  localStorage.removeItem(
-    storageKey,
-  );
+  unlockedAchievementIds =
+    new Set();
+
+  activeMindPlayName =
+    "";
 
   notifyAchievementUpdate();
 }

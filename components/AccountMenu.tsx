@@ -1,89 +1,32 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { supabase } from "@/lib/supabase";
 import { getLevelProgress } from "@/lib/levels";
 import {
   getProgress,
+  loadProgressFromSupabase,
   subscribeToProgress,
   type MindPlayProgress,
 } from "@/lib/progress";
+import {
+  clearPlayerName,
+  getPlayerName,
+  loadPlayerName,
+  PLAYER_NAME_UPDATED_EVENT,
+} from "@/lib/player";
+import {
+  clearDailyChallengeCache,
+} from "@/lib/dailyChallenge";
 
-type QuitStep = "closed" | "confirm" | "delete";
-
-/*
- * =========================================================
- * CLEAR ALL LOCAL MINDPLAY DATA
- * =========================================================
- *
- * Supabase data and browser localStorage are separate.
- *
- * Deleting the Supabase account does NOT automatically
- * delete data stored in the user's browser.
- *
- * This function completely resets MindPlay's local state.
- */
-function clearAllLocalMindPlayData(
-  userId: string
-) {
-  /*
-   * Progress
-   */
-  localStorage.removeItem(
-    "mindplay-progress"
-  );
-
-  /*
-   * Daily challenge
-   */
-  localStorage.removeItem(
-    "mindplay-daily-challenge"
-  );
-
-  /*
-   * Temporary new-account marker
-   */
-  localStorage.removeItem(
-    "mindplay-new-account"
-  );
-
-  /*
-   * Remember Me
-   */
-  localStorage.removeItem(
-    "mindplay-remember-me"
-  );
-
-  /*
-   * Player identity
-   */
-  localStorage.removeItem(
-    "mindplay-player-name"
-  );
-
-  localStorage.removeItem(
-    "mindplay-active-user-id"
-  );
-
-  /*
-   * Global achievements
-   */
-  localStorage.removeItem(
-    "mindplay-achievements"
-  );
-
-  /*
-   * User-specific achievements
-   */
-  localStorage.removeItem(
-    `mindplay-achievements:${userId}`
-  );
-
-  /*
-   * Clear all temporary browser-session data.
-   */
-  sessionStorage.clear();
-}
+type QuitStep =
+  | "closed"
+  | "confirm"
+  | "delete";
 
 export default function AccountMenu() {
   const [isOpen, setIsOpen] =
@@ -94,7 +37,7 @@ export default function AccountMenu() {
 
   const [progress, setProgress] =
     useState<MindPlayProgress | null>(
-      null
+      null,
     );
 
   const [mindPlayName, setMindPlayName] =
@@ -129,39 +72,88 @@ export default function AccountMenu() {
 
   /*
    * =========================================================
+   * LOAD MINDPLAY NAME
+   * =========================================================
+   */
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadName = async () => {
+      const name =
+        await loadPlayerName();
+
+      if (mounted) {
+        setMindPlayName(
+          name ??
+            getPlayerName() ??
+            "",
+        );
+      }
+    };
+
+    void loadName();
+
+    const handlePlayerNameUpdate =
+      () => {
+        if (!mounted) {
+          return;
+        }
+
+        setMindPlayName(
+          getPlayerName() ?? "",
+        );
+      };
+
+    window.addEventListener(
+      PLAYER_NAME_UPDATED_EVENT,
+      handlePlayerNameUpdate,
+    );
+
+    return () => {
+      mounted = false;
+
+      window.removeEventListener(
+        PLAYER_NAME_UPDATED_EVENT,
+        handlePlayerNameUpdate,
+      );
+    };
+  }, []);
+
+  /*
+   * =========================================================
    * LOAD MINDPLAY PROGRESS
    * =========================================================
    */
 
   useEffect(() => {
     const update = () => {
-      setProgress(getProgress());
+      setProgress(
+        getProgress(),
+      );
     };
 
     update();
 
-    return subscribeToProgress(update);
+    return subscribeToProgress(
+      update,
+    );
   }, []);
 
   /*
    * =========================================================
    * CLOSE MENU
    * =========================================================
-   *
-   * Close when:
-   *
-   * - clicking outside
-   * - pressing Escape
    */
 
   useEffect(() => {
     const handlePointerDown = (
-      event: MouseEvent
+      event: MouseEvent,
     ) => {
       if (
         menuRef.current &&
         !menuRef.current.contains(
-          event.target as Node
+          event.target as Node,
         )
       ) {
         setIsOpen(false);
@@ -169,9 +161,11 @@ export default function AccountMenu() {
     };
 
     const handleKeyDown = (
-      event: KeyboardEvent
+      event: KeyboardEvent,
     ) => {
-      if (event.key === "Escape") {
+      if (
+        event.key === "Escape"
+      ) {
         setIsOpen(false);
         setQuitStep("closed");
         resetDeleteForm();
@@ -180,23 +174,23 @@ export default function AccountMenu() {
 
     document.addEventListener(
       "mousedown",
-      handlePointerDown
+      handlePointerDown,
     );
 
     document.addEventListener(
       "keydown",
-      handleKeyDown
+      handleKeyDown,
     );
 
     return () => {
       document.removeEventListener(
         "mousedown",
-        handlePointerDown
+        handlePointerDown,
       );
 
       document.removeEventListener(
         "keydown",
-        handleKeyDown
+        handleKeyDown,
       );
     };
   }, []);
@@ -226,14 +220,39 @@ export default function AccountMenu() {
       const {
         error,
       } =
-        await supabase.auth.signOut();
+        await supabase.auth.signOut({
+          scope: "local",
+        });
 
       if (error) {
         console.error(
           "Logout failed:",
-          error
+          error,
         );
+
+        return;
       }
+
+      /*
+       * Clear only in-memory caches.
+       *
+       * Persistent data stays safely
+       * inside Supabase.
+       */
+
+      clearPlayerName();
+      clearDailyChallengeCache();
+
+      /*
+       * Reset the client-side progress
+       * view to the currently logged-out
+       * state.
+       *
+       * This does NOT write zero progress
+       * to Supabase.
+       */
+
+      await loadProgressFromSupabase();
     };
 
   /*
@@ -261,11 +280,11 @@ export default function AccountMenu() {
           !user
         ) {
           setDeleteError(
-            "Your session has expired. Please log in again."
+            "Your session has expired. Please log in again.",
           );
 
           setQuitStep(
-            "confirm"
+            "confirm",
           );
 
           return;
@@ -278,26 +297,26 @@ export default function AccountMenu() {
           await supabase
             .from("profiles")
             .select(
-              "mindplay_name"
+              "mindplay_name",
             )
             .eq(
               "id",
-              user.id
+              user.id,
             )
             .single();
 
         if (profileError) {
           console.error(
             "Failed to load MindPlay name:",
-            profileError
+            profileError,
           );
 
           setDeleteError(
-            "We couldn't load your MindPlay name. Please try again."
+            "We couldn't load your MindPlay name. Please try again.",
           );
 
           setQuitStep(
-            "confirm"
+            "confirm",
           );
 
           return;
@@ -307,35 +326,35 @@ export default function AccountMenu() {
           !profile?.mindplay_name
         ) {
           setDeleteError(
-            "No MindPlay name was found for this account."
+            "No MindPlay name was found for this account.",
           );
 
           setQuitStep(
-            "confirm"
+            "confirm",
           );
 
           return;
         }
 
         setMindPlayName(
-          profile.mindplay_name
+          profile.mindplay_name,
         );
 
         setQuitStep(
-          "confirm"
+          "confirm",
         );
       } catch (error) {
         console.error(
           "Failed to open account deletion:",
-          error
+          error,
         );
 
         setDeleteError(
-          "Something went wrong. Please try again."
+          "Something went wrong. Please try again.",
         );
 
         setQuitStep(
-          "confirm"
+          "confirm",
         );
       }
     };
@@ -355,6 +374,7 @@ export default function AccountMenu() {
         /*
          * Get the currently logged-in user.
          */
+
         const {
           data: {
             user,
@@ -368,22 +388,24 @@ export default function AccountMenu() {
           !user
         ) {
           throw new Error(
-            "Your session has expired."
+            "Your session has expired.",
           );
         }
 
         /*
          * Make sure the user has an email.
          */
+
         if (!user.email) {
           throw new Error(
-            "No email address is associated with this account."
+            "No email address is associated with this account.",
           );
         }
 
         /*
          * Verify the MindPlay name.
          */
+
         const {
           data: profile,
           error: profileError,
@@ -391,17 +413,17 @@ export default function AccountMenu() {
           await supabase
             .from("profiles")
             .select(
-              "mindplay_name"
+              "mindplay_name",
             )
             .eq(
               "id",
-              user.id
+              user.id,
             )
             .single();
 
         if (profileError) {
           throw new Error(
-            "Unable to verify your MindPlay name."
+            "Unable to verify your MindPlay name.",
           );
         }
 
@@ -411,15 +433,17 @@ export default function AccountMenu() {
             profile.mindplay_name
         ) {
           setDeleteError(
-            "The MindPlay name does not match."
+            "The MindPlay name does not match.",
           );
 
           return;
         }
 
         /*
-         * Re-authenticate using the current password.
+         * Re-authenticate using the
+         * current password.
          */
+
         const {
           error:
             passwordError,
@@ -429,26 +453,28 @@ export default function AccountMenu() {
               email:
                 user.email,
               password,
-            }
+            },
           );
 
         if (passwordError) {
           setDeleteError(
-            "Your password is incorrect."
+            "Your password is incorrect.",
           );
 
           return;
         }
 
         /*
-         * Permanently delete the Supabase account.
+         * Permanently delete the
+         * Supabase account.
          */
+
         const {
           error:
             accountDeleteError,
         } =
           await supabase.rpc(
-            "delete_my_account"
+            "delete_my_account",
           );
 
         if (
@@ -458,41 +484,37 @@ export default function AccountMenu() {
         }
 
         /*
-         * ===================================================
-         * COMPLETE LOCAL RESET
-         * ===================================================
+         * The database deletion should
+         * remove the user's persistent
+         * account data.
          *
-         * Remove ALL MindPlay browser data.
-         *
-         * The next account will therefore start with:
-         *
-         * Level 1
-         * XP 0
-         * Score 0
-         * No achievements
-         * No old player name
-         * No old daily challenge
-         * No old progress
+         * Clear only client-side
+         * in-memory caches.
          */
-        clearAllLocalMindPlayData(
-          user.id
-        );
+
+        clearPlayerName();
+        clearDailyChallengeCache();
 
         /*
          * Close the delete modal.
          */
+
         setQuitStep(
-          "closed"
+          "closed",
         );
 
         /*
-         * Sign out the deleted account.
+         * Clear the authentication
+         * session for this browser.
          */
-        await supabase.auth.signOut();
+
+        await supabase.auth.signOut({
+          scope: "local",
+        });
       } catch (error) {
         console.error(
           "Account deletion failed:",
-          error
+          error,
         );
 
         if (
@@ -501,16 +523,16 @@ export default function AccountMenu() {
             "Your session has expired."
         ) {
           setDeleteError(
-            "Your session has expired. Please log in again."
+            "Your session has expired. Please log in again.",
           );
         } else {
           setDeleteError(
-            "We couldn't delete your account. Please try again."
+            "We couldn't delete your account. Please try again.",
           );
         }
       } finally {
         setIsDeleting(
-          false
+          false,
         );
       }
     };
@@ -525,6 +547,16 @@ export default function AccountMenu() {
     confirmName.trim() ===
       mindPlayName &&
     mindPlayName.length > 0;
+
+  /*
+   * =========================================================
+   * ACCOUNT DISPLAY NAME
+   * =========================================================
+   */
+
+  const accountLabel =
+    mindPlayName.trim() ||
+    "Account";
 
   /*
    * =========================================================
@@ -544,7 +576,7 @@ export default function AccountMenu() {
           type="button"
           onClick={() =>
             setIsOpen(
-              (value) => !value
+              (value) => !value,
             )
           }
           aria-expanded={isOpen}
@@ -556,8 +588,8 @@ export default function AccountMenu() {
             👤
           </span>
 
-          <span className="hidden sm:inline">
-            👤 Account
+          <span className="hidden max-w-40 truncate sm:inline">
+            👤 {accountLabel}
           </span>
         </button>
 
@@ -568,9 +600,21 @@ export default function AccountMenu() {
             role="menu"
             className="absolute right-0 top-full z-50 mt-2 w-55 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-white/10 bg-[#0d1220]/95 p-2 shadow-2xl shadow-black/30 backdrop-blur-xl sm:mt-3 sm:w-64"
           >
-            {/* Status */}
+            {/* Player */}
 
             <div className="rounded-xl bg-white/4 px-3 py-3">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/30">
+                Player
+              </p>
+
+              <p className="mt-1 truncate text-sm font-bold text-white/80">
+                {accountLabel}
+              </p>
+            </div>
+
+            {/* Status */}
+
+            <div className="mt-2 rounded-xl bg-white/4 px-3 py-3">
               <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/30">
                 Status
               </p>
@@ -675,7 +719,7 @@ export default function AccountMenu() {
                     type="button"
                     onClick={() => {
                       setQuitStep(
-                        "closed"
+                        "closed",
                       );
 
                       resetDeleteForm();
@@ -689,11 +733,11 @@ export default function AccountMenu() {
                     type="button"
                     onClick={() => {
                       setDeleteError(
-                        ""
+                        "",
                       );
 
                       setQuitStep(
-                        "delete"
+                        "delete",
                       );
                     }}
                     className="mp-button bg-red-400/10 px-5 py-3 text-sm font-bold text-red-200 hover:bg-red-400/15"
@@ -770,11 +814,11 @@ export default function AccountMenu() {
                       confirmName
                     }
                     onChange={(
-                      event
+                      event,
                     ) =>
                       setConfirmName(
                         event.target
-                          .value
+                          .value,
                       )
                     }
                     autoComplete="off"
@@ -811,11 +855,11 @@ export default function AccountMenu() {
                       password
                     }
                     onChange={(
-                      event
+                      event,
                     ) =>
                       setPassword(
                         event.target
-                          .value
+                          .value,
                       )
                     }
                     autoComplete="current-password"
@@ -845,7 +889,7 @@ export default function AccountMenu() {
                     }
                     onClick={() => {
                       setQuitStep(
-                        "closed"
+                        "closed",
                       );
 
                       resetDeleteForm();

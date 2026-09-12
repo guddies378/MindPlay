@@ -257,7 +257,7 @@ export default function OddOneOutPage() {
 
     if (timeLeft <= 0) {
       const timer =
-        window.setTimeout(() => {
+        window.setTimeout(async () => {
           /*
            * Only a valid Daily Challenge
            * can receive the daily reward.
@@ -266,7 +266,7 @@ export default function OddOneOutPage() {
             dailyMode &&
             dailyChallenge.game ===
               "odd-one-out"
-              ? completeDailyChallenge(
+              ? await completeDailyChallenge(
                   "odd-one-out"
                 )
               : false;

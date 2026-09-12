@@ -429,7 +429,7 @@ export default function PatternRecallPage() {
     showPattern(nextRound);
   }
 
-  function finishGame() {
+  async function finishGame() {
     clearTimers();
 
     const totalRounds =
@@ -471,7 +471,7 @@ export default function PatternRecallPage() {
     const completedDaily =
       dailyMode &&
       dailyChallenge.game === "pattern-recall"
-        ? completeDailyChallenge(
+        ? await completeDailyChallenge(
             "pattern-recall"
           )
         : false;

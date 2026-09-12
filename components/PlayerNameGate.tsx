@@ -1,22 +1,22 @@
 "use client";
 
+import type { FormEvent, ReactNode } from "react";
 import {
-  FormEvent,
   useEffect,
   useState,
 } from "react";
 import { usePathname } from "next/navigation";
-import { supabase } from "@/lib/supabase";
 import {
-  syncLocalProgressToSupabase,
+  setRememberMePreference,
+  supabase,
+} from "@/lib/supabase";
+import {
+  loadProgressFromSupabase,
 } from "@/lib/progress";
+import {
+  loadDailyChallengeFromSupabase,
+} from "@/lib/dailyChallenge";
 import LandingPage from "@/components/LandingPage";
-
-const NEW_ACCOUNT_KEY =
-  "mindplay-new-account";
-
-const REMEMBER_ME_KEY =
-  "mindplay-remember-me";
 
 type AuthMode =
   | "login"
@@ -31,57 +31,6 @@ type OnboardingStep =
 
 /*
  * =========================================================
- * INITIAL REMEMBER ME
- * =========================================================
- */
-
-function getInitialRememberMe() {
-  if (
-    typeof window ===
-    "undefined"
-  ) {
-    return true;
-  }
-
-  const saved =
-    localStorage.getItem(
-      REMEMBER_ME_KEY,
-    );
-
-  /*
-   * Default:
-   * Remember Me = ON
-   */
-  if (saved === null) {
-    return true;
-  }
-
-  return saved === "true";
-}
-
-/*
- * =========================================================
- * INITIAL NEW ACCOUNT
- * =========================================================
- */
-
-function getInitialNewAccount() {
-  if (
-    typeof window ===
-    "undefined"
-  ) {
-    return false;
-  }
-
-  return (
-    localStorage.getItem(
-      NEW_ACCOUNT_KEY,
-    ) === "true"
-  );
-}
-
-/*
- * =========================================================
  * ONBOARDING POPUP
  * =========================================================
  */
@@ -93,10 +42,7 @@ function OnboardingPopup({
   step: OnboardingStep;
   onContinue: () => void;
 }) {
-  if (
-    step ===
-    "none"
-  ) {
+  if (step === "none") {
     return null;
   }
 
@@ -111,8 +57,7 @@ function OnboardingPopup({
 
     "account-created": {
       icon: "✨",
-      title:
-        "Account created successfully",
+      title: "Account created successfully",
       message:
         "Welcome to MindPlay! Your account is ready. Let's get you set up and ready to play.",
       button: "LET'S GO",
@@ -120,8 +65,7 @@ function OnboardingPopup({
 
     "name-warning": {
       icon: "🧠",
-      title:
-        "Choose your MindPlay name",
+      title: "Choose your MindPlay name",
       message:
         "This is the name you'll use throughout your MindPlay journey. Choose carefully — once you sync it, your MindPlay name cannot be edited.",
       button: "LET'S DO IT",
@@ -156,9 +100,7 @@ function OnboardingPopup({
 
         <button
           type="button"
-          onClick={
-            onContinue
-          }
+          onClick={onContinue}
           className="mp-button mt-7 w-full bg-white px-5 py-3.5 text-sm text-black hover:bg-cyan-50"
         >
           {content.button}
@@ -181,81 +123,55 @@ function PasswordRequirements({
 }) {
   const requirements = [
     {
-      label:
-        "One lowercase character",
-      valid:
-        /[a-z]/.test(
-          password,
-        ),
+      label: "One lowercase character",
+      valid: /[a-z]/.test(password),
     },
 
     {
-      label:
-        "One uppercase character",
-      valid:
-        /[A-Z]/.test(
-          password,
-        ),
+      label: "One uppercase character",
+      valid: /[A-Z]/.test(password),
     },
 
     {
-      label:
-        "One number",
-      valid:
-        /\d/.test(
-          password,
-        ),
+      label: "One number",
+      valid: /\d/.test(password),
     },
 
     {
-      label:
-        "One special character",
-      valid:
-        /[^A-Za-z0-9]/.test(
-          password,
-        ),
+      label: "One special character",
+      valid: /[^A-Za-z0-9]/.test(password),
     },
 
     {
-      label:
-        "8 characters minimum",
-      valid:
-        password.length >= 8,
+      label: "8 characters minimum",
+      valid: password.length >= 8,
     },
   ];
 
   return (
     <div className="mt-3 grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2">
-      {requirements.map(
-        (requirement) => (
-          <div
-            key={
-              requirement.label
-            }
-            className={`flex items-center gap-2 text-xs transition-colors duration-200 ${
+      {requirements.map((requirement) => (
+        <div
+          key={requirement.label}
+          className={`flex items-center gap-2 text-xs transition-colors duration-200 ${
+            requirement.valid
+              ? "text-cyan-300"
+              : "text-white/30"
+          }`}
+        >
+          <span
+            className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full text-[9px] font-black transition-all duration-200 ${
               requirement.valid
-                ? "text-cyan-300"
-                : "text-white/30"
+                ? "bg-cyan-300 text-black"
+                : "bg-white/20 text-transparent"
             }`}
           >
-            <span
-              className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full text-[9px] font-black transition-all duration-200 ${
-                requirement.valid
-                  ? "bg-cyan-300 text-black"
-                  : "bg-white/20 text-transparent"
-              }`}
-            >
-              ✓
-            </span>
+            ✓
+          </span>
 
-            <span>
-              {
-                requirement.label
-              }
-            </span>
-          </div>
-        ),
-      )}
+          <span>{requirement.label}</span>
+        </div>
+      ))}
     </div>
   );
 }
@@ -269,10 +185,9 @@ function PasswordRequirements({
 export default function PlayerNameGate({
   children,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
-  const pathname =
-    usePathname();
+  const pathname = usePathname();
 
   /*
    * =========================================================
@@ -300,13 +215,6 @@ export default function PlayerNameGate({
     setProfileExists,
   ] = useState(false);
 
-  const [
-    isNewAccount,
-    setIsNewAccount,
-  ] = useState(
-    getInitialNewAccount,
-  );
-
   /*
    * =========================================================
    * AUTH UI
@@ -321,9 +229,7 @@ export default function PlayerNameGate({
   const [
     authMode,
     setAuthMode,
-  ] = useState<AuthMode>(
-    "login",
-  );
+  ] = useState<AuthMode>("login");
 
   /*
    * =========================================================
@@ -346,12 +252,17 @@ export default function PlayerNameGate({
     setConfirmPassword,
   ] = useState("");
 
+  /*
+   * Remember Me
+   *
+   * This is stored through a cookie.
+   * No localStorage/sessionStorage is used.
+   */
+
   const [
     rememberMe,
     setRememberMe,
-  ] = useState(
-    getInitialRememberMe,
-  );
+  ] = useState(true);
 
   const [
     showPassword,
@@ -403,9 +314,7 @@ export default function PlayerNameGate({
   const [
     onboardingStep,
     setOnboardingStep,
-  ] = useState<OnboardingStep>(
-    "none",
-  );
+  ] = useState<OnboardingStep>("none");
 
   const [
     showNameSetup,
@@ -421,108 +330,89 @@ export default function PlayerNameGate({
   useEffect(() => {
     let mounted = true;
 
-    const checkSession =
-      async () => {
-        const {
-          data: {
-            session,
-          },
-        } =
-          await supabase.auth.getSession();
+    async function checkSession() {
+      const {
+        data: {
+          session,
+        },
+      } = await supabase.auth.getSession();
 
-        if (!mounted) {
-          return;
-        }
+      if (!mounted) {
+        return;
+      }
 
-        setHasSession(
-          !!session,
-        );
+      setHasSession(!!session);
 
-        /*
-         * No session.
-         */
+      /*
+       * No active session.
+       */
 
-        if (!session) {
-          setProfileChecked(
-            false,
-          );
+      if (!session) {
+        setProfileChecked(false);
+        setProfileExists(false);
+        setSessionReady(true);
 
-          setProfileExists(
-            false,
-          );
+        return;
+      }
 
-          setSessionReady(
-            true,
-          );
+      /*
+       * Load cloud progress.
+       */
 
-          return;
-        }
+      await loadProgressFromSupabase();
 
-        /*
-         * Check profile.
-         */
+      /*
+       * Load today's Daily Challenge
+       * from Supabase.
+       */
 
-        const {
-          data: profile,
+      await loadDailyChallengeFromSupabase();
+
+      if (!mounted) {
+        return;
+      }
+
+      /*
+       * Check the user's MindPlay profile.
+       */
+
+      const {
+        data: profile,
+        error,
+      } = await supabase
+        .from("profiles")
+        .select("mindplay_name")
+        .eq("id", session.user.id)
+        .maybeSingle();
+
+      if (!mounted) {
+        return;
+      }
+
+      if (error) {
+        console.error(
+          "Profile check failed:",
           error,
-        } =
-          await supabase
-            .from("profiles")
-            .select(
-              "mindplay_name",
-            )
-            .eq(
-              "id",
-              session.user.id,
-            )
-            .maybeSingle();
-
-        if (!mounted) {
-          return;
-        }
-
-        if (error) {
-          console.error(
-            "Profile check failed:",
-            error,
-          );
-
-          setProfileChecked(
-            true,
-          );
-
-          setProfileExists(
-            false,
-          );
-        } else {
-          const exists =
-            !!profile?.mindplay_name;
-
-          setProfileExists(
-            exists,
-          );
-
-          setProfileChecked(
-            true,
-          );
-
-          if (exists) {
-            setIsNewAccount(
-              false,
-            );
-          } else {
-            setIsNewAccount(
-              getInitialNewAccount(),
-            );
-          }
-        }
-
-        setSessionReady(
-          true,
         );
-      };
 
-    checkSession();
+        setProfileChecked(true);
+        setProfileExists(false);
+      } else {
+        const exists =
+          !!profile?.mindplay_name;
+
+        setProfileExists(exists);
+        setProfileChecked(true);
+
+        if (!exists) {
+          setShowNameSetup(true);
+        }
+      }
+
+      setSessionReady(true);
+    }
+
+    void checkSession();
 
     /*
      * =======================================================
@@ -544,43 +434,39 @@ export default function PlayerNameGate({
             return;
           }
 
-          setHasSession(
-            !!session,
-          );
+          setHasSession(!!session);
 
           /*
            * No session.
            */
 
           if (!session) {
-            setProfileChecked(
-              false,
-            );
+            setProfileChecked(false);
+            setProfileExists(false);
 
-            setProfileExists(
-              false,
-            );
+            setShowAuthOnLanding(false);
+            setShowNameSetup(false);
+            setOnboardingStep("none");
 
-            setIsNewAccount(
-              false,
-            );
+            setSessionReady(true);
 
-            setShowAuthOnLanding(
-              false,
-            );
+            return;
+          }
 
-            setShowNameSetup(
-              false,
-            );
+          /*
+           * Load cloud progress.
+           */
 
-            setOnboardingStep(
-              "none",
-            );
+          await loadProgressFromSupabase();
 
-            setSessionReady(
-              true,
-            );
+          /*
+           * Load today's Daily Challenge
+           * from Supabase.
+           */
 
+          await loadDailyChallengeFromSupabase();
+
+          if (!mounted) {
             return;
           }
 
@@ -591,17 +477,11 @@ export default function PlayerNameGate({
           const {
             data: profile,
             error,
-          } =
-            await supabase
-              .from("profiles")
-              .select(
-                "mindplay_name",
-              )
-              .eq(
-                "id",
-                session.user.id,
-              )
-              .maybeSingle();
+          } = await supabase
+            .from("profiles")
+            .select("mindplay_name")
+            .eq("id", session.user.id)
+            .maybeSingle();
 
           if (!mounted) {
             return;
@@ -613,41 +493,27 @@ export default function PlayerNameGate({
               error,
             );
 
-            setProfileExists(
-              false,
-            );
+            setProfileExists(false);
           } else {
             const exists =
               !!profile?.mindplay_name;
 
-            setProfileExists(
-              exists,
-            );
+            setProfileExists(exists);
 
             if (exists) {
-              setIsNewAccount(
-                false,
-              );
+              setShowNameSetup(false);
             } else {
-              setIsNewAccount(
-                getInitialNewAccount(),
-              );
+              setShowNameSetup(true);
             }
           }
 
-          setProfileChecked(
-            true,
-          );
-
-          setSessionReady(
-            true,
-          );
+          setProfileChecked(true);
+          setSessionReady(true);
         },
       );
 
     return () => {
       mounted = false;
-
       subscription.unsubscribe();
     };
   }, []);
@@ -659,33 +525,17 @@ export default function PlayerNameGate({
    */
 
   function openLogin() {
-    setAuthMode(
-      "login",
-    );
+    setAuthMode("login");
 
-    setAuthError(
-      "",
-    );
+    setAuthError("");
 
-    setPassword(
-      "",
-    );
+    setPassword("");
+    setConfirmPassword("");
 
-    setConfirmPassword(
-      "",
-    );
+    setShowPassword(false);
+    setShowConfirmPassword(false);
 
-    setShowPassword(
-      false,
-    );
-
-    setShowConfirmPassword(
-      false,
-    );
-
-    setShowAuthOnLanding(
-      true,
-    );
+    setShowAuthOnLanding(true);
   }
 
   /*
@@ -695,33 +545,15 @@ export default function PlayerNameGate({
    */
 
   function openSignup() {
-    setAuthMode(
-      "signup",
-    );
+    setAuthMode("signup");
 
-    setAuthError(
-      "",
-    );
+    setAuthError("");
 
-    setPassword(
-      "",
-    );
+    setPassword("");
+    setConfirmPassword("");
 
-    setConfirmPassword(
-      "",
-    );
-
-    setShowPassword(
-      false,
-    );
-
-    setShowConfirmPassword(
-      false,
-    );
-
-    /*
-     * Before-you-begin popup.
-     */
+    setShowPassword(false);
+    setShowConfirmPassword(false);
 
     setOnboardingStep(
       "account-warning",
@@ -735,33 +567,17 @@ export default function PlayerNameGate({
    */
 
   function backToLanding() {
-    setShowAuthOnLanding(
-      false,
-    );
+    setShowAuthOnLanding(false);
 
-    setAuthError(
-      "",
-    );
+    setAuthError("");
 
-    setPassword(
-      "",
-    );
+    setPassword("");
+    setConfirmPassword("");
 
-    setConfirmPassword(
-      "",
-    );
+    setShowPassword(false);
+    setShowConfirmPassword(false);
 
-    setShowPassword(
-      false,
-    );
-
-    setShowConfirmPassword(
-      false,
-    );
-
-    setOnboardingStep(
-      "none",
-    );
+    setOnboardingStep("none");
   }
 
   /*
@@ -771,32 +587,15 @@ export default function PlayerNameGate({
    */
 
   function handleOnboardingContinue() {
-    /*
-     * -----------------------------------------------
-     * Before signup
-     * -----------------------------------------------
-     */
-
     if (
       onboardingStep ===
       "account-warning"
     ) {
-      setOnboardingStep(
-        "none",
-      );
-
-      setShowAuthOnLanding(
-        true,
-      );
+      setOnboardingStep("none");
+      setShowAuthOnLanding(true);
 
       return;
     }
-
-    /*
-     * -----------------------------------------------
-     * Account created
-     * -----------------------------------------------
-     */
 
     if (
       onboardingStep ===
@@ -809,44 +608,22 @@ export default function PlayerNameGate({
       return;
     }
 
-    /*
-     * -----------------------------------------------
-     * Name warning
-     * -----------------------------------------------
-     */
-
     if (
       onboardingStep ===
       "name-warning"
     ) {
-      setOnboardingStep(
-        "none",
-      );
-
-      setShowNameSetup(
-        true,
-      );
+      setOnboardingStep("none");
+      setShowNameSetup(true);
 
       return;
     }
-
-    /*
-     * -----------------------------------------------
-     * Ready to play
-     * -----------------------------------------------
-     */
 
     if (
       onboardingStep ===
       "ready-to-play"
     ) {
-      setOnboardingStep(
-        "none",
-      );
-
-      setShowNameSetup(
-        false,
-      );
+      setOnboardingStep("none");
+      setShowNameSetup(false);
 
       return;
     }
@@ -863,78 +640,17 @@ export default function PlayerNameGate({
   ) {
     event.preventDefault();
 
-    setAuthError(
-      "",
-    );
-
-    setIsSubmitting(
-      true,
-    );
+    setAuthError("");
+    setIsSubmitting(true);
 
     /*
-     * =======================================================
-     * REMEMBER ME
-     * =======================================================
+     * Save Remember Me preference before
+     * Supabase creates/refreshes auth cookies.
      */
 
-    if (
-      typeof window !==
-      "undefined"
-    ) {
-      localStorage.setItem(
-        REMEMBER_ME_KEY,
-        String(
-          rememberMe,
-        ),
-      );
-
-      /*
-       * Remove stale Supabase auth
-       * session from the opposite storage.
-       */
-
-      if (rememberMe) {
-        /*
-         * Persistent login.
-         */
-
-        const authKeys =
-          Object.keys(
-            sessionStorage,
-          ).filter(
-            (key) =>
-              key.startsWith(
-                "sb-",
-              ),
-          );
-
-        for (const key of authKeys) {
-          sessionStorage.removeItem(
-            key,
-          );
-        }
-      } else {
-        /*
-         * Session-only login.
-         */
-
-        const authKeys =
-          Object.keys(
-            localStorage,
-          ).filter(
-            (key) =>
-              key.startsWith(
-                "sb-",
-              ),
-          );
-
-        for (const key of authKeys) {
-          localStorage.removeItem(
-            key,
-          );
-        }
-      }
-    }
+    setRememberMePreference(
+      rememberMe,
+    );
 
     try {
       /*
@@ -943,10 +659,7 @@ export default function PlayerNameGate({
        * =====================================================
        */
 
-      if (
-        authMode ===
-        "login"
-      ) {
+      if (authMode === "login") {
         const cleanEmail =
           email
             .trim()
@@ -968,24 +681,57 @@ export default function PlayerNameGate({
           return;
         }
 
+        /*
+         * IMPORTANT:
+         *
+         * If Remember Me is OFF, clear any existing
+         * local Supabase session first.
+         *
+         * This prevents an older persistent session
+         * from surviving and being reused.
+         *
+         * scope: "local" only clears this browser's
+         * local authentication session.
+         */
+
+        if (!rememberMe) {
+          const {
+            error: signOutError,
+          } =
+            await supabase.auth.signOut({
+              scope: "local",
+            });
+
+          if (signOutError) {
+            console.error(
+              "Failed to clear previous local session:",
+              signOutError,
+            );
+          }
+        }
+
+        /*
+         * Create the new session.
+         */
+
         const {
           error,
         } =
           await supabase.auth.signInWithPassword(
             {
-              email:
-                cleanEmail,
+              email: cleanEmail,
               password,
             },
           );
 
         if (error) {
+          const message =
+            error.message.toLowerCase();
+
           if (
-            error.message
-              .toLowerCase()
-              .includes(
-                "invalid login credentials",
-              )
+            message.includes(
+              "invalid login credentials",
+            )
           ) {
             setAuthError(
               "Incorrect email or password. Please check your details and try again.",
@@ -1001,25 +747,13 @@ export default function PlayerNameGate({
          * Login successful.
          */
 
-        setShowAuthOnLanding(
-          false,
-        );
+        setShowAuthOnLanding(false);
 
-        setPassword(
-          "",
-        );
+        setPassword("");
+        setConfirmPassword("");
 
-        setConfirmPassword(
-          "",
-        );
-
-        setShowPassword(
-          false,
-        );
-
-        setShowConfirmPassword(
-          false,
-        );
+        setShowPassword(false);
+        setShowConfirmPassword(false);
 
         return;
       }
@@ -1070,9 +804,7 @@ export default function PlayerNameGate({
       const hasMinimumLength =
         password.length >= 8;
 
-      if (
-        !hasMinimumLength
-      ) {
+      if (!hasMinimumLength) {
         setAuthError(
           "Password must contain at least 8 characters.",
         );
@@ -1080,9 +812,7 @@ export default function PlayerNameGate({
         return;
       }
 
-      if (
-        !hasLowercase
-      ) {
+      if (!hasLowercase) {
         setAuthError(
           "Password must contain at least one lowercase character.",
         );
@@ -1090,9 +820,7 @@ export default function PlayerNameGate({
         return;
       }
 
-      if (
-        !hasUppercase
-      ) {
+      if (!hasUppercase) {
         setAuthError(
           "Password must contain at least one uppercase character.",
         );
@@ -1100,9 +828,7 @@ export default function PlayerNameGate({
         return;
       }
 
-      if (
-        !hasNumber
-      ) {
+      if (!hasNumber) {
         setAuthError(
           "Password must contain at least one number.",
         );
@@ -1110,9 +836,7 @@ export default function PlayerNameGate({
         return;
       }
 
-      if (
-        !hasSpecial
-      ) {
+      if (!hasSpecial) {
         setAuthError(
           "Password must contain at least one special character.",
         );
@@ -1132,21 +856,6 @@ export default function PlayerNameGate({
       }
 
       /*
-       * Mark as a new account
-       * before signup.
-       */
-
-      if (
-        typeof window !==
-        "undefined"
-      ) {
-        localStorage.setItem(
-          NEW_ACCOUNT_KEY,
-          "true",
-        );
-      }
-
-      /*
        * Create account.
        */
 
@@ -1156,17 +865,12 @@ export default function PlayerNameGate({
       } =
         await supabase.auth.signUp(
           {
-            email:
-              cleanEmail,
+            email: cleanEmail,
             password,
           },
         );
 
       if (error) {
-        /*
-         * Existing email.
-         */
-
         const message =
           error.message.toLowerCase();
 
@@ -1181,15 +885,6 @@ export default function PlayerNameGate({
             "user already exists",
           )
         ) {
-          if (
-            typeof window !==
-            "undefined"
-          ) {
-            localStorage.removeItem(
-              NEW_ACCOUNT_KEY,
-            );
-          }
-
           setAuthError(
             "This email is already registered. Please log in instead.",
           );
@@ -1214,25 +909,13 @@ export default function PlayerNameGate({
        * Account created successfully.
        */
 
-      setShowAuthOnLanding(
-        false,
-      );
+      setShowAuthOnLanding(false);
 
-      setPassword(
-        "",
-      );
+      setPassword("");
+      setConfirmPassword("");
 
-      setConfirmPassword(
-        "",
-      );
-
-      setShowPassword(
-        false,
-      );
-
-      setShowConfirmPassword(
-        false,
-      );
+      setShowPassword(false);
+      setShowConfirmPassword(false);
 
       setOnboardingStep(
         "account-created",
@@ -1255,9 +938,7 @@ export default function PlayerNameGate({
         );
       }
     } finally {
-      setIsSubmitting(
-        false,
-      );
+      setIsSubmitting(false);
     }
   }
 
@@ -1275,9 +956,7 @@ export default function PlayerNameGate({
     const trimmedName =
       mindPlayName.trim();
 
-    setNameError(
-      "",
-    );
+    setNameError("");
 
     if (!trimmedName) {
       setNameError(
@@ -1288,8 +967,7 @@ export default function PlayerNameGate({
     }
 
     if (
-      trimmedName.length <
-      3
+      trimmedName.length < 3
     ) {
       setNameError(
         "MindPlay name must be at least 3 characters.",
@@ -1299,8 +977,7 @@ export default function PlayerNameGate({
     }
 
     if (
-      trimmedName.length >
-      20
+      trimmedName.length > 20
     ) {
       setNameError(
         "MindPlay name must be 20 characters or less.",
@@ -1309,9 +986,7 @@ export default function PlayerNameGate({
       return;
     }
 
-    setIsSavingName(
-      true,
-    );
+    setIsSavingName(true);
 
     try {
       /*
@@ -1337,10 +1012,6 @@ export default function PlayerNameGate({
 
       /*
        * Save profile.
-       *
-       * EMAIL FIX:
-       * Save the authenticated user's
-       * email into the profiles table.
        */
 
       const {
@@ -1356,8 +1027,7 @@ export default function PlayerNameGate({
                 trimmedName,
             },
             {
-              onConflict:
-                "id",
+              onConflict: "id",
             },
           );
 
@@ -1366,54 +1036,26 @@ export default function PlayerNameGate({
       }
 
       /*
-       * Save locally.
+       * Load cloud progress.
        */
 
-      if (
-        typeof window !==
-        "undefined"
-      ) {
-        localStorage.setItem(
-          "mindplay-active-user-id",
-          user.id,
-        );
-
-        localStorage.setItem(
-          "mindplay-player-name",
-          trimmedName,
-        );
-      }
+      await loadProgressFromSupabase();
 
       /*
-       * Sync progress.
+       * Load today's Daily Challenge
+       * from Supabase.
        */
 
-      await syncLocalProgressToSupabase();
+      await loadDailyChallengeFromSupabase();
 
       /*
-       * Remove new account marker.
+       * Profile now exists.
        */
 
-      if (
-        typeof window !==
-        "undefined"
-      ) {
-        localStorage.removeItem(
-          NEW_ACCOUNT_KEY,
-        );
-      }
+      setProfileExists(true);
+      setProfileChecked(true);
 
-      setProfileExists(
-        true,
-      );
-
-      setIsNewAccount(
-        false,
-      );
-
-      setShowNameSetup(
-        false,
-      );
+      setShowNameSetup(false);
 
       /*
        * Final onboarding.
@@ -1440,9 +1082,7 @@ export default function PlayerNameGate({
         );
       }
     } finally {
-      setIsSavingName(
-        false,
-      );
+      setIsSavingName(false);
     }
   }
 
@@ -1473,7 +1113,6 @@ export default function PlayerNameGate({
     hasSession &&
     profileChecked &&
     !profileExists &&
-    isNewAccount &&
     showNameSetup;
 
   /*
@@ -1490,12 +1129,8 @@ export default function PlayerNameGate({
 
       {shouldShowLanding ? (
         <LandingPage
-          onLogin={
-            openLogin
-          }
-          onSignup={
-            openSignup
-          }
+          onLogin={openLogin}
+          onSignup={openSignup}
         />
       ) : (
         children
@@ -1506,9 +1141,7 @@ export default function PlayerNameGate({
           ===================================================== */}
 
       <OnboardingPopup
-        step={
-          onboardingStep
-        }
+        step={onboardingStep}
         onContinue={
           handleOnboardingContinue
         }
@@ -1592,8 +1225,7 @@ export default function PlayerNameGate({
                     event,
                   ) =>
                     setEmail(
-                      event.target
-                        .value,
+                      event.target.value,
                     )
                   }
                   autoComplete="email"
@@ -1631,8 +1263,7 @@ export default function PlayerNameGate({
                       event,
                     ) =>
                       setPassword(
-                        event.target
-                          .value,
+                        event.target.value,
                       )
                     }
                     autoComplete={
@@ -1649,15 +1280,11 @@ export default function PlayerNameGate({
                     className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 pr-20 text-sm text-white outline-none placeholder:text-white/20 focus:border-cyan-300/30 focus:bg-white/7 disabled:cursor-not-allowed disabled:opacity-50"
                   />
 
-                  {/* SHOW / HIDE */}
-
                   <button
                     type="button"
                     onClick={() =>
                       setShowPassword(
-                        (
-                          previous,
-                        ) =>
+                        (previous) =>
                           !previous,
                       )
                     }
@@ -1671,8 +1298,6 @@ export default function PlayerNameGate({
                       : "SHOW"}
                   </button>
                 </div>
-
-                {/* Signup requirements */}
 
                 {authMode ===
                   "signup" && (
@@ -1711,8 +1336,7 @@ export default function PlayerNameGate({
                         event,
                       ) =>
                         setConfirmPassword(
-                          event.target
-                            .value,
+                          event.target.value,
                         )
                       }
                       autoComplete="new-password"
@@ -1728,9 +1352,7 @@ export default function PlayerNameGate({
                       type="button"
                       onClick={() =>
                         setShowConfirmPassword(
-                          (
-                            previous,
-                          ) =>
+                          (previous) =>
                             !previous,
                         )
                       }
@@ -1749,38 +1371,38 @@ export default function PlayerNameGate({
 
               {/* Remember Me */}
 
-              <label className="flex cursor-pointer items-center gap-3 py-1">
-                <input
-                  type="checkbox"
-                  checked={
-                    rememberMe
-                  }
-                  onChange={(
-                    event,
-                  ) =>
-                    setRememberMe(
-                      event.target
-                        .checked,
-                    )
-                  }
-                  disabled={
-                    isSubmitting
-                  }
-                  className="h-4 w-4 accent-cyan-300"
-                />
+              {authMode ===
+                "login" && (
+                <label className="flex cursor-pointer items-center gap-3 py-1">
+                  <input
+                    type="checkbox"
+                    checked={
+                      rememberMe
+                    }
+                    onChange={(
+                      event,
+                    ) =>
+                      setRememberMe(
+                        event.target.checked,
+                      )
+                    }
+                    disabled={
+                      isSubmitting
+                    }
+                    className="h-4 w-4 accent-cyan-300"
+                  />
 
-                <span className="text-sm text-white/45">
-                  Remember me
-                </span>
-              </label>
+                  <span className="text-sm text-white/45">
+                    Remember me
+                  </span>
+                </label>
+              )}
 
               {/* Error */}
 
               {authError && (
                 <div className="rounded-xl border border-red-300/10 bg-red-300/5 px-4 py-3 text-sm leading-5 text-red-200/80">
-                  {
-                    authError
-                  }
+                  {authError}
                 </div>
               )}
 
@@ -1896,8 +1518,7 @@ export default function PlayerNameGate({
                   event,
                 ) =>
                   setMindPlayName(
-                    event.target
-                      .value,
+                    event.target.value,
                   )
                 }
                 autoComplete="off"
@@ -1916,9 +1537,7 @@ export default function PlayerNameGate({
 
               {nameError && (
                 <div className="mt-4 rounded-xl border border-red-300/10 bg-red-300/5 px-4 py-3 text-sm text-red-200/80">
-                  {
-                    nameError
-                  }
+                  {nameError}
                 </div>
               )}
 

@@ -396,7 +396,7 @@ export default function NumberMemoryPage() {
     );
   }
 
-  function finishGame(
+  async function finishGame(
     finalScore: number
   ) {
     /*
@@ -425,7 +425,7 @@ export default function NumberMemoryPage() {
       dailyMode &&
       dailyChallenge.game ===
         "number-memory"
-        ? completeDailyChallenge(
+        ? await completeDailyChallenge(
             "number-memory"
           )
         : false;

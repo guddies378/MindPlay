@@ -744,7 +744,7 @@ export default function LogicRushPage() {
     );
   }
 
-  function finishGame() {
+  async function finishGame() {
     /*
      * Daily Challenge bonus is ONLY
      * available when the game was started
@@ -754,7 +754,7 @@ export default function LogicRushPage() {
       dailyMode &&
       dailyChallenge.game ===
         "logic-rush"
-        ? completeDailyChallenge(
+        ? await completeDailyChallenge(
             "logic-rush"
           )
         : false;

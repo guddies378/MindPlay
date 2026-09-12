@@ -435,7 +435,7 @@ export default function ColorClashPage() {
   };
 
   const finishGame =
-    useCallback(() => {
+    useCallback(async () => {
       clearRoundTimers();
 
       /*
@@ -446,7 +446,7 @@ export default function ColorClashPage() {
         dailyMode &&
         dailyChallenge.game ===
           "color-clash"
-          ? completeDailyChallenge(
+          ? await completeDailyChallenge(
               "color-clash"
             )
           : false;
