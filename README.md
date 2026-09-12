@@ -1,291 +1,208 @@
-MindPlay
+# MindPlay 🧠🎮
 
-Play. Think. Grow.
+MindPlay is a brain-training web app built around short and fun mini-games that challenge memory, logic, focus, reaction speed, problem-solving, and mental calculation.
 
-MindPlay is a modern brain-training web app built around short, engaging
-games designed to keep your mind sharp.
+> **Make your mind sharper while playing.**
 
-Instead of long training sessions, MindPlay turns a few minutes into
-quick challenges that test memory, logic, speed, focus, math, and
-problem-solving.
+---
 
-✨ Features
+## 🌐 Live Demo
 
-🧠 12 brain-training games
+**Play MindPlay:**  
+https://mindplay-six.vercel.app
 
-🎮 Short, replayable challenges
-
-📈 XP, levels, streaks, games played, and best scores
-
-🏆 Game and progress achievements
-
-📅 Daily challenges with bonus XP
-
-👤 User accounts with a permanent MindPlay name
-
-☁️ Cloud-saved progress with Supabase
-
-🔐 Supabase Row Level Security (RLS)
-
-💾 Remember Me login option
-
-📱 Responsive mobile-first interface
-
-✨ Premium dark UI with subtle cyan/fuchsia accents
-
-⚡ Built with Next.js and optimized for fast navigation
-
-🎮 Games
-
-MindPlay currently includes:
-
-Memory Match --- Test your memory by matching pairs.
-
-Quick Math --- Solve arithmetic problems as quickly as possible.
-
-Word Scramble --- Unscramble words before time runs out.
-
-Riddle Me --- Solve riddles and think outside the box.
-
-Odd One Out --- Find the item that does not belong.
-
-Tic Tac Toe --- Challenge the game board and plan your moves.
-
-Reaction Rush --- Test your reaction speed.
-
-Number Memory --- Remember and reproduce number sequences.
-
-Color Clash --- Test your focus against conflicting colors.
-
-Pattern Recall --- Remember and reproduce visual patterns.
-
-Sequence Master --- Watch a sequence and reproduce it in order.
-
-Logic Rush --- Solve logic challenges under pressure.
-
-🛠️ Tech Stack
-
-Next.js 16
-
-React
-
-TypeScript
-
-Tailwind CSS
-
-Supabase
-
-Vercel
-
-ESLint
-
-🗂️ Project Structure
-
-MindPlay/
-├── app/
-│   ├── games/
-│   │   ├── color-clash/
-│   │   ├── logic-rush/
-│   │   ├── memory-match/
-│   │   ├── number-memory/
-│   │   ├── odd-one-out/
-│   │   ├── pattern-recall/
-│   │   ├── quick-math/
-│   │   ├── reaction-rush/
-│   │   ├── riddle-me/
-│   │   ├── sequence-master/
-│   │   ├── tic-tac-toe/
-│   │   └── word-scramble/
-│   ├── games/
-│   └── ...
-├── components/
-│   └── ...
-├── lib/
-│   ├── achievements.ts
-│   ├── dailyChallenge.ts
-│   ├── gameXP.ts
-│   ├── progress.ts
-│   └── supabase.ts
-├── public/
-└── ...
-
-👤 Accounts & Progress
-
-MindPlay uses Supabase for account and progress persistence.
-
-Profile
-
-Each authenticated user has a profile containing their permanent
-MindPlay name.
-
-Overall Progress
-
-MindPlay stores:
-
-XP
-
-Games played
-
-Current streak
-
-Best score
-
-Last played date
-
-Last update time
-
-Game Progress
-
-Individual game statistics can be stored per user and game, including:
-
-Games played
-
-Best score
-
-Total score
-
-Last played date
-
-Last update time
-
-Feedback
-
-Authenticated users can submit feedback, including a reaction and
-message.
-
-🔐 Security
-
-MindPlay uses Supabase Row Level Security (RLS).
-
-Users are restricted to their own records using their authenticated
-Supabase user ID.
-
-This applies to:
-
-profiles
-
-overall_progress
-
-game_progress
-
-feedback
-
-The application does not expose the Supabase service-role key to the
-browser.
-
-🚀 Getting Started
-
-1. Clone the repository
-
-git clone https://github.com/guddies378/MindPlay.git
-cd MindPlay
-
-2. Install dependencies
-
-npm install
-
-3. Configure environment variables
-
-Create a .env.local file in the project root:
-
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
-
-Use the values from your Supabase project.
-
-Do not commit .env.local or any secret keys to GitHub.
-
-4. Start the development server
-
-npm run dev
-
-Open:
-
-http://localhost:3000
-
-📦 Available Scripts
-
-npm run dev
-
-Starts the local development server.
-
-npm run build
-
-Creates a production build and checks the application for build errors.
-
-npm run start
-
-Starts the production server after a successful build.
-
-npm run lint
-
-Runs ESLint checks.
-
-☁️ Deployment
-
-MindPlay is designed to deploy through Vercel.
-
-The production deployment is:
-
-https://mindplay-arcade.vercel.app/
-
-The GitHub repository is:
+## 📂 GitHub Repository
 
 https://github.com/guddies378/MindPlay
 
-When the project is connected to Vercel, pushing changes to the main
-branch can automatically trigger a new deployment.
+---
 
-Remember to configure the same Supabase environment variables in Vercel:
+## ✨ Features
 
-NEXT_PUBLIC_SUPABASE_URL
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+- 🧠 Brain-training mini-games
+- 🎮 Multiple game types
+- 🃏 Memory challenges
+- ⚡ Reaction-speed challenges
+- 🧩 Logic and pattern challenges
+- ➕ Mental math challenges
+- 🔤 Word challenges
+- 🔢 Number-memory challenges
+- ❓ Riddle challenges
+- 🔥 Daily streak system
+- ⭐ XP progression system
+- 🏆 Unlimited level progression
+- 📊 Player progress tracking
+- 👤 User accounts
+- 💬 Feedback system
+- 📱 Responsive design
+- 🔐 Supabase authentication
+- ☁️ Persistent player data
 
-🎨 Design
+---
 
-MindPlay follows a simple, premium visual direction:
+# 🎮 Games
 
-Dark interface
+MindPlay currently includes the following games.
 
-Large, bold typography
+### 🃏 Memory Match
 
-Generous negative space
+Test your memory by finding matching cards.
 
-Minimal interface elements
+### ➕ Quick Math
 
-Subtle ambient gradients
+Solve arithmetic questions as quickly as possible.
 
-Cyan and fuchsia as the main visual accents
+### ❓ Riddle Me
 
-Responsive layouts designed for mobile and desktop
+Solve riddles before the timer runs out.
 
-Consistent game UI through a shared GameShell
+### 🎯 Tic Tac Toe
 
-The goal is to make the experience feel clean, confident, focused, and
-fun without overwhelming the player.
+Play the classic Tic Tac Toe game.
 
-📱 Responsive Experience
+### 🔤 Word Scramble
 
-MindPlay is designed to work across:
+Unscramble letters and find the correct word.
 
-Mobile phones
+### 🔢 Number Memory
 
-Tablets
+Remember and recall numbers.
 
-Desktop screens
+### 👀 Odd One Out
 
-Game pages use natural page scrolling on mobile so longer game
-interfaces remain comfortable to use.
+Find the item that doesn't belong.
 
-🧠 Why MindPlay?
+### 🧩 Pattern Recall
 
-MindPlay is built around a simple idea:
+Remember and reproduce visual patterns.
 
-Short games. Serious thinking.
+### 🔄 Sequence Master
 
-You do not need hours of training to challenge your brain. Pick a game,
-think fast, and keep getting better.
+Identify patterns and complete sequences.
 
-📄 License
+### ⚡ Reaction Rush
 
-This project is currently intended as a personal project.
+Test your reaction speed.
+
+### 🎨 Color Clash
+
+Challenge your visual recognition and reaction speed.
+
+### 🧠 Logic Rush
+
+Solve quick logic-based challenges.
+
+---
+
+# 🏆 Progression System
+
+MindPlay uses an XP-based progression system.
+
+Players earn XP by playing games and completing activities.
+
+MindPlay tracks:
+
+- XP
+- Level
+- Games played
+- Current streak
+- Best score
+- Last played
+
+The level system is **unlimited**, allowing players to continue leveling up as they earn more XP.
+
+## XP Levels
+
+| Level | Required XP |
+|------:|------------:|
+| 1 | 0 |
+| 2 | 100 |
+| 3 | 250 |
+| 4 | 450 |
+| 5 | 700 |
+| 6 | 1,000 |
+| 7 | 1,350 |
+| 8 | 1,750 |
+| 9 | 2,200 |
+| 10 | 2,700 |
+
+There is no maximum level.
+
+---
+
+# 🔥 Daily Streaks
+
+MindPlay tracks player activity through daily streaks.
+
+Players can maintain their streak by continuing to play and complete activities consistently.
+
+The streak system is designed to encourage regular brain-training sessions.
+
+---
+
+# 👤 User Accounts
+
+Users can create a MindPlay account using:
+
+- Email
+- Password
+- MindPlay name
+
+Authentication is handled through **Supabase Auth**.
+
+Passwords are handled securely by Supabase Auth and are not stored as plaintext in the application's public database tables.
+
+---
+
+# 💬 Feedback System
+
+Players can submit feedback directly through MindPlay.
+
+Feedback records contain:
+
+- Email
+- MindPlay name
+- Reaction
+- Message
+- Date submitted
+- XP awarded
+
+Players can receive:
+
+**+10 XP**
+
+for their first feedback submission of the day.
+
+Additional feedback submissions on the same day do not award additional feedback XP.
+
+---
+
+# 📊 Player Progress
+
+MindPlay keeps track of player progress across the application.
+
+The player's progress includes:
+
+- Current XP
+- Level
+- Games played
+- Streak
+- Best score
+- Last played date
+
+Progress is stored in Supabase so player information can persist between sessions.
+
+---
+
+# 🗄️ Database
+
+MindPlay uses **Supabase** for authentication and persistent application data.
+
+## Profiles
+
+```text
+profiles
+├── id
+├── email
+├── mindplay_name
+└── created_at

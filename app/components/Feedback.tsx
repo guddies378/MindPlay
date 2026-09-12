@@ -59,10 +59,39 @@ export default function Feedback() {
         return;
       }
 
-      console.log(
-        "AUTHENTICATED USER:",
-        user.id,
-      );
+      const email = user.email?.trim().toLowerCase();
+
+      if (!email) {
+        setError(
+          "Unable to find your account email.",
+        );
+
+        return;
+      }
+
+      // Get the player's MindPlay name
+      const { data: profile, error: profileError } =
+        await supabase
+          .from("profiles")
+          .select("mindplay_name")
+          .eq("id", user.id)
+          .maybeSingle();
+
+      if (profileError) {
+        console.error(
+          "PROFILE ERROR:",
+          profileError.message,
+        );
+
+        setError(
+          "Unable to load your MindPlay profile.",
+        );
+
+        return;
+      }
+
+      const mindplayName =
+        profile?.mindplay_name?.trim() || null;
 
       /*
        * Check whether the user has already
@@ -75,7 +104,7 @@ export default function Feedback() {
         await supabase
           .from("feedback")
           .select("id, xp_awarded")
-          .eq("user_id", user.id)
+          .eq("email", email)
           .gte(
             "created_at",
             startOfToday.toISOString(),
@@ -103,10 +132,8 @@ export default function Feedback() {
         );
 
       /*
-       * Save the feedback.
-       *
-       * If the user already received today's
-       * reward, this feedback gets 0 XP.
+       * First feedback of the day = 10 XP.
+       * Additional feedback = 0 XP.
        */
       const rewardXP = alreadyReceivedXP
         ? 0
@@ -116,7 +143,8 @@ export default function Feedback() {
         await supabase
           .from("feedback")
           .insert({
-            user_id: user.id,
+            email,
+            mindplay_name: mindplayName,
             reaction:
               reaction || null,
             message:

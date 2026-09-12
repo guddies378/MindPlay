@@ -18,7 +18,22 @@ const NEW_ACCOUNT_KEY =
 const REMEMBER_ME_KEY =
   "mindplay-remember-me";
 
-type AuthMode = "login" | "signup";
+type AuthMode =
+  | "login"
+  | "signup";
+
+type OnboardingStep =
+  | "none"
+  | "account-warning"
+  | "account-created"
+  | "name-warning"
+  | "ready-to-play";
+
+/*
+ * =========================================================
+ * INITIAL REMEMBER ME
+ * =========================================================
+ */
 
 function getInitialRememberMe() {
   if (
@@ -30,15 +45,25 @@ function getInitialRememberMe() {
 
   const saved =
     localStorage.getItem(
-      REMEMBER_ME_KEY
+      REMEMBER_ME_KEY,
     );
 
+  /*
+   * Default:
+   * Remember Me = ON
+   */
   if (saved === null) {
     return true;
   }
 
   return saved === "true";
 }
+
+/*
+ * =========================================================
+ * INITIAL NEW ACCOUNT
+ * =========================================================
+ */
 
 function getInitialNewAccount() {
   if (
@@ -50,105 +75,346 @@ function getInitialNewAccount() {
 
   return (
     localStorage.getItem(
-      NEW_ACCOUNT_KEY
+      NEW_ACCOUNT_KEY,
     ) === "true"
   );
 }
+
+/*
+ * =========================================================
+ * ONBOARDING POPUP
+ * =========================================================
+ */
+
+function OnboardingPopup({
+  step,
+  onContinue,
+}: {
+  step: OnboardingStep;
+  onContinue: () => void;
+}) {
+  if (
+    step ===
+    "none"
+  ) {
+    return null;
+  }
+
+  const content = {
+    "account-warning": {
+      icon: "🧠",
+      title: "Before you begin",
+      message:
+        "Your email and password are used to access your MindPlay account. Keep them somewhere safe — these credentials cannot be edited through MindPlay.",
+      button: "I UNDERSTAND",
+    },
+
+    "account-created": {
+      icon: "✨",
+      title:
+        "Account created successfully",
+      message:
+        "Welcome to MindPlay! Your account is ready. Let's get you set up and ready to play.",
+      button: "LET'S GO",
+    },
+
+    "name-warning": {
+      icon: "🧠",
+      title:
+        "Choose your MindPlay name",
+      message:
+        "This is the name you'll use throughout your MindPlay journey. Choose carefully — once you sync it, your MindPlay name cannot be edited.",
+      button: "LET'S DO IT",
+    },
+
+    "ready-to-play": {
+      icon: "🚀",
+      title: "You're all set",
+      message:
+        "Your account and MindPlay name are ready. Time to put your mind to the test — your first challenge is waiting.",
+      button: "LET'S PLAY",
+    },
+  }[step];
+
+  return (
+    <div className="fixed inset-0 z-120 flex items-center justify-center bg-black/75 px-5 backdrop-blur-md">
+      <div
+        key={step}
+        className="w-full max-w-md animate-[mindplayPop_0.3s_ease-out] rounded-4xl border border-cyan-300/15 bg-[#0d1222]/95 p-7 text-center shadow-2xl shadow-cyan-950/30 backdrop-blur-xl sm:p-8"
+      >
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-3xl shadow-lg">
+          {content.icon}
+        </div>
+
+        <h2 className="mt-6 text-2xl font-black tracking-tight text-white sm:text-3xl">
+          {content.title}
+        </h2>
+
+        <p className="mx-auto mt-4 max-w-sm text-sm leading-6 text-white/45">
+          {content.message}
+        </p>
+
+        <button
+          type="button"
+          onClick={
+            onContinue
+          }
+          className="mp-button mt-7 w-full bg-white px-5 py-3.5 text-sm text-black hover:bg-cyan-50"
+        >
+          {content.button}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/*
+ * =========================================================
+ * PASSWORD REQUIREMENTS
+ * =========================================================
+ */
+
+function PasswordRequirements({
+  password,
+}: {
+  password: string;
+}) {
+  const requirements = [
+    {
+      label:
+        "One lowercase character",
+      valid:
+        /[a-z]/.test(
+          password,
+        ),
+    },
+
+    {
+      label:
+        "One uppercase character",
+      valid:
+        /[A-Z]/.test(
+          password,
+        ),
+    },
+
+    {
+      label:
+        "One number",
+      valid:
+        /\d/.test(
+          password,
+        ),
+    },
+
+    {
+      label:
+        "One special character",
+      valid:
+        /[^A-Za-z0-9]/.test(
+          password,
+        ),
+    },
+
+    {
+      label:
+        "8 characters minimum",
+      valid:
+        password.length >= 8,
+    },
+  ];
+
+  return (
+    <div className="mt-3 grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2">
+      {requirements.map(
+        (requirement) => (
+          <div
+            key={
+              requirement.label
+            }
+            className={`flex items-center gap-2 text-xs transition-colors duration-200 ${
+              requirement.valid
+                ? "text-cyan-300"
+                : "text-white/30"
+            }`}
+          >
+            <span
+              className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full text-[9px] font-black transition-all duration-200 ${
+                requirement.valid
+                  ? "bg-cyan-300 text-black"
+                  : "bg-white/20 text-transparent"
+              }`}
+            >
+              ✓
+            </span>
+
+            <span>
+              {
+                requirement.label
+              }
+            </span>
+          </div>
+        ),
+      )}
+    </div>
+  );
+}
+
+/*
+ * =========================================================
+ * MAIN PLAYER NAME GATE
+ * =========================================================
+ */
 
 export default function PlayerNameGate({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const pathname = usePathname();
+  const pathname =
+    usePathname();
 
   /*
    * =========================================================
-   * SESSION / PROFILE STATE
+   * SESSION / PROFILE
    * =========================================================
    */
 
-  const [sessionReady, setSessionReady] =
-    useState(false);
+  const [
+    sessionReady,
+    setSessionReady,
+  ] = useState(false);
 
-  const [hasSession, setHasSession] =
-    useState(false);
+  const [
+    hasSession,
+    setHasSession,
+  ] = useState(false);
 
-  const [profileChecked, setProfileChecked] =
-    useState(false);
+  const [
+    profileChecked,
+    setProfileChecked,
+  ] = useState(false);
 
-  const [profileExists, setProfileExists] =
-    useState(false);
+  const [
+    profileExists,
+    setProfileExists,
+  ] = useState(false);
 
-  const [isNewAccount, setIsNewAccount] =
-    useState(getInitialNewAccount);
+  const [
+    isNewAccount,
+    setIsNewAccount,
+  ] = useState(
+    getInitialNewAccount,
+  );
 
   /*
    * =========================================================
-   * LANDING / AUTH STATE
+   * AUTH UI
    * =========================================================
    */
 
-  const [showAuthOnLanding, setShowAuthOnLanding] =
-    useState(false);
+  const [
+    showAuthOnLanding,
+    setShowAuthOnLanding,
+  ] = useState(false);
 
-  const [authMode, setAuthMode] =
-    useState<AuthMode>("login");
+  const [
+    authMode,
+    setAuthMode,
+  ] = useState<AuthMode>(
+    "login",
+  );
 
   /*
    * =========================================================
-   * AUTH FORM STATE
+   * AUTH FORM
    * =========================================================
    */
 
-  const [email, setEmail] =
-    useState("");
+  const [
+    email,
+    setEmail,
+  ] = useState("");
 
-  const [password, setPassword] =
-    useState("");
+  const [
+    password,
+    setPassword,
+  ] = useState("");
 
-  const [confirmPassword, setConfirmPassword] =
-    useState("");
+  const [
+    confirmPassword,
+    setConfirmPassword,
+  ] = useState("");
 
-  const [rememberMe, setRememberMe] =
-    useState(getInitialRememberMe);
+  const [
+    rememberMe,
+    setRememberMe,
+  ] = useState(
+    getInitialRememberMe,
+  );
 
-  const [authError, setAuthError] =
-    useState("");
+  const [
+    showPassword,
+    setShowPassword,
+  ] = useState(false);
 
-  const [isSubmitting, setIsSubmitting] =
-    useState(false);
+  const [
+    showConfirmPassword,
+    setShowConfirmPassword,
+  ] = useState(false);
+
+  const [
+    authError,
+    setAuthError,
+  ] = useState("");
+
+  const [
+    isSubmitting,
+    setIsSubmitting,
+  ] = useState(false);
 
   /*
    * =========================================================
-   * EMAIL / SIGNUP NOTICES
+   * MINDPLAY NAME
    * =========================================================
    */
 
-  const [showEmailToast, setShowEmailToast] =
-    useState(false);
+  const [
+    mindPlayName,
+    setMindPlayName,
+  ] = useState("");
 
-  const [showSignupNotice, setShowSignupNotice] =
-    useState(false);
+  const [
+    nameError,
+    setNameError,
+  ] = useState("");
+
+  const [
+    isSavingName,
+    setIsSavingName,
+  ] = useState(false);
 
   /*
    * =========================================================
-   * MINDPLAY NAME STATE
+   * ONBOARDING
    * =========================================================
    */
 
-  const [mindPlayName, setMindPlayName] =
-    useState("");
+  const [
+    onboardingStep,
+    setOnboardingStep,
+  ] = useState<OnboardingStep>(
+    "none",
+  );
 
-  const [nameError, setNameError] =
-    useState("");
-
-  const [isSavingName, setIsSavingName] =
-    useState(false);
+  const [
+    showNameSetup,
+    setShowNameSetup,
+  ] = useState(false);
 
   /*
    * =========================================================
-   * CHECK CURRENT SESSION
+   * CHECK SESSION
    * =========================================================
    */
 
@@ -169,32 +435,33 @@ export default function PlayerNameGate({
         }
 
         setHasSession(
-          !!session
+          !!session,
         );
 
         /*
          * No session.
          */
+
         if (!session) {
           setProfileChecked(
-            false
+            false,
           );
 
           setProfileExists(
-            false
+            false,
           );
 
           setSessionReady(
-            true
+            true,
           );
 
           return;
         }
 
         /*
-         * Check whether this account
-         * already has a MindPlay profile.
+         * Check profile.
          */
+
         const {
           data: profile,
           error,
@@ -202,11 +469,11 @@ export default function PlayerNameGate({
           await supabase
             .from("profiles")
             .select(
-              "mindplay_name"
+              "mindplay_name",
             )
             .eq(
               "id",
-              session.user.id
+              session.user.id,
             )
             .maybeSingle();
 
@@ -217,28 +484,41 @@ export default function PlayerNameGate({
         if (error) {
           console.error(
             "Profile check failed:",
-            error
+            error,
           );
 
           setProfileChecked(
-            true
+            true,
           );
 
           setProfileExists(
-            false
+            false,
           );
         } else {
+          const exists =
+            !!profile?.mindplay_name;
+
           setProfileExists(
-            !!profile?.mindplay_name
+            exists,
           );
 
           setProfileChecked(
-            true
+            true,
           );
+
+          if (exists) {
+            setIsNewAccount(
+              false,
+            );
+          } else {
+            setIsNewAccount(
+              getInitialNewAccount(),
+            );
+          }
         }
 
         setSessionReady(
-          true
+          true,
         );
       };
 
@@ -258,51 +538,56 @@ export default function PlayerNameGate({
       supabase.auth.onAuthStateChange(
         async (
           _event,
-          session
+          session,
         ) => {
           if (!mounted) {
             return;
           }
 
           setHasSession(
-            !!session
+            !!session,
           );
 
           /*
            * No session.
            */
+
           if (!session) {
             setProfileChecked(
-              false
+              false,
             );
 
             setProfileExists(
-              false
+              false,
             );
 
             setIsNewAccount(
-              false
+              false,
             );
 
-            /*
-             * If the user logged out,
-             * return to the landing page
-             * instead of reopening auth.
-             */
             setShowAuthOnLanding(
-              false
+              false,
+            );
+
+            setShowNameSetup(
+              false,
+            );
+
+            setOnboardingStep(
+              "none",
             );
 
             setSessionReady(
-              true
+              true,
             );
 
             return;
           }
 
           /*
-           * Check profile after login.
+           * Check profile.
            */
+
           const {
             data: profile,
             error,
@@ -310,11 +595,11 @@ export default function PlayerNameGate({
             await supabase
               .from("profiles")
               .select(
-                "mindplay_name"
+                "mindplay_name",
               )
               .eq(
                 "id",
-                session.user.id
+                session.user.id,
               )
               .maybeSingle();
 
@@ -325,48 +610,44 @@ export default function PlayerNameGate({
           if (error) {
             console.error(
               "Profile check failed:",
-              error
+              error,
             );
 
             setProfileExists(
-              false
+              false,
             );
           } else {
+            const exists =
+              !!profile?.mindplay_name;
+
             setProfileExists(
-              !!profile?.mindplay_name
+              exists,
             );
+
+            if (exists) {
+              setIsNewAccount(
+                false,
+              );
+            } else {
+              setIsNewAccount(
+                getInitialNewAccount(),
+              );
+            }
           }
 
           setProfileChecked(
-            true
+            true,
           );
-
-          /*
-           * Check whether this is a
-           * new account.
-           *
-           * This is intentionally done here
-           * instead of another effect.
-           */
-          if (
-            typeof window !==
-            "undefined"
-          ) {
-            setIsNewAccount(
-              localStorage.getItem(
-                NEW_ACCOUNT_KEY
-              ) === "true"
-            );
-          }
 
           setSessionReady(
-            true
+            true,
           );
-        }
+        },
       );
 
     return () => {
       mounted = false;
+
       subscription.unsubscribe();
     };
   }, []);
@@ -378,13 +659,33 @@ export default function PlayerNameGate({
    */
 
   function openLogin() {
-    setAuthMode("login");
-    setAuthError("");
-    setShowEmailToast(false);
-    setShowSignupNotice(false);
-    setPassword("");
-    setConfirmPassword("");
-    setShowAuthOnLanding(true);
+    setAuthMode(
+      "login",
+    );
+
+    setAuthError(
+      "",
+    );
+
+    setPassword(
+      "",
+    );
+
+    setConfirmPassword(
+      "",
+    );
+
+    setShowPassword(
+      false,
+    );
+
+    setShowConfirmPassword(
+      false,
+    );
+
+    setShowAuthOnLanding(
+      true,
+    );
   }
 
   /*
@@ -394,13 +695,37 @@ export default function PlayerNameGate({
    */
 
   function openSignup() {
-    setAuthMode("signup");
-    setAuthError("");
-    setShowEmailToast(false);
-    setShowSignupNotice(false);
-    setPassword("");
-    setConfirmPassword("");
-    setShowAuthOnLanding(true);
+    setAuthMode(
+      "signup",
+    );
+
+    setAuthError(
+      "",
+    );
+
+    setPassword(
+      "",
+    );
+
+    setConfirmPassword(
+      "",
+    );
+
+    setShowPassword(
+      false,
+    );
+
+    setShowConfirmPassword(
+      false,
+    );
+
+    /*
+     * Before-you-begin popup.
+     */
+
+    setOnboardingStep(
+      "account-warning",
+    );
   }
 
   /*
@@ -410,12 +735,121 @@ export default function PlayerNameGate({
    */
 
   function backToLanding() {
-    setShowAuthOnLanding(false);
-    setAuthError("");
-    setShowEmailToast(false);
-    setShowSignupNotice(false);
-    setPassword("");
-    setConfirmPassword("");
+    setShowAuthOnLanding(
+      false,
+    );
+
+    setAuthError(
+      "",
+    );
+
+    setPassword(
+      "",
+    );
+
+    setConfirmPassword(
+      "",
+    );
+
+    setShowPassword(
+      false,
+    );
+
+    setShowConfirmPassword(
+      false,
+    );
+
+    setOnboardingStep(
+      "none",
+    );
+  }
+
+  /*
+   * =========================================================
+   * ONBOARDING CONTINUE
+   * =========================================================
+   */
+
+  function handleOnboardingContinue() {
+    /*
+     * -----------------------------------------------
+     * Before signup
+     * -----------------------------------------------
+     */
+
+    if (
+      onboardingStep ===
+      "account-warning"
+    ) {
+      setOnboardingStep(
+        "none",
+      );
+
+      setShowAuthOnLanding(
+        true,
+      );
+
+      return;
+    }
+
+    /*
+     * -----------------------------------------------
+     * Account created
+     * -----------------------------------------------
+     */
+
+    if (
+      onboardingStep ===
+      "account-created"
+    ) {
+      setOnboardingStep(
+        "name-warning",
+      );
+
+      return;
+    }
+
+    /*
+     * -----------------------------------------------
+     * Name warning
+     * -----------------------------------------------
+     */
+
+    if (
+      onboardingStep ===
+      "name-warning"
+    ) {
+      setOnboardingStep(
+        "none",
+      );
+
+      setShowNameSetup(
+        true,
+      );
+
+      return;
+    }
+
+    /*
+     * -----------------------------------------------
+     * Ready to play
+     * -----------------------------------------------
+     */
+
+    if (
+      onboardingStep ===
+      "ready-to-play"
+    ) {
+      setOnboardingStep(
+        "none",
+      );
+
+      setShowNameSetup(
+        false,
+      );
+
+      return;
+    }
   }
 
   /*
@@ -425,13 +859,82 @@ export default function PlayerNameGate({
    */
 
   async function handleAuthSubmit(
-    event: FormEvent<HTMLFormElement>
+    event: FormEvent<HTMLFormElement>,
   ) {
     event.preventDefault();
 
-    setAuthError("");
-    setShowSignupNotice(false);
-    setIsSubmitting(true);
+    setAuthError(
+      "",
+    );
+
+    setIsSubmitting(
+      true,
+    );
+
+    /*
+     * =======================================================
+     * REMEMBER ME
+     * =======================================================
+     */
+
+    if (
+      typeof window !==
+      "undefined"
+    ) {
+      localStorage.setItem(
+        REMEMBER_ME_KEY,
+        String(
+          rememberMe,
+        ),
+      );
+
+      /*
+       * Remove stale Supabase auth
+       * session from the opposite storage.
+       */
+
+      if (rememberMe) {
+        /*
+         * Persistent login.
+         */
+
+        const authKeys =
+          Object.keys(
+            sessionStorage,
+          ).filter(
+            (key) =>
+              key.startsWith(
+                "sb-",
+              ),
+          );
+
+        for (const key of authKeys) {
+          sessionStorage.removeItem(
+            key,
+          );
+        }
+      } else {
+        /*
+         * Session-only login.
+         */
+
+        const authKeys =
+          Object.keys(
+            localStorage,
+          ).filter(
+            (key) =>
+              key.startsWith(
+                "sb-",
+              ),
+          );
+
+        for (const key of authKeys) {
+          localStorage.removeItem(
+            key,
+          );
+        }
+      }
+    }
 
     try {
       /*
@@ -444,45 +947,79 @@ export default function PlayerNameGate({
         authMode ===
         "login"
       ) {
+        const cleanEmail =
+          email
+            .trim()
+            .toLowerCase();
+
+        if (!cleanEmail) {
+          setAuthError(
+            "Please enter your email.",
+          );
+
+          return;
+        }
+
+        if (!password) {
+          setAuthError(
+            "Please enter your password.",
+          );
+
+          return;
+        }
+
         const {
           error,
         } =
           await supabase.auth.signInWithPassword(
             {
               email:
-                email.trim(),
+                cleanEmail,
               password,
-            }
+            },
           );
 
         if (error) {
+          if (
+            error.message
+              .toLowerCase()
+              .includes(
+                "invalid login credentials",
+              )
+          ) {
+            setAuthError(
+              "Incorrect email or password. Please check your details and try again.",
+            );
+
+            return;
+          }
+
           throw error;
         }
 
         /*
-         * Save Remember Me preference.
+         * Login successful.
          */
-        if (
-          typeof window !==
-          "undefined"
-        ) {
-          localStorage.setItem(
-            REMEMBER_ME_KEY,
-            String(
-              rememberMe
-            )
-          );
-        }
 
-        /*
-         * Login succeeded.
-         */
         setShowAuthOnLanding(
-          false
+          false,
         );
 
-        setPassword("");
-        setConfirmPassword("");
+        setPassword(
+          "",
+        );
+
+        setConfirmPassword(
+          "",
+        );
+
+        setShowPassword(
+          false,
+        );
+
+        setShowConfirmPassword(
+          false,
+        );
 
         return;
       }
@@ -493,12 +1030,91 @@ export default function PlayerNameGate({
        * =====================================================
        */
 
+      const cleanEmail =
+        email
+          .trim()
+          .toLowerCase();
+
+      if (!cleanEmail) {
+        setAuthError(
+          "Please enter your email.",
+        );
+
+        return;
+      }
+
+      /*
+       * Password requirements.
+       */
+
+      const hasLowercase =
+        /[a-z]/.test(
+          password,
+        );
+
+      const hasUppercase =
+        /[A-Z]/.test(
+          password,
+        );
+
+      const hasNumber =
+        /\d/.test(
+          password,
+        );
+
+      const hasSpecial =
+        /[^A-Za-z0-9]/.test(
+          password,
+        );
+
+      const hasMinimumLength =
+        password.length >= 8;
+
       if (
-        password.length <
-        6
+        !hasMinimumLength
       ) {
         setAuthError(
-          "Password must be at least 6 characters."
+          "Password must contain at least 8 characters.",
+        );
+
+        return;
+      }
+
+      if (
+        !hasLowercase
+      ) {
+        setAuthError(
+          "Password must contain at least one lowercase character.",
+        );
+
+        return;
+      }
+
+      if (
+        !hasUppercase
+      ) {
+        setAuthError(
+          "Password must contain at least one uppercase character.",
+        );
+
+        return;
+      }
+
+      if (
+        !hasNumber
+      ) {
+        setAuthError(
+          "Password must contain at least one number.",
+        );
+
+        return;
+      }
+
+      if (
+        !hasSpecial
+      ) {
+        setAuthError(
+          "Password must contain at least one special character.",
         );
 
         return;
@@ -509,11 +1125,30 @@ export default function PlayerNameGate({
         confirmPassword
       ) {
         setAuthError(
-          "Passwords do not match."
+          "Passwords do not match.",
         );
 
         return;
       }
+
+      /*
+       * Mark as a new account
+       * before signup.
+       */
+
+      if (
+        typeof window !==
+        "undefined"
+      ) {
+        localStorage.setItem(
+          NEW_ACCOUNT_KEY,
+          "true",
+        );
+      }
+
+      /*
+       * Create account.
+       */
 
       const {
         data,
@@ -522,84 +1157,106 @@ export default function PlayerNameGate({
         await supabase.auth.signUp(
           {
             email:
-              email.trim(),
+              cleanEmail,
             password,
-          }
+          },
         );
 
       if (error) {
+        /*
+         * Existing email.
+         */
+
+        const message =
+          error.message.toLowerCase();
+
+        if (
+          message.includes(
+            "already registered",
+          ) ||
+          message.includes(
+            "already been registered",
+          ) ||
+          message.includes(
+            "user already exists",
+          )
+        ) {
+          if (
+            typeof window !==
+            "undefined"
+          ) {
+            localStorage.removeItem(
+              NEW_ACCOUNT_KEY,
+            );
+          }
+
+          setAuthError(
+            "This email is already registered. Please log in instead.",
+          );
+
+          return;
+        }
+
         throw error;
       }
 
       /*
-       * Mark this as a new account.
+       * Confirm email should be OFF.
        */
-      if (
-        typeof window !==
-        "undefined"
-      ) {
-        localStorage.setItem(
-          NEW_ACCOUNT_KEY,
-          "true"
-        );
 
-        localStorage.setItem(
-          REMEMBER_ME_KEY,
-          String(
-            rememberMe
-          )
+      if (!data.session) {
+        throw new Error(
+          "Your account was created, but no active session was returned. Please check that Confirm email is disabled in Supabase.",
         );
       }
 
       /*
-       * Supabase may automatically
-       * return a session depending on
-       * email confirmation settings.
-       *
-       * Sign out so the user must
-       * verify their email first.
+       * Account created successfully.
        */
-      if (data.session) {
-        await supabase.auth.signOut();
-      }
 
-      /*
-       * Return to landing page.
-       */
       setShowAuthOnLanding(
-        false
+        false,
       );
 
-      setShowEmailToast(
-        true
+      setPassword(
+        "",
       );
 
-      setShowSignupNotice(
-        false
+      setConfirmPassword(
+        "",
       );
 
-      setPassword("");
-      setConfirmPassword("");
+      setShowPassword(
+        false,
+      );
+
+      setShowConfirmPassword(
+        false,
+      );
+
+      setOnboardingStep(
+        "account-created",
+      );
     } catch (error) {
       console.error(
         "Authentication failed:",
-        error
+        error,
       );
 
       if (
         error instanceof Error
       ) {
         setAuthError(
-          error.message
+          error.message,
         );
       } else {
         setAuthError(
-          "Something went wrong. Please try again."
+          "Something went wrong. Please try again.",
         );
       }
     } finally {
       setIsSubmitting(
-        false
+        false,
       );
     }
   }
@@ -611,18 +1268,20 @@ export default function PlayerNameGate({
    */
 
   async function handleSaveName(
-    event: FormEvent<HTMLFormElement>
+    event: FormEvent<HTMLFormElement>,
   ) {
     event.preventDefault();
 
     const trimmedName =
       mindPlayName.trim();
 
-    setNameError("");
+    setNameError(
+      "",
+    );
 
     if (!trimmedName) {
       setNameError(
-        "Please enter a MindPlay name."
+        "Please enter a MindPlay name.",
       );
 
       return;
@@ -633,7 +1292,7 @@ export default function PlayerNameGate({
       3
     ) {
       setNameError(
-        "MindPlay name must be at least 3 characters."
+        "MindPlay name must be at least 3 characters.",
       );
 
       return;
@@ -644,17 +1303,21 @@ export default function PlayerNameGate({
       20
     ) {
       setNameError(
-        "MindPlay name must be 20 characters or less."
+        "MindPlay name must be 20 characters or less.",
       );
 
       return;
     }
 
     setIsSavingName(
-      true
+      true,
     );
 
     try {
+      /*
+       * Get current authenticated user.
+       */
+
       const {
         data: {
           user,
@@ -668,13 +1331,18 @@ export default function PlayerNameGate({
         !user
       ) {
         throw new Error(
-          "Your session has expired. Please log in again."
+          "Your session has expired. Please log in again.",
         );
       }
 
       /*
-       * Save the name to Supabase.
+       * Save profile.
+       *
+       * EMAIL FIX:
+       * Save the authenticated user's
+       * email into the profiles table.
        */
+
       const {
         error,
       } =
@@ -683,13 +1351,14 @@ export default function PlayerNameGate({
           .upsert(
             {
               id: user.id,
+              email: user.email,
               mindplay_name:
                 trimmedName,
             },
             {
               onConflict:
                 "id",
-            }
+            },
           );
 
       if (error) {
@@ -697,86 +1366,84 @@ export default function PlayerNameGate({
       }
 
       /*
-       * Save the name locally.
-       *
-       * savePlayerName() is intentionally
-       * not used because your progress.ts
-       * does not export that function.
+       * Save locally.
        */
+
       if (
         typeof window !==
         "undefined"
       ) {
         localStorage.setItem(
           "mindplay-active-user-id",
-          user.id
+          user.id,
         );
 
         localStorage.setItem(
           "mindplay-player-name",
-          trimmedName
+          trimmedName,
         );
       }
 
       /*
-       * Sync local progress
-       * to this Supabase account.
+       * Sync progress.
        */
+
       await syncLocalProgressToSupabase();
 
       /*
-       * Account setup is complete.
+       * Remove new account marker.
        */
+
       if (
         typeof window !==
         "undefined"
       ) {
         localStorage.removeItem(
-          NEW_ACCOUNT_KEY
+          NEW_ACCOUNT_KEY,
         );
       }
 
       setProfileExists(
-        true
+        true,
       );
 
       setIsNewAccount(
-        false
+        false,
+      );
+
+      setShowNameSetup(
+        false,
+      );
+
+      /*
+       * Final onboarding.
+       */
+
+      setOnboardingStep(
+        "ready-to-play",
       );
     } catch (error) {
       console.error(
         "Failed to save MindPlay name:",
-        error
+        error,
       );
 
       if (
         error instanceof Error
       ) {
         setNameError(
-          error.message
+          error.message,
         );
       } else {
         setNameError(
-          "Something went wrong. Please try again."
+          "Something went wrong. Please try again.",
         );
       }
     } finally {
       setIsSavingName(
-        false
+        false,
       );
     }
-  }
-
-  /*
-   * =========================================================
-   * CLOSE EMAIL TOAST
-   * =========================================================
-   */
-
-  function closeEmailToast() {
-    setShowEmailToast(
-      false
-    );
   }
 
   /*
@@ -806,7 +1473,8 @@ export default function PlayerNameGate({
     hasSession &&
     profileChecked &&
     !profileExists &&
-    isNewAccount;
+    isNewAccount &&
+    showNameSetup;
 
   /*
    * =========================================================
@@ -816,68 +1484,49 @@ export default function PlayerNameGate({
 
   return (
     <>
+      {/* =====================================================
+          LANDING
+          ===================================================== */}
+
       {shouldShowLanding ? (
         <LandingPage
-          onLogin={openLogin}
-          onSignup={openSignup}
+          onLogin={
+            openLogin
+          }
+          onSignup={
+            openSignup
+          }
         />
       ) : (
         children
       )}
 
       {/* =====================================================
-          EMAIL VERIFICATION TOAST
+          ONBOARDING POPUPS
           ===================================================== */}
 
-      {showEmailToast && (
-        <div className="fixed inset-x-0 top-5 z-100 flex justify-center px-5">
-          <div className="w-full max-w-md rounded-2xl border border-cyan-300/15 bg-[#0d1222]/95 p-5 shadow-2xl shadow-cyan-950/30 backdrop-blur-xl">
-            <div className="flex items-start gap-3">
-              <div className="text-2xl">
-                📩
-              </div>
-
-              <div className="min-w-0 flex-1">
-                <h2 className="text-sm font-black uppercase tracking-wider text-white">
-                  Check your email
-                </h2>
-
-                <p className="mt-2 text-sm leading-6 text-white/50">
-                  We sent a verification
-                  link to your email.
-                  Verify your account,
-                  then log in to continue.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={
-                  closeEmailToast
-                }
-                className="text-white/30 transition hover:text-white"
-                aria-label="Close"
-              >
-                ✕
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <OnboardingPopup
+        step={
+          onboardingStep
+        }
+        onContinue={
+          handleOnboardingContinue
+        }
+      />
 
       {/* =====================================================
           AUTH MODAL
           ===================================================== */}
 
       {shouldShowAuth && (
-        <div className="fixed inset-0 z-90 flex items-center justify-center bg-black/70 px-5 backdrop-blur-sm">
+        <div className="fixed inset-0 z-90 flex items-center justify-center bg-black/70 px-5 py-6 backdrop-blur-sm">
           <div
             aria-labelledby="auth-title"
             aria-modal="true"
-            className="w-full max-w-md rounded-4xl border border-cyan-300/15 bg-[#0d1222]/95 p-6 shadow-2xl shadow-cyan-950/30 sm:p-8"
+            className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-4xl border border-cyan-300/15 bg-[#0d1222]/95 p-6 shadow-2xl shadow-cyan-950/30 sm:p-8"
             role="dialog"
           >
-            {/* Back to landing */}
+            {/* Back */}
 
             {isLandingPage &&
               showAuthOnLanding && (
@@ -917,13 +1566,13 @@ export default function PlayerNameGate({
               </p>
             </div>
 
-            {/* Auth form */}
+            {/* Form */}
 
             <form
               onSubmit={
                 handleAuthSubmit
               }
-              className="space-y-4"
+              className="space-y-5"
             >
               {/* Email */}
 
@@ -940,11 +1589,11 @@ export default function PlayerNameGate({
                   type="email"
                   value={email}
                   onChange={(
-                    event
+                    event,
                   ) =>
                     setEmail(
                       event.target
-                        .value
+                        .value,
                     )
                   }
                   autoComplete="email"
@@ -967,34 +1616,75 @@ export default function PlayerNameGate({
                   Password
                 </label>
 
-                <input
-                  id="auth-password"
-                  type="password"
-                  value={password}
-                  onChange={(
-                    event
-                  ) =>
-                    setPassword(
-                      event.target
-                        .value
-                    )
-                  }
-                  autoComplete={
-                    authMode ===
-                    "login"
-                      ? "current-password"
-                      : "new-password"
-                  }
-                  placeholder="Your password"
-                  required
-                  disabled={
-                    isSubmitting
-                  }
-                  className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none placeholder:text-white/20 focus:border-cyan-300/30 focus:bg-white/7 disabled:cursor-not-allowed disabled:opacity-50"
-                />
+                <div className="relative mt-2">
+                  <input
+                    id="auth-password"
+                    type={
+                      showPassword
+                        ? "text"
+                        : "password"
+                    }
+                    value={
+                      password
+                    }
+                    onChange={(
+                      event,
+                    ) =>
+                      setPassword(
+                        event.target
+                          .value,
+                      )
+                    }
+                    autoComplete={
+                      authMode ===
+                      "login"
+                        ? "current-password"
+                        : "new-password"
+                    }
+                    placeholder="Your password"
+                    required
+                    disabled={
+                      isSubmitting
+                    }
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 pr-20 text-sm text-white outline-none placeholder:text-white/20 focus:border-cyan-300/30 focus:bg-white/7 disabled:cursor-not-allowed disabled:opacity-50"
+                  />
+
+                  {/* SHOW / HIDE */}
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowPassword(
+                        (
+                          previous,
+                        ) =>
+                          !previous,
+                      )
+                    }
+                    disabled={
+                      isSubmitting
+                    }
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-white/30 transition hover:text-cyan-300 disabled:opacity-50"
+                  >
+                    {showPassword
+                      ? "HIDE"
+                      : "SHOW"}
+                  </button>
+                </div>
+
+                {/* Signup requirements */}
+
+                {authMode ===
+                  "signup" && (
+                  <PasswordRequirements
+                    password={
+                      password
+                    }
+                  />
+                )}
               </div>
 
-              {/* Confirm password */}
+              {/* Confirm Password */}
 
               {authMode ===
                 "signup" && (
@@ -1006,28 +1696,54 @@ export default function PlayerNameGate({
                     Confirm password
                   </label>
 
-                  <input
-                    id="auth-confirm-password"
-                    type="password"
-                    value={
-                      confirmPassword
-                    }
-                    onChange={(
-                      event
-                    ) =>
-                      setConfirmPassword(
-                        event.target
-                          .value
-                      )
-                    }
-                    autoComplete="new-password"
-                    placeholder="Repeat your password"
-                    required
-                    disabled={
-                      isSubmitting
-                    }
-                    className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none placeholder:text-white/20 focus:border-cyan-300/30 focus:bg-white/7 disabled:cursor-not-allowed disabled:opacity-50"
-                  />
+                  <div className="relative mt-2">
+                    <input
+                      id="auth-confirm-password"
+                      type={
+                        showConfirmPassword
+                          ? "text"
+                          : "password"
+                      }
+                      value={
+                        confirmPassword
+                      }
+                      onChange={(
+                        event,
+                      ) =>
+                        setConfirmPassword(
+                          event.target
+                            .value,
+                        )
+                      }
+                      autoComplete="new-password"
+                      placeholder="Repeat your password"
+                      required
+                      disabled={
+                        isSubmitting
+                      }
+                      className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 pr-20 text-sm text-white outline-none placeholder:text-white/20 focus:border-cyan-300/30 focus:bg-white/7 disabled:cursor-not-allowed disabled:opacity-50"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowConfirmPassword(
+                          (
+                            previous,
+                          ) =>
+                            !previous,
+                        )
+                      }
+                      disabled={
+                        isSubmitting
+                      }
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-white/30 transition hover:text-cyan-300 disabled:opacity-50"
+                    >
+                      {showConfirmPassword
+                        ? "HIDE"
+                        : "SHOW"}
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -1040,11 +1756,11 @@ export default function PlayerNameGate({
                     rememberMe
                   }
                   onChange={(
-                    event
+                    event,
                   ) =>
                     setRememberMe(
                       event.target
-                        .checked
+                        .checked,
                     )
                   }
                   disabled={
@@ -1086,7 +1802,7 @@ export default function PlayerNameGate({
               </button>
             </form>
 
-            {/* Switch auth mode */}
+            {/* Switch */}
 
             <div className="mt-6 text-center">
               {authMode ===
@@ -1125,27 +1841,28 @@ export default function PlayerNameGate({
       )}
 
       {/* =====================================================
-          MINDPLAY NAME SETUP
+          NAME SETUP
           ===================================================== */}
 
       {shouldShowNameSetup && (
-        <div className="fixed inset-0 z-95 flex items-center justify-center bg-black/70 px-5 backdrop-blur-sm">
+        <div className="fixed inset-0 z-95 flex items-center justify-center bg-black/70 px-5 backdrop-blur-md">
           <div
             aria-labelledby="mindplay-name-title"
             aria-modal="true"
-            className="w-full max-w-md rounded-4xl border border-cyan-300/15 bg-[#0d1222]/95 p-6 shadow-2xl shadow-cyan-950/30 sm:p-8"
+            className="w-full max-w-md animate-[mindplayPop_0.3s_ease-out] rounded-4xl border border-cyan-300/15 bg-[#0d1222]/95 p-6 shadow-2xl shadow-cyan-950/30 sm:p-8"
             role="dialog"
           >
             <div className="text-center">
-              <div className="text-4xl">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-3xl">
                 🧠
               </div>
 
               <h1
                 id="mindplay-name-title"
-                className="mt-4 text-2xl font-black tracking-tight text-white"
+                className="mt-5 text-2xl font-black tracking-tight text-white"
               >
                 Create your
+                <br />
                 MindPlay name
               </h1>
 
@@ -1176,11 +1893,11 @@ export default function PlayerNameGate({
                   mindPlayName
                 }
                 onChange={(
-                  event
+                  event,
                 ) =>
                   setMindPlayName(
                     event.target
-                      .value
+                      .value,
                   )
                 }
                 autoComplete="off"
@@ -1228,33 +1945,24 @@ export default function PlayerNameGate({
       )}
 
       {/* =====================================================
-          SIGNUP NOTICE
+          GLOBAL POPUP ANIMATION
           ===================================================== */}
 
-      {showSignupNotice && (
-        <div className="fixed inset-x-0 bottom-5 z-100 flex justify-center px-5">
-          <div className="w-full max-w-md rounded-2xl border border-cyan-300/15 bg-[#0d1222]/95 p-5 shadow-2xl shadow-cyan-950/30 backdrop-blur-xl">
-            <p className="text-sm leading-6 text-white/60">
-              Please check your
-              email and verify
-              your account before
-              logging in.
-            </p>
+      <style jsx global>{`
+        @keyframes mindplayPop {
+          0% {
+            opacity: 0;
+            transform: scale(0.96)
+              translateY(8px);
+          }
 
-            <button
-              type="button"
-              onClick={() =>
-                setShowSignupNotice(
-                  false
-                )
-              }
-              className="mt-3 text-xs font-black uppercase tracking-wider text-cyan-300/80 hover:text-cyan-300"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
+          100% {
+            opacity: 1;
+            transform: scale(1)
+              translateY(0);
+          }
+        }
+      `}</style>
     </>
   );
 }

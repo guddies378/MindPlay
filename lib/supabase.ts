@@ -18,12 +18,29 @@ if (!supabasePublishableKey) {
   );
 }
 
+/*
+ * =========================================================
+ * REMEMBER ME
+ * =========================================================
+ *
+ * MindPlay stores the Remember Me preference separately.
+ *
+ * true  -> localStorage
+ * false -> sessionStorage
+ *
+ * The Supabase auth session itself is then stored in the
+ * appropriate storage automatically.
+ */
+
 const REMEMBER_ME_KEY =
   "mindplay-remember-me";
 
 const storage = {
   getItem(key: string) {
-    if (typeof window === "undefined") {
+    if (
+      typeof window ===
+      "undefined"
+    ) {
       return null;
     }
 
@@ -32,18 +49,37 @@ const storage = {
         REMEMBER_ME_KEY,
       ) === "true";
 
+    /*
+     * Remember Me ON
+     *
+     * Session survives browser
+     * closing.
+     */
     if (rememberMe) {
-      return localStorage.getItem(key);
+      return localStorage.getItem(
+        key,
+      );
     }
 
-    return sessionStorage.getItem(key);
+    /*
+     * Remember Me OFF
+     *
+     * Session only survives while
+     * the browser session is active.
+     */
+    return sessionStorage.getItem(
+      key,
+    );
   },
 
   setItem(
     key: string,
     value: string,
   ) {
-    if (typeof window === "undefined") {
+    if (
+      typeof window ===
+      "undefined"
+    ) {
       return;
     }
 
@@ -53,21 +89,61 @@ const storage = {
       ) === "true";
 
     if (rememberMe) {
-      localStorage.setItem(key, value);
-      sessionStorage.removeItem(key);
+      /*
+       * Persistent login.
+       */
+      localStorage.setItem(
+        key,
+        value,
+      );
+
+      /*
+       * Make sure there isn't an
+       * older session copy in
+       * sessionStorage.
+       */
+      sessionStorage.removeItem(
+        key,
+      );
     } else {
-      sessionStorage.setItem(key, value);
-      localStorage.removeItem(key);
+      /*
+       * Session-only login.
+       */
+      sessionStorage.setItem(
+        key,
+        value,
+      );
+
+      /*
+       * Make sure there isn't an
+       * older persistent copy in
+       * localStorage.
+       */
+      localStorage.removeItem(
+        key,
+      );
     }
   },
 
   removeItem(key: string) {
-    if (typeof window === "undefined") {
+    if (
+      typeof window ===
+      "undefined"
+    ) {
       return;
     }
 
-    localStorage.removeItem(key);
-    sessionStorage.removeItem(key);
+    /*
+     * Always remove the session
+     * from both storage locations.
+     */
+    localStorage.removeItem(
+      key,
+    );
+
+    sessionStorage.removeItem(
+      key,
+    );
   },
 };
 
@@ -78,8 +154,23 @@ export const supabase =
     {
       auth: {
         storage,
+
+        /*
+         * Automatically refresh the
+         * Supabase access token.
+         */
         autoRefreshToken: true,
+
+        /*
+         * Keep the authenticated
+         * session between page loads.
+         */
         persistSession: true,
+
+        /*
+         * Allows Supabase auth links
+         * to be detected if needed.
+         */
         detectSessionInUrl: true,
       },
     },
