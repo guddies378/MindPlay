@@ -23,13 +23,13 @@ if (!supabasePublishableKey) {
 
 /*
  * =========================================================
- * REMEMBER ME COOKIE
+ * REMEMBER ME
  * =========================================================
- *
- * This is NOT localStorage.
  *
  * true  = persistent login
  * false = session-only login
+ *
+ * The preference itself is stored in a cookie.
  */
 
 export const REMEMBER_ME_COOKIE =
@@ -37,6 +37,26 @@ export const REMEMBER_ME_COOKIE =
 
 const REMEMBER_ME_MAX_AGE =
   60 * 60 * 24 * 30; // 30 days
+
+/*
+ * =========================================================
+ * SESSION-ONLY MARKER
+ * =========================================================
+ *
+ * sessionStorage exists only for the lifetime of the
+ * current browser tab.
+ *
+ * This lets MindPlay distinguish:
+ *
+ * Remember Me ON
+ *     -> persistent login
+ *
+ * Remember Me OFF
+ *     -> current-tab login
+ */
+
+export const SESSION_ONLY_MARKER =
+  "mindplay-session-only";
 
 /*
  * =========================================================
@@ -78,7 +98,13 @@ function readBrowserCookies() {
     });
 }
 
-function getRememberMePreference() {
+/*
+ * =========================================================
+ * REMEMBER ME PREFERENCE
+ * =========================================================
+ */
+
+export function getRememberMePreference() {
   if (
     typeof document ===
     "undefined"
@@ -97,12 +123,19 @@ function getRememberMePreference() {
    * Default to ON when no preference
    * exists yet.
    */
+
   if (!cookie) {
     return true;
   }
 
   return cookie.value === "true";
 }
+
+/*
+ * =========================================================
+ * COOKIE SERIALIZER
+ * =========================================================
+ */
 
 function serializeBrowserCookie(
   name: string,
@@ -169,9 +202,8 @@ function serializeBrowserCookie(
  * SUPABASE BROWSER COOKIE ADAPTER
  * =========================================================
  *
- * This lets Remember Me control whether the
- * Supabase auth cookies are persistent or
- * session-only.
+ * This controls whether Supabase authentication cookies
+ * are persistent or session-only.
  */
 
 const browserCookies: CookieMethodsBrowser =
@@ -195,6 +227,7 @@ const browserCookies: CookieMethodsBrowser =
          *
          * Never override that.
          */
+
         const isRemoving =
           options?.maxAge === 0;
 
@@ -208,9 +241,10 @@ const browserCookies: CookieMethodsBrowser =
            * Remember Me OFF:
            *     session cookie
            *
-           * Remove:
+           * Removing:
            *     Max-Age=0
            */
+
           maxAge: isRemoving
             ? 0
             : rememberMe
@@ -246,7 +280,7 @@ export const supabase =
 
 /*
  * =========================================================
- * REMEMBER ME PREFERENCE
+ * SET REMEMBER ME PREFERENCE
  * =========================================================
  */
 
@@ -275,4 +309,53 @@ export function setRememberMePreference(
           : undefined,
       },
     );
+}
+
+/*
+ * =========================================================
+ * SESSION-ONLY MARKER
+ * =========================================================
+ */
+
+export function setSessionOnlyMarker(
+  sessionOnly: boolean,
+) {
+  if (
+    typeof window ===
+    "undefined"
+  ) {
+    return;
+  }
+
+  if (sessionOnly) {
+    sessionStorage.setItem(
+      SESSION_ONLY_MARKER,
+      "true",
+    );
+  } else {
+    sessionStorage.removeItem(
+      SESSION_ONLY_MARKER,
+    );
+  }
+}
+
+/*
+ * =========================================================
+ * CHECK SESSION-ONLY MARKER
+ * =========================================================
+ */
+
+export function hasSessionOnlyMarker() {
+  if (
+    typeof window ===
+    "undefined"
+  ) {
+    return false;
+  }
+
+  return (
+    sessionStorage.getItem(
+      SESSION_ONLY_MARKER,
+    ) === "true"
+  );
 }

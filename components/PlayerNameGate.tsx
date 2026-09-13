@@ -1,21 +1,33 @@
 "use client";
 
-import type { FormEvent, ReactNode } from "react";
+import type {
+  FormEvent,
+  ReactNode,
+} from "react";
+
 import {
   useEffect,
   useState,
 } from "react";
+
 import { usePathname } from "next/navigation";
+
 import {
+  getRememberMePreference,
+  hasSessionOnlyMarker,
   setRememberMePreference,
+  setSessionOnlyMarker,
   supabase,
 } from "@/lib/supabase";
+
 import {
   loadProgressFromSupabase,
 } from "@/lib/progress";
+
 import {
   loadDailyChallengeFromSupabase,
 } from "@/lib/dailyChallenge";
+
 import LandingPage from "@/components/LandingPage";
 
 type AuthMode =
@@ -150,28 +162,34 @@ function PasswordRequirements({
 
   return (
     <div className="mt-3 grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2">
-      {requirements.map((requirement) => (
-        <div
-          key={requirement.label}
-          className={`flex items-center gap-2 text-xs transition-colors duration-200 ${
-            requirement.valid
-              ? "text-cyan-300"
-              : "text-white/30"
-          }`}
-        >
-          <span
-            className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full text-[9px] font-black transition-all duration-200 ${
+      {requirements.map(
+        (requirement) => (
+          <div
+            key={
+              requirement.label
+            }
+            className={`flex items-center gap-2 text-xs transition-colors duration-200 ${
               requirement.valid
-                ? "bg-cyan-300 text-black"
-                : "bg-white/20 text-transparent"
+                ? "text-cyan-300"
+                : "text-white/30"
             }`}
           >
-            ✓
-          </span>
+            <span
+              className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full text-[9px] font-black transition-all duration-200 ${
+                requirement.valid
+                  ? "bg-cyan-300 text-black"
+                  : "bg-white/20 text-transparent"
+              }`}
+            >
+              ✓
+            </span>
 
-          <span>{requirement.label}</span>
-        </div>
-      ))}
+            <span>
+              {requirement.label}
+            </span>
+          </div>
+        ),
+      )}
     </div>
   );
 }
@@ -187,7 +205,8 @@ export default function PlayerNameGate({
 }: {
   children: ReactNode;
 }) {
-  const pathname = usePathname();
+  const pathname =
+    usePathname();
 
   /*
    * =========================================================
@@ -229,7 +248,9 @@ export default function PlayerNameGate({
   const [
     authMode,
     setAuthMode,
-  ] = useState<AuthMode>("login");
+  ] = useState<AuthMode>(
+    "login",
+  );
 
   /*
    * =========================================================
@@ -255,8 +276,7 @@ export default function PlayerNameGate({
   /*
    * Remember Me
    *
-   * This is stored through a cookie.
-   * No localStorage/sessionStorage is used.
+   * Default is ON.
    */
 
   const [
@@ -314,7 +334,9 @@ export default function PlayerNameGate({
   const [
     onboardingStep,
     setOnboardingStep,
-  ] = useState<OnboardingStep>("none");
+  ] = useState<OnboardingStep>(
+    "none",
+  );
 
   const [
     showNameSetup,
@@ -331,21 +353,71 @@ export default function PlayerNameGate({
     let mounted = true;
 
     async function checkSession() {
+      /*
+       * Load the current Remember Me preference.
+       */
+
+      const rememberPreference =
+        getRememberMePreference();
+
+      /*
+       * Load the current Supabase session.
+       */
+
       const {
         data: {
           session,
         },
-      } = await supabase.auth.getSession();
+      } =
+        await supabase.auth.getSession();
 
       if (!mounted) {
         return;
       }
 
-      setHasSession(!!session);
+      /*
+       * =====================================================
+       * SESSION-ONLY LOGIN CHECK
+       * =====================================================
+       *
+       * When Remember Me was OFF, a marker is stored in
+       * sessionStorage.
+       *
+       * sessionStorage disappears when the browser tab
+       * session ends.
+       *
+       * If the Supabase session still exists but the marker
+       * does not, clear that old local session.
+       */
+
+      if (
+        session &&
+        !rememberPreference &&
+        !hasSessionOnlyMarker()
+      ) {
+        await supabase.auth.signOut({
+          scope: "local",
+        });
+
+        if (!mounted) {
+          return;
+        }
+
+        setHasSession(false);
+        setProfileChecked(false);
+        setProfileExists(false);
+        setSessionReady(true);
+
+        return;
+      }
 
       /*
-       * No active session.
+       * =====================================================
+       * NO ACTIVE SESSION
+       * =====================================================
        */
+
+      setHasSession(!!session);
 
       if (!session) {
         setProfileChecked(false);
@@ -356,14 +428,17 @@ export default function PlayerNameGate({
       }
 
       /*
-       * Load cloud progress.
+       * =====================================================
+       * LOAD CLOUD PROGRESS
+       * =====================================================
        */
 
       await loadProgressFromSupabase();
 
       /*
-       * Load today's Daily Challenge
-       * from Supabase.
+       * =====================================================
+       * LOAD DAILY CHALLENGE
+       * =====================================================
        */
 
       await loadDailyChallengeFromSupabase();
@@ -373,17 +448,25 @@ export default function PlayerNameGate({
       }
 
       /*
-       * Check the user's MindPlay profile.
+       * =====================================================
+       * CHECK PROFILE
+       * =====================================================
        */
 
       const {
         data: profile,
         error,
-      } = await supabase
-        .from("profiles")
-        .select("mindplay_name")
-        .eq("id", session.user.id)
-        .maybeSingle();
+      } =
+        await supabase
+          .from("profiles")
+          .select(
+            "mindplay_name",
+          )
+          .eq(
+            "id",
+            session.user.id,
+          )
+          .maybeSingle();
 
       if (!mounted) {
         return;
@@ -401,11 +484,18 @@ export default function PlayerNameGate({
         const exists =
           !!profile?.mindplay_name;
 
-        setProfileExists(exists);
-        setProfileChecked(true);
+        setProfileExists(
+          exists,
+        );
+
+        setProfileChecked(
+          true,
+        );
 
         if (!exists) {
-          setShowNameSetup(true);
+          setShowNameSetup(
+            true,
+          );
         }
       }
 
@@ -434,21 +524,38 @@ export default function PlayerNameGate({
             return;
           }
 
-          setHasSession(!!session);
+          setHasSession(
+            !!session,
+          );
 
           /*
            * No session.
            */
 
           if (!session) {
-            setProfileChecked(false);
-            setProfileExists(false);
+            setProfileChecked(
+              false,
+            );
 
-            setShowAuthOnLanding(false);
-            setShowNameSetup(false);
-            setOnboardingStep("none");
+            setProfileExists(
+              false,
+            );
 
-            setSessionReady(true);
+            setShowAuthOnLanding(
+              false,
+            );
+
+            setShowNameSetup(
+              false,
+            );
+
+            setOnboardingStep(
+              "none",
+            );
+
+            setSessionReady(
+              true,
+            );
 
             return;
           }
@@ -460,8 +567,7 @@ export default function PlayerNameGate({
           await loadProgressFromSupabase();
 
           /*
-           * Load today's Daily Challenge
-           * from Supabase.
+           * Load today's Daily Challenge.
            */
 
           await loadDailyChallengeFromSupabase();
@@ -477,11 +583,17 @@ export default function PlayerNameGate({
           const {
             data: profile,
             error,
-          } = await supabase
-            .from("profiles")
-            .select("mindplay_name")
-            .eq("id", session.user.id)
-            .maybeSingle();
+          } =
+            await supabase
+              .from("profiles")
+              .select(
+                "mindplay_name",
+              )
+              .eq(
+                "id",
+                session.user.id,
+              )
+              .maybeSingle();
 
           if (!mounted) {
             return;
@@ -493,27 +605,41 @@ export default function PlayerNameGate({
               error,
             );
 
-            setProfileExists(false);
+            setProfileExists(
+              false,
+            );
           } else {
             const exists =
               !!profile?.mindplay_name;
 
-            setProfileExists(exists);
+            setProfileExists(
+              exists,
+            );
 
             if (exists) {
-              setShowNameSetup(false);
+              setShowNameSetup(
+                false,
+              );
             } else {
-              setShowNameSetup(true);
+              setShowNameSetup(
+                true,
+              );
             }
           }
 
-          setProfileChecked(true);
-          setSessionReady(true);
+          setProfileChecked(
+            true,
+          );
+
+          setSessionReady(
+            true,
+          );
         },
       );
 
     return () => {
       mounted = false;
+
       subscription.unsubscribe();
     };
   }, []);
@@ -533,9 +659,21 @@ export default function PlayerNameGate({
     setConfirmPassword("");
 
     setShowPassword(false);
-    setShowConfirmPassword(false);
+    setShowConfirmPassword(
+      false,
+    );
 
-    setShowAuthOnLanding(true);
+    /*
+     * Load the saved Remember Me preference.
+     */
+
+    setRememberMe(
+      getRememberMePreference(),
+    );
+
+    setShowAuthOnLanding(
+      true,
+    );
   }
 
   /*
@@ -553,7 +691,9 @@ export default function PlayerNameGate({
     setConfirmPassword("");
 
     setShowPassword(false);
-    setShowConfirmPassword(false);
+    setShowConfirmPassword(
+      false,
+    );
 
     setOnboardingStep(
       "account-warning",
@@ -575,9 +715,13 @@ export default function PlayerNameGate({
     setConfirmPassword("");
 
     setShowPassword(false);
-    setShowConfirmPassword(false);
+    setShowConfirmPassword(
+      false,
+    );
 
-    setOnboardingStep("none");
+    setOnboardingStep(
+      "none",
+    );
   }
 
   /*
@@ -591,8 +735,13 @@ export default function PlayerNameGate({
       onboardingStep ===
       "account-warning"
     ) {
-      setOnboardingStep("none");
-      setShowAuthOnLanding(true);
+      setOnboardingStep(
+        "none",
+      );
+
+      setShowAuthOnLanding(
+        true,
+      );
 
       return;
     }
@@ -612,7 +761,10 @@ export default function PlayerNameGate({
       onboardingStep ===
       "name-warning"
     ) {
-      setOnboardingStep("none");
+      setOnboardingStep(
+        "none",
+      );
+
       setShowNameSetup(true);
 
       return;
@@ -622,8 +774,13 @@ export default function PlayerNameGate({
       onboardingStep ===
       "ready-to-play"
     ) {
-      setOnboardingStep("none");
-      setShowNameSetup(false);
+      setOnboardingStep(
+        "none",
+      );
+
+      setShowNameSetup(
+        false,
+      );
 
       return;
     }
@@ -644,12 +801,25 @@ export default function PlayerNameGate({
     setIsSubmitting(true);
 
     /*
-     * Save Remember Me preference before
-     * Supabase creates/refreshes auth cookies.
+     * Save Remember Me preference BEFORE Supabase
+     * creates or refreshes authentication cookies.
      */
 
     setRememberMePreference(
       rememberMe,
+    );
+
+    /*
+     * Remember Me OFF:
+     *
+     * Store a marker in sessionStorage.
+     *
+     * This marker survives refreshes but disappears
+     * when the browser tab session ends.
+     */
+
+    setSessionOnlyMarker(
+      !rememberMe,
     );
 
     try {
@@ -659,7 +829,9 @@ export default function PlayerNameGate({
        * =====================================================
        */
 
-      if (authMode === "login") {
+      if (
+        authMode === "login"
+      ) {
         const cleanEmail =
           email
             .trim()
@@ -682,27 +854,27 @@ export default function PlayerNameGate({
         }
 
         /*
-         * IMPORTANT:
-         *
          * If Remember Me is OFF, clear any existing
          * local Supabase session first.
          *
          * This prevents an older persistent session
-         * from surviving and being reused.
-         *
-         * scope: "local" only clears this browser's
-         * local authentication session.
+         * from being reused.
          */
 
         if (!rememberMe) {
           const {
-            error: signOutError,
+            error:
+              signOutError,
           } =
-            await supabase.auth.signOut({
-              scope: "local",
-            });
+            await supabase.auth.signOut(
+              {
+                scope: "local",
+              },
+            );
 
-          if (signOutError) {
+          if (
+            signOutError
+          ) {
             console.error(
               "Failed to clear previous local session:",
               signOutError,
@@ -719,7 +891,8 @@ export default function PlayerNameGate({
         } =
           await supabase.auth.signInWithPassword(
             {
-              email: cleanEmail,
+              email:
+                cleanEmail,
               password,
             },
           );
@@ -737,6 +910,15 @@ export default function PlayerNameGate({
               "Incorrect email or password. Please check your details and try again.",
             );
 
+            /*
+             * Remove the session-only marker if
+             * authentication failed.
+             */
+
+            setSessionOnlyMarker(
+              false,
+            );
+
             return;
           }
 
@@ -747,13 +929,17 @@ export default function PlayerNameGate({
          * Login successful.
          */
 
-        setShowAuthOnLanding(false);
+        setShowAuthOnLanding(
+          false,
+        );
 
         setPassword("");
         setConfirmPassword("");
 
         setShowPassword(false);
-        setShowConfirmPassword(false);
+        setShowConfirmPassword(
+          false,
+        );
 
         return;
       }
@@ -804,7 +990,9 @@ export default function PlayerNameGate({
       const hasMinimumLength =
         password.length >= 8;
 
-      if (!hasMinimumLength) {
+      if (
+        !hasMinimumLength
+      ) {
         setAuthError(
           "Password must contain at least 8 characters.",
         );
@@ -865,7 +1053,8 @@ export default function PlayerNameGate({
       } =
         await supabase.auth.signUp(
           {
-            email: cleanEmail,
+            email:
+              cleanEmail,
             password,
           },
         );
@@ -909,13 +1098,17 @@ export default function PlayerNameGate({
        * Account created successfully.
        */
 
-      setShowAuthOnLanding(false);
+      setShowAuthOnLanding(
+        false,
+      );
 
       setPassword("");
       setConfirmPassword("");
 
       setShowPassword(false);
-      setShowConfirmPassword(false);
+      setShowConfirmPassword(
+        false,
+      );
 
       setOnboardingStep(
         "account-created",
@@ -938,7 +1131,9 @@ export default function PlayerNameGate({
         );
       }
     } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(
+        false,
+      );
     }
   }
 
@@ -1022,12 +1217,14 @@ export default function PlayerNameGate({
           .upsert(
             {
               id: user.id,
-              email: user.email,
+              email:
+                user.email,
               mindplay_name:
                 trimmedName,
             },
             {
-              onConflict: "id",
+              onConflict:
+                "id",
             },
           );
 
@@ -1042,8 +1239,7 @@ export default function PlayerNameGate({
       await loadProgressFromSupabase();
 
       /*
-       * Load today's Daily Challenge
-       * from Supabase.
+       * Load today's Daily Challenge.
        */
 
       await loadDailyChallengeFromSupabase();
@@ -1052,10 +1248,17 @@ export default function PlayerNameGate({
        * Profile now exists.
        */
 
-      setProfileExists(true);
-      setProfileChecked(true);
+      setProfileExists(
+        true,
+      );
 
-      setShowNameSetup(false);
+      setProfileChecked(
+        true,
+      );
+
+      setShowNameSetup(
+        false,
+      );
 
       /*
        * Final onboarding.
@@ -1082,7 +1285,9 @@ export default function PlayerNameGate({
         );
       }
     } finally {
-      setIsSavingName(false);
+      setIsSavingName(
+        false,
+      );
     }
   }
 
@@ -1225,7 +1430,8 @@ export default function PlayerNameGate({
                     event,
                   ) =>
                     setEmail(
-                      event.target.value,
+                      event.target
+                        .value,
                     )
                   }
                   autoComplete="email"
@@ -1263,7 +1469,8 @@ export default function PlayerNameGate({
                       event,
                     ) =>
                       setPassword(
-                        event.target.value,
+                        event.target
+                          .value,
                       )
                     }
                     autoComplete={
@@ -1284,7 +1491,9 @@ export default function PlayerNameGate({
                     type="button"
                     onClick={() =>
                       setShowPassword(
-                        (previous) =>
+                        (
+                          previous,
+                        ) =>
                           !previous,
                       )
                     }
@@ -1336,7 +1545,8 @@ export default function PlayerNameGate({
                         event,
                       ) =>
                         setConfirmPassword(
-                          event.target.value,
+                          event.target
+                            .value,
                         )
                       }
                       autoComplete="new-password"
@@ -1352,7 +1562,9 @@ export default function PlayerNameGate({
                       type="button"
                       onClick={() =>
                         setShowConfirmPassword(
-                          (previous) =>
+                          (
+                            previous,
+                          ) =>
                             !previous,
                         )
                       }
@@ -1383,7 +1595,8 @@ export default function PlayerNameGate({
                       event,
                     ) =>
                       setRememberMe(
-                        event.target.checked,
+                        event.target
+                          .checked,
                       )
                     }
                     disabled={
@@ -1518,7 +1731,8 @@ export default function PlayerNameGate({
                   event,
                 ) =>
                   setMindPlayName(
-                    event.target.value,
+                    event.target
+                      .value,
                   )
                 }
                 autoComplete="off"
